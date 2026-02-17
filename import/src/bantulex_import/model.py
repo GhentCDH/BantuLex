@@ -46,30 +46,39 @@ class Country(Table, table=True):
     """Country of Bantu"""
     name: Optional[str] = None
     
+    regions: List["Region"] = Relationship(back_populates="country")
+    locations: List["Location"] = Relationship(back_populates="country")
+
 class Region(Table, table=True):
     """Region of Bantu"""
     name: Optional[str] = None
     country_id: Optional[int] = Field(default=None, foreign_key="country.id")
-    country: Optional["Country"] = Relationship(back_populates="regions")
+    country: Optional[Country] = Relationship(back_populates="regions")
+    
+    places: List["Place"] = Relationship(back_populates="region")
+    locations: List["Location"] = Relationship(back_populates="region")
 
 class Place(Table, table=True):
     """Place of Bantu"""
     name: Optional[str] = None
     region_id: Optional[int] = Field(default=None, foreign_key="region.id")
-    region: Optional["Region"] = Relationship(back_populates="places")
+    region: Optional[Region] = Relationship(back_populates="places")
+    
+    locations: List["Location"] = Relationship(back_populates="place")
 
 class Location(Table, table=True):
     """Location of Bantu"""
-    place: Optional[Place] = Relationship()
-    region: Optional[Region] = None
-    country: Optional[Country] = None
-    clan: Optional[str] = None
-    coordinates: List[Coordinate] = Relationship(back_populates="location")
-
     place_id: Optional[int] = Field(default=None, foreign_key="place.id")
     region_id: Optional[int] = Field(default=None, foreign_key="region.id")
     country_id: Optional[int] = Field(default=None, foreign_key="country.id")
 
+    place: Optional[Place] = Relationship(back_populates="locations")
+    region: Optional[Region] = Relationship(back_populates="locations")
+    country: Optional[Country] = Relationship(back_populates="locations")
+    
+    clan: Optional[str] = None
+    coordinates: List[Coordinate] = Relationship(back_populates="location")
+    
     entries: List["Entry"] = Relationship(back_populates="location")
 
 class Source(Table, table=True):
