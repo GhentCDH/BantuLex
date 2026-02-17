@@ -8,5 +8,7 @@ kottster/app.db
 data/bantulex.db
 data/bantulex.csv
 import/erd.mermaid
+*.db-shm
+*.db-wal
 
 .claude
