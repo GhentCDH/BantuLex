@@ -6,6 +6,18 @@
   "config": {
     "dataSource": "bantulex_db",
     "fetchStrategy": "databaseTable",
-    "table": "entry"
+    "table": "entry",
+    "linkedRecordsColumns": [
+      {
+        "relationshipKey": "entrysource__c__entry_id",
+        "label": "Sources",
+        "hiddenInTable": false
+      },
+      {
+        "relationshipKey": "sourceentries__c__entry_id",
+        "label": "Sources",
+        "hiddenInTable": false
+      }
+    ]
   }
 }

@@ -33,16 +33,42 @@ class Variety(Table, table=True):
 
     entries: List["Entry"] = Relationship(back_populates="variety")
 
+class Coordinate(Table, table=True):
+    """Coordinate of Bantu"""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    description: Optional[str] = None # 'default', 'original'
+    
+    location_id: Optional[int] = Field(default=None, foreign_key="location.id")
+    location: Optional["Location"] = Relationship(back_populates="coordinates")
+
+class Country(Table, table=True):
+    """Country of Bantu"""
+    name: Optional[str] = None
+    
+class Region(Table, table=True):
+    """Region of Bantu"""
+    name: Optional[str] = None
+    country_id: Optional[int] = Field(default=None, foreign_key="country.id")
+    country: Optional["Country"] = Relationship(back_populates="regions")
+
+class Place(Table, table=True):
+    """Place of Bantu"""
+    name: Optional[str] = None
+    region_id: Optional[int] = Field(default=None, foreign_key="region.id")
+    region: Optional["Region"] = Relationship(back_populates="places")
+
 class Location(Table, table=True):
     """Location of Bantu"""
-    place: Optional[str] = None
-    region: Optional[str] = None
-    country: Optional[str] = None
+    place: Optional[Place] = Relationship()
+    region: Optional[Region] = None
+    country: Optional[Country] = None
     clan: Optional[str] = None
-    longitude: Optional[float] = None
-    latitude: Optional[float] = None
-    longitude_source: Optional[str] = None
-    latitude_source: Optional[str] = None
+    coordinates: List[Coordinate] = Relationship(back_populates="location")
+
+    place_id: Optional[int] = Field(default=None, foreign_key="place.id")
+    region_id: Optional[int] = Field(default=None, foreign_key="region.id")
+    country_id: Optional[int] = Field(default=None, foreign_key="country.id")
 
     entries: List["Entry"] = Relationship(back_populates="location")
 
@@ -63,6 +89,16 @@ class Fieldwork(Table, table=True):
     data_entered_by: Optional[str] = None
 
     entries: List["Entry"] = Relationship(back_populates="fieldwork")
+
+class SourceEntries(Table, table=True):
+    """Link table between Entry and Source, acting as a Citation with a role."""
+    role: str = Field(index=True) # primary, second, cited, second_cited
+    
+    entry_id: Optional[int] = Field(default=None, foreign_key="entry.id")
+    source_id: Optional[int] = Field(default=None, foreign_key="source.id")
+    
+    entry: "Entry" = Relationship(back_populates="sources")
+    source: "Source" = Relationship()
 
 class Entry(Table, table=True):
     """Entry of Bantu"""
@@ -85,18 +121,9 @@ class Entry(Table, table=True):
     location_id: Optional[int] = Field(default=None, foreign_key="location.id")
     fieldwork_id: Optional[int] = Field(default=None, foreign_key="fieldwork.id")
     
-    source_id: Optional[int] = Field(default=None, foreign_key="source.id")
-    second_source_id: Optional[int] = Field(default=None, foreign_key="source.id")
-    cited_source_id: Optional[int] = Field(default=None, foreign_key="source.id")
-    second_cited_source_id: Optional[int] = Field(default=None, foreign_key="source.id")
-
     # Relationships
     variety: Optional[Variety] = Relationship(back_populates="entries")
     location: Optional[Location] = Relationship(back_populates="entries")
     fieldwork: Optional[Fieldwork] = Relationship(back_populates="entries")
     
-    # Source relationships
-    source: Optional[Source] = Relationship(sa_relationship_kwargs={"primaryjoin": "Entry.source_id==Source.id"})
-    second_source: Optional[Source] = Relationship(sa_relationship_kwargs={"primaryjoin": "Entry.second_source_id==Source.id"})
-    cited_source: Optional[Source] = Relationship(sa_relationship_kwargs={"primaryjoin": "Entry.cited_source_id==Source.id"})
-    second_cited_source: Optional[Source] = Relationship(sa_relationship_kwargs={"primaryjoin": "Entry.second_cited_source_id==Source.id"})
+    sources: List[SourceEntries] = Relationship(back_populates="entry")
