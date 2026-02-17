@@ -8,7 +8,7 @@ import knex from "knex";
 const client = knex({
   client: "better-sqlite3",
   connection: {
-    filename: "/data/bantulex.db",
+    filename: process.env.DB_PATH || "../data/bantulex.db",
   },
   useNullAsDefault: true,
 });

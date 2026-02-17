@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./data:/data
+      - ./import:/app
       - import-venv:/app/.venv
     env_file:
       - .env

@@ -13,3 +13,4 @@ DB_PATH = os.getenv("DB_PATH", "../data/bantulex.db")
 DB_STRING = f"sqlite:///{DB_PATH}"
 
 CSV = ROOT / "data" / "bantulex.csv"
+EXCEL = ROOT / "data" / "bantulex.xlsx"
