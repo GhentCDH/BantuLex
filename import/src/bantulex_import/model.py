@@ -84,6 +84,7 @@ class Location(Table, table=True):
 class Source(Table, table=True):
     """Source of Bantu"""
     author_year: Optional[str] = None
+    year_uncertain: bool = Field(default=False)
     title: Optional[str] = None
     pages: Optional[str] = None
     # No back_populates to avoid conflicts with multiple FKs on Entry
@@ -92,6 +93,7 @@ class Fieldwork(Table, table=True):
     """Fieldwork of Bantu"""
     project: Optional[str] = None
     year: Optional[str] = None
+    year_uncertain: bool = Field(default=False)
     consultants: Optional[str] = None # JSON or comma-separated
     data_collectors: Optional[str] = None
     archive: Optional[str] = None

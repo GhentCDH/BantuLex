@@ -1,7 +1,9 @@
 import logging
 import io
 import contextlib
-from typing import Dict, Tuple, Optional
+import re
+from datetime import datetime
+from typing import Dict, Tuple, Optional, Any, List
 
 # Use openpyxl directly to avoid pandas memory overhead
 from openpyxl import load_workbook
@@ -34,6 +36,63 @@ def clean_value(val):
         return None
     s = str(val).strip()
     return s if s else None
+
+class ImportReport:
+    def __init__(self):
+        # category -> list of dictionaries
+        self.categories: Dict[str, List[Dict[str, Any]]] = {}
+    
+    def add(self, category, data: Dict[str, Any]):
+        if category not in self.categories:
+            self.categories[category] = []
+        self.categories[category].append(data)
+    
+    def save(self, path):
+        from openpyxl import Workbook
+        wb = Workbook()
+        # Remove default sheet
+        default_sheet = wb.active
+        if default_sheet:
+            wb.remove(default_sheet)
+
+        for category in sorted(self.categories.keys()):
+            # Create a sheet for each category
+            # Sheet names are limited to 31 chars
+            ws_name = category.upper()[:31]
+            ws = wb.create_sheet(title=ws_name)
+            
+            entries = self.categories[category]
+            if not entries:
+                continue
+                
+            # Headers from first entry keys
+            headers = list(entries[0].keys())
+            ws.append(headers)
+            
+            # Sort by 'Row' if present
+            if "Row" in headers:
+                entries = sorted(entries, key=lambda x: x["Row"])
+            
+            for entry in entries:
+                ws.append([entry.get(h, "") for h in headers])
+
+        wb.save(path)
+
+def parse_uncertainty(val):
+    if not val:
+        return None, False
+    
+    s = str(val).strip()
+    if s == "?????":
+        return None, True
+    
+    is_uncertain = False
+    if "?" in s:
+        is_uncertain = True
+        import re
+        s = re.sub(r"\s*\(?\?\)?\s*", "", s).strip()
+    
+    return s if s else None, is_uncertain
 
 def main():
     SQLModel.metadata.create_all(engine)
@@ -81,6 +140,7 @@ def main():
 
     total_processed = 0
     batch_size = 1000
+    import_report = ImportReport()
 
     # Local Caches to avoid repeated DB Lookups
     # Keys should be tuples of defining attributes
@@ -91,6 +151,8 @@ def main():
     locations_cache: Dict[Tuple, Location] = {}
     sources_cache: Dict[Tuple, Source] = {}
     fieldworks_cache: Dict[Tuple, Fieldwork] = {}
+    # Track location coordinates to find mismatches: location_id -> description -> (lat, lon, original_row_idx)
+    location_coordinates_tracking: Dict[int, Dict[str, Tuple[float, float, int]]] = {}
     
     with Session(engine, expire_on_commit=False) as session:
         logger.info("Pre-loading caches from database...")
@@ -224,34 +286,57 @@ def main():
                             except (ValueError, TypeError):
                                 return None
                         
-                        lat = parse_float(row.get("Latitude"))
-                        lon = parse_float(row.get("Longitude"))
-                        if lat is not None and lon is not None and location:
-                             # Check if coordinate exists in session/db
-                             exists = session.exec(select(Coordinate).where(
-                                 Coordinate.location_id == location.id,
-                                 Coordinate.latitude == lat,
-                                 Coordinate.longitude == lon,
-                                 Coordinate.description == "default"
-                             )).first()
-                             if not exists:
-                                 session.add(Coordinate(location_id=location.id, latitude=lat, longitude=lon, description="default"))
+                        def add_coordinate(loc_id, lat, lon, desc):
+                            excel_row = total_processed + i + 2
+                            if loc_id not in location_coordinates_tracking:
+                                location_coordinates_tracking[loc_id] = {}
+                            
+                            if desc not in location_coordinates_tracking[loc_id]:
+                                session.add(Coordinate(location_id=loc_id, latitude=lat, longitude=lon, description=desc))
+                                location_coordinates_tracking[loc_id][desc] = (lat, lon, excel_row)
+                            else:
+                                existing_lat, existing_lon, conflicting_row = location_coordinates_tracking[loc_id][desc]
+                                # Only log if the new coordinates actually differ
+                                if lat != existing_lat or lon != existing_lon:
+                                    term = clean_value(row.get("Term"))
+                                    variety = clean_value(row.get("Variety"))
+                                    import_report.add("coordinate conflict", {
+                                        "Row": excel_row,
+                                        "Type": desc,
+                                        "Existing Lat": existing_lat,
+                                        "Existing Lon": existing_lon,
+                                        "New Lat": lat,
+                                        "New Lon": lon,
+                                        "Term": term,
+                                        "Variety": variety,
+                                        "Conflicting Row": conflicting_row
+                                    })
+
+                        lat_def = parse_float(row.get("Latitude"))
+                        lon_def = parse_float(row.get("Longitude"))
+                        if lat_def is not None and lon_def is not None and location:
+                             add_coordinate(location.id, lat_def, lon_def, "default")
                              
                         lat_orig = parse_float(row.get("Latitude OR source"))
                         lon_orig = parse_float(row.get("Longitude OR source"))
                         if lat_orig is not None and lon_orig is not None and location:
-                             exists = session.exec(select(Coordinate).where(
-                                 Coordinate.location_id == location.id,
-                                 Coordinate.latitude == lat_orig,
-                                 Coordinate.longitude == lon_orig,
-                                 Coordinate.description == "original"
-                             )).first()
-                             if not exists:
-                                 session.add(Coordinate(location_id=location.id, latitude=lat_orig, longitude=lon_orig, description="original"))
+                             add_coordinate(location.id, lat_orig, lon_orig, "original")
 
                         # 3. Fieldwork
                         f_project = clean_value(row.get("Project"))
-                        f_year = clean_value(row.get("Year of collection"))
+                        f_year_col = "Year of collection"
+                        f_year_raw = clean_value(row.get(f_year_col))
+                        f_year, f_uncertain = parse_uncertainty(f_year_raw)
+                        
+                        if f_uncertain:
+                            excel_row = total_processed + i + 2
+                            import_report.add("uncertainty", {
+                                "Row": excel_row,
+                                "Column": f_year_col,
+                                "Original Value": f_year_raw,
+                                "Cleaned Value": f_year
+                            })
+
                         f_data_collectors = clean_value(row.get("Data collector 1"))
                         f_archive = clean_value(row.get("Archive"))
                         f_entered_by = clean_value(row.get("Data entered by"))
@@ -268,7 +353,8 @@ def main():
                                 fieldwork = fieldworks_cache[f_key]
                             else:
                                 fieldwork = Fieldwork(
-                                    project=f_project, year=f_year, consultants=f_consultants,
+                                    project=f_project, year=f_year, year_uncertain=f_uncertain,
+                                    consultants=f_consultants,
                                     data_collectors=f_data_collectors, archive=f_archive, data_entered_by=f_entered_by
                                 )
                                 session.add(fieldwork)
@@ -293,19 +379,31 @@ def main():
                             else:
                                 return None
 
-                            auth_val = clean_value(row.get(col_auth))
-                            if prefix == "" and not auth_val:
-                                auth_val = clean_value(row.get("source"))
+                            auth_col = col_auth
+                            auth_val_raw = clean_value(row.get(auth_col))
+                            if prefix == "" and not auth_val_raw:
+                                auth_col = "source"
+                                auth_val_raw = clean_value(row.get(auth_col))
 
                             title_val = clean_value(row.get(col_title))
-                            if not auth_val and not title_val:
+                            if not auth_val_raw and not title_val:
                                 return None
                             
+                            auth_val, s_uncertain = parse_uncertainty(auth_val_raw)
+                            if s_uncertain:
+                                excel_row = total_processed + i + 2
+                                import_report.add("uncertainty", {
+                                    "Row": excel_row,
+                                    "Column": auth_col,
+                                    "Original Value": auth_val_raw,
+                                    "Cleaned Value": auth_val
+                                })
+
                             s_key = (auth_val, title_val)
                             if s_key in sources_cache:
                                 return sources_cache[s_key]
                             else:
-                                src = Source(author_year=auth_val, title=title_val)
+                                src = Source(author_year=auth_val, year_uncertain=s_uncertain, title=title_val)
                                 session.add(src)
                                 session.flush()
                                 sources_cache[s_key] = src
@@ -362,7 +460,13 @@ def main():
                             session.add(SourceEntries(entry_id=entry.id, source_id=cited2.id, role="second_cited"))
                     
                     except Exception as e:
-                        logger.error(f"Error processing row {row_idx}: {e}")
+                        excel_row = total_processed + i + 2
+                        logger.error(f"Error processing Excel row {excel_row}: {e}")
+                        import_report.add("critical error", {
+                            "Row": excel_row,
+                            "Column": None,
+                            "Error Message": str(e)
+                        })
                         continue
 
                 session.commit()
@@ -371,11 +475,14 @@ def main():
         
             except Exception as e:
                 logger.error(f"Error processing batch: {e}")
-                session.rollback() # Rollback the batch if something goes catastrophically wrong
+                session.rollback()
                 continue
 
 
     logger.info("Import complete.")
+    report_path = "import_validation.xlsx"
+    import_report.save(report_path)
+    logger.info(f"Validation report saved to {report_path}")
 
 if __name__ == "__main__":
     main()
