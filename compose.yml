@@ -34,6 +34,15 @@ services:
     stdin_open: true
     command: tail -f /dev/null
 
+  bantulex-map:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data:ro
+    restart: unless-stopped
 
 volumes:
   import-venv:
