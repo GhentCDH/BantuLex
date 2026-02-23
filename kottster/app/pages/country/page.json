@@ -1,11 +1,11 @@
 {
   "version": "3.4",
   "type": "table",
-  "title": "SourceEntries",
+  "title": "Country",
   "hideInSidebar": false,
   "config": {
     "dataSource": "bantulex_db",
     "fetchStrategy": "databaseTable",
-    "table": "sourceentries"
+    "table": "country"
   }
 }

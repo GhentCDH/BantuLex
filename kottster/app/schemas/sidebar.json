@@ -2,8 +2,14 @@
   "menuPageOrder": [
     "entry",
     "source",
-    "sourceEntries",
     "location",
-    "coordinate"
+    "coordinate",
+    "country",
+    "fieldwork",
+    "place",
+    "dataCollector",
+    "project",
+    "region",
+    "variety"
   ]
 }
