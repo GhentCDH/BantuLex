@@ -6,6 +6,23 @@
   "config": {
     "dataSource": "bantulex_db",
     "fetchStrategy": "databaseTable",
-    "table": "variety"
+    "table": "variety",
+    "columns": [
+      {
+        "column": "branch",
+        "label": "Branch",
+        "hiddenInTable": false,
+        "hiddenInForm": false,
+        "filterable": true,
+        "sortable": true,
+        "searchable": true,
+        "fieldInput": {
+          "type": "textarea",
+          "asArray": false
+        },
+        "fieldRequirement": "none",
+        "formFieldSpan": "12"
+      }
+    ]
   }
 }
