@@ -10,6 +10,7 @@ data/bantulex.csv
 import/erd.mermaid
 *.db-shm
 *.db-wal
+*-journal
 
 .claude
 .DS_Store
