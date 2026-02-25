@@ -13,6 +13,9 @@ up:
 import:
     docker compose exec import uv run import
 
+export:
+    docker compose exec export uv run export
+
 kottster:
     docker compose exec kottster /dev.sh
 
