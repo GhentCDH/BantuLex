@@ -7,7 +7,10 @@ import folium
 from folium.plugins import MarkerCluster
 
 from .database import get_session
-from .models import Coordinate, Location, Place, Region, Country, Variety, Entry, SourceEntries, Source
+from .models import (
+    Coordinate, Location, Place, Region, Country,
+    Variety, Entry, SourceEntries, Source,
+)
 
 app = FastAPI(title="Bantulex Map")
 
@@ -27,11 +30,11 @@ def build_map(
             Entry.location_id,
             Entry.variety_id,
             func.count(Entry.id).label("entry_count"),
-            func.group_concat(Entry.term, " · ").label("terms"),
-            func.group_concat(Entry.translation, " · ").label("translations"),
-            func.group_concat(Entry.meaning, " · ").label("meanings"),
-            func.group_concat(Entry.semantic_field, " · ").label("semantic_fields"),
-            func.group_concat(Entry.part_of_speech, " · ").label("pos"),
+            func.group_concat(Entry.term, "\n").label("terms"),
+            func.group_concat(Entry.translation, "\n").label("translations"),
+            func.group_concat(Entry.meaning, "\n").label("meanings"),
+            func.group_concat(Entry.semantic_field, "\n").label("semantic_fields"),
+            func.group_concat(Entry.part_of_speech, "\n").label("pos"),
         )
         .group_by(Entry.location_id, Entry.variety_id)
         .subquery()
@@ -42,8 +45,7 @@ def build_map(
             Coordinate.latitude,
             Coordinate.longitude,
             Coordinate.description,
-            Location.clan,
-            Place.name.label("place_name"),
+            Place.name.label("place_name"),      # clan verwijderd uit model
             Region.name.label("region_name"),
             Country.name.label("country_name"),
             Variety.id.label("variety_id"),
@@ -65,10 +67,12 @@ def build_map(
         .outerjoin(Place, Location.place_id == Place.id)
         .outerjoin(Region, Location.region_id == Region.id)
         .outerjoin(Country, Location.country_id == Country.id)
-        .join(entry_count_sq, (entry_count_sq.c.location_id == Location.id))
+        .join(entry_count_sq, entry_count_sq.c.location_id == Location.id)
         .join(Variety, entry_count_sq.c.variety_id == Variety.id)
         .where(Coordinate.latitude.isnot(None))
         .where(Coordinate.longitude.isnot(None))
+        # Gebruik enkel de primaire (BK/BL) coördinaten voor de kaart
+        .where(Coordinate.description == "default")
     )
 
     if branch:
@@ -88,90 +92,56 @@ def build_map(
     cluster = MarkerCluster().add_to(m)
 
     for row in rows:
-        # Trunceer lange lijsten voor leesbaarheid
+
         def truncate(val, n=5):
             if not val:
-                return "—"
-            items = val.split(" · ")
-            result = " · ".join(items[:n])
-            return result + f" <i>(+{len(items)-n})</i>" if len(items) > n else result
+                return ""
+            items = val.split('\n')
+            result = ", ".join(items[:n])
+            return result + f" (+{len(items) - n} meer)" if len(items) > n else result
 
         popup_html = f"""
-        <div style="font-family:sans-serif; font-size:13px; min-width:280px; max-width:320px">
-            <h4 style="margin:0 0 4px 0">{row.name_english or row.name_bantu or '?'}</h4>
-            <i style="color:#666">{row.name_bantu or ''}{' / ' + row.name_french if row.name_french else ''}</i>
-            <hr style="margin:6px 0">
-
-            <b>📍 Locatie</b><br>
-            {row.place_name or '—'}, {row.region_name or '—'}, {row.country_name or '—'}<br>
-            {('Clan: ' + row.clan) if row.clan else ''}
-
-            <hr style="margin:6px 0">
-            <b>🔤 Variëteit</b><br>
-            Branch: <code>{row.branch or '—'}</code><br>
-            Guthrie: <code>{row.guthrie_index or '—'}</code>
-            &nbsp; Bastin: <code>{row.bastin_index or '—'}</code><br>
-            Substrate suspect: {'<span style="color:red">✓</span>' if row.substrate_suspect else '✗'}
-
-            <hr style="margin:6px 0">
-            <b>📚 Entries ({row.entry_count})</b><br>
-            <table style="width:100%; font-size:12px; border-collapse:collapse">
-                <tr><td style="color:#888; width:90px">Termen</td>
-                    <td>{truncate(row.terms)}</td></tr>
-                <tr><td style="color:#888">Vertalingen</td>
-                    <td>{truncate(row.translations)}</td></tr>
-                <tr><td style="color:#888">Betekenis</td>
-                    <td>{truncate(row.meanings)}</td></tr>
-                <tr><td style="color:#888">Sem. veld</td>
-                    <td>{truncate(row.semantic_fields, 3)}</td></tr>
-                <tr><td style="color:#888">Woordsoort</td>
-                    <td>{truncate(row.pos, 3)}</td></tr>
-            </table>
-        </div>
-        """
-
-        color = "red" if row.substrate_suspect else "blue"
-        # Grootte marker op basis van aantal entries
-        radius = min(5 + (row.entry_count or 1) * 0.5, 20)
-
-        folium.CircleMarker(
+<b>{row.name_english or row.name_bantu or '—'}</b>
+<br><small>{row.name_french or ''}</small>
+<hr>
+<b>Branch:</b> <code>{row.branch or '—'}</code><br>
+<b>Guthrie:</b> <code>{row.guthrie_index or '—'}</code><br>
+<b>Bastin:</b> <code>{row.bastin_index or '—'}</code><br>
+<b>Plaats:</b> {row.place_name or '—'}, {row.region_name or '—'}, {row.country_name or '—'}<br>
+<b>Entries:</b> {row.entry_count}<br>
+<hr>
+<table>
+  <tr><td><b>Termen</b></td><td>{truncate(row.terms)}</td></tr>
+  <tr><td><b>Vertalingen</b></td><td>{truncate(row.translations)}</td></tr>
+  <tr><td><b>Betekenis</b></td><td>{truncate(row.meanings)}</td></tr>
+  <tr><td><b>Sem. veld</b></td><td>{truncate(row.semantic_fields, 3)}</td></tr>
+  <tr><td><b>Woordsoort</b></td><td>{truncate(row.pos, 3)}</td></tr>
+</table>
+"""
+        folium.Marker(
             location=[row.latitude, row.longitude],
-            radius=radius,
-            popup=folium.Popup(popup_html, max_width=340),
-            tooltip=f"{row.name_english or row.name_bantu or '?'} ({row.entry_count} entries)",
-            color=color,
-            fill=True,
-            fill_opacity=0.7,
+            popup=folium.Popup(popup_html, max_width=350),
+            tooltip=row.name_english or row.name_bantu or "—",
         ).add_to(cluster)
 
-    return m.get_root().render()
+    return m._repr_html_()
 
 
-@app.get("/", response_class=HTMLResponse)
-def map_view(
+@app.get("/map", response_class=HTMLResponse)
+def get_map(
     session: Session = Depends(get_session),
-    branch: Optional[str] = Query(None),
-    country: Optional[str] = Query(None),
-    variety_id: Optional[int] = Query(None),
-    substrate_only: bool = Query(False),
-    semantic_field: Optional[str] = Query(None),
+    branch: Optional[str] = Query(default=None),
+    country: Optional[str] = Query(default=None),
+    variety_id: Optional[int] = Query(default=None),
+    substrate_only: bool = Query(default=False),
+    semantic_field: Optional[str] = Query(default=None),
 ):
-    return build_map(session, branch, country, variety_id, substrate_only, semantic_field)
-
-
-@app.get("/api/filters")
-def get_filter_options(session: Session = Depends(get_session)):
-    branches = session.exec(
-        select(Variety.branch).where(Variety.branch.isnot(None)).distinct()
-    ).all()
-    countries = session.exec(
-        select(Country.name).where(Country.name.isnot(None)).distinct()
-    ).all()
-    semantic_fields = session.exec(
-        select(Entry.semantic_field).where(Entry.semantic_field.isnot(None)).distinct()
-    ).all()
-    return {
-        "branches": sorted(b for b in branches if b),
-        "countries": sorted(c for c in countries if c),
-        "semantic_fields": sorted(s for s in semantic_fields if s),
-    }
+    html = build_map(
+        session,
+        branch=branch,
+        country_name=country,
+        variety_id=variety_id,
+        substrate_only=substrate_only,
+        semantic_field=semantic_field,
+    )
+    return HTMLResponse(content=html)

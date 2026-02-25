@@ -1,18 +1,23 @@
-# app/database.py
-from sqlalchemy import event
-from sqlmodel import Session, create_engine
+import sqlite3
+from pathlib import Path
+from sqlalchemy import create_engine, event
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session
 
-DATABASE_URL = "sqlite:////data/bantulex.db"
+DB_PATH = Path("/data/bantulex.db")
 
 engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    "sqlite://",
+    creator=lambda: sqlite3.connect(
+        f"file:{DB_PATH}?immutable=1", uri=True
+    ),
+    poolclass=StaticPool,  # één gedeelde connectie, geen thread-issues
 )
 
 @event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_conn, connection_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL;")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON;")
     cursor.execute("PRAGMA query_only=ON;")
     cursor.close()
 
