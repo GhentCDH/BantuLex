@@ -12,6 +12,19 @@ services:
       - .env
     command: tail -f /dev/null
 
+  export:
+    container_name: bantulex-export
+    build:
+      context: export/
+      dockerfile: Dockerfile
+    volumes:
+      - ./data:/data
+      - ./export:/app
+      - export-venv:/app/.venv
+    env_file:
+      - .env
+    command: tail -f /dev/null
+
   kottster:
     container_name: bantulex-kottster
     build:
@@ -46,3 +59,4 @@ services:
 
 volumes:
   import-venv:
+  export-venv:
