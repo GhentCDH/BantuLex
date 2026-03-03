@@ -1,10 +1,11 @@
+import os
 import sqlite3
 from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 
-DB_PATH = Path("/data/bantulex.db")
+DB_PATH = Path(os.environ.get("DATABASE_PATH", "/data/bantulex.db"))
 
 engine = create_engine(
     "sqlite://",
