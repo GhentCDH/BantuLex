@@ -1,8 +1,21 @@
 from datetime import datetime
 from typing import Optional, List
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import Integer, Text, func
+from sqlalchemy import REAL
 from sqlmodel import Field, SQLModel, Relationship
+
+_STRICT = {"sqlite_strict": True}
+
+
+def _text(**kwargs):
+    """TEXT column — VARCHAR is not STRICT-compatible."""
+    return Field(sa_type=Text(), **kwargs)
+
+
+def _real(**kwargs):
+    """REAL column — FLOAT is not STRICT-compatible."""
+    return Field(sa_type=REAL(), **kwargs)
 
 
 class Table(SQLModel):
@@ -10,27 +23,30 @@ class Table(SQLModel):
     id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(
         default=None,
-        sa_type=DateTime(),
+        sa_type=Text(),
         sa_column_kwargs={"server_default": func.now(), "nullable": False},
     )
     updated_at: datetime = Field(
         default=None,
-        sa_type=DateTime(),
+        sa_type=Text(),
         sa_column_kwargs={"server_default": func.now(), "nullable": False},
     )
 
 
 class Variety(Table, table=True):
     """A Bantu language variety."""
-    name_english: Optional[str] = None
-    name_french: Optional[str] = None
-    name_bantu: Optional[str] = None
-    name_bastin: Optional[str] = None
-    branch: Optional[str] = None
-    bastin_index: Optional[str] = None
-    guthrie_index: Optional[str] = None
-    guthrie_plus: Optional[str] = None
-    substrate_suspect: Optional[bool] = None
+    __table_args__ = _STRICT
+
+    name_english: Optional[str] = _text(default=None)
+    name_french: Optional[str] = _text(default=None)
+    name_bantu: Optional[str] = _text(default=None)
+    name_bastin: Optional[str] = _text(default=None)
+    branch: Optional[str] = _text(default=None)
+    bastin_index: Optional[str] = _text(default=None)
+    guthrie_index: Optional[str] = _text(default=None)
+    guthrie_plus: Optional[str] = _text(default=None)
+    # BOOLEAN is not STRICT-compatible; store as INTEGER (0/1)
+    substrate_suspect: Optional[int] = Field(default=None, sa_type=Integer())
 
     entries: List["Entry"] = Relationship(back_populates="variety")
 
@@ -38,12 +54,15 @@ class Variety(Table, table=True):
 class Coordinate(Table, table=True):
     """Geographical coordinate attached to a location.
 
-    description='default'  -> columns BK/BL (primary, possibly corrected)
+    description='default' -> columns BK/BL (primary, possibly corrected)
     description='original' -> columns BM/BN (as found in original source)
     """
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    description: Optional[str] = None  # 'default' or 'original'
+    __table_args__ = _STRICT
+
+    # FLOAT is not STRICT-compatible; use REAL
+    latitude: Optional[float] = _real(default=None)
+    longitude: Optional[float] = _real(default=None)
+    description: Optional[str] = _text(default=None)  # 'default' or 'original'
 
     location_id: Optional[int] = Field(default=None, foreign_key="location.id")
     location: Optional["Location"] = Relationship(back_populates="coordinates")
@@ -51,7 +70,9 @@ class Coordinate(Table, table=True):
 
 class Country(Table, table=True):
     """Country."""
-    name: Optional[str] = None
+    __table_args__ = _STRICT
+
+    name: Optional[str] = _text(default=None)
 
     regions: List["Region"] = Relationship(back_populates="country")
     locations: List["Location"] = Relationship(back_populates="country")
@@ -59,7 +80,9 @@ class Country(Table, table=True):
 
 class Region(Table, table=True):
     """Fieldwork region within a country."""
-    name: Optional[str] = None
+    __table_args__ = _STRICT
+
+    name: Optional[str] = _text(default=None)
     country_id: Optional[int] = Field(default=None, foreign_key="country.id")
 
     country: Optional[Country] = Relationship(back_populates="regions")
@@ -69,7 +92,9 @@ class Region(Table, table=True):
 
 class Place(Table, table=True):
     """Specific place within a region."""
-    name: Optional[str] = None
+    __table_args__ = _STRICT
+
+    name: Optional[str] = _text(default=None)
     region_id: Optional[int] = Field(default=None, foreign_key="region.id")
 
     region: Optional[Region] = Relationship(back_populates="places")
@@ -80,6 +105,8 @@ class Location(Table, table=True):
     """Composite location (place + region + country).
     Clan is intentionally excluded per project decision.
     """
+    __table_args__ = _STRICT
+
     place_id: Optional[int] = Field(default=None, foreign_key="place.id")
     region_id: Optional[int] = Field(default=None, foreign_key="region.id")
     country_id: Optional[int] = Field(default=None, foreign_key="country.id")
@@ -94,15 +121,19 @@ class Location(Table, table=True):
 
 class Source(Table, table=True):
     """Bibliographic source (author + year + title)."""
-    author_year: Optional[str] = None
-    year_uncertain: bool = Field(default=False)
-    title: Optional[str] = None
-    pages: Optional[str] = None
+    __table_args__ = _STRICT
+
+    author_year: Optional[str] = _text(default=None)
+    # BOOLEAN is not STRICT-compatible; store as INTEGER (0/1)
+    year_uncertain: int = Field(default=0, sa_type=Integer())
+    title: Optional[str] = _text(default=None)
 
 
 class Project(Table, table=True):
     """A research project."""
-    name: Optional[str] = None
+    __table_args__ = _STRICT
+
+    name: Optional[str] = _text(default=None)
 
     fieldworks: List["Fieldwork"] = Relationship(back_populates="project")
 
@@ -111,19 +142,23 @@ class CollectionYear(Table, table=True):
     """
     A year of data collection with its certainty status.
     status: 'known' | 'uncertain' | 'unknown'
-      known    -> normal year value
-      uncertain -> year with ? marker (e.g. 'Bouka 1989?')
-      unknown  -> was '?????' or unresolvable
+    known     -> normal year value
+    uncertain -> year with ? marker (e.g. 'Bouka 1989?')
+    unknown   -> was '?????' or unresolvable
     """
-    value: Optional[str] = None   # actual year string; None when status='unknown'
-    status: str = Field(default="known")
+    __table_args__ = _STRICT
+
+    value: Optional[str] = _text(default=None)  # actual year string; None when status='unknown'
+    status: str = _text(default="known")
 
     fieldworks: List["Fieldwork"] = Relationship(back_populates="collection_year")
 
 
 class DataCollector(Table, table=True):
     """A person who collected field data."""
-    name: Optional[str] = None
+    __table_args__ = _STRICT
+
+    name: Optional[str] = _text(default=None)
 
     fieldwork_links: List["FieldworkDataCollector"] = Relationship(
         back_populates="data_collector"
@@ -132,6 +167,8 @@ class DataCollector(Table, table=True):
 
 class FieldworkDataCollector(SQLModel, table=True):
     """Link table: Fieldwork <-> DataCollector. Composite PK, no auto-id."""
+    __table_args__ = _STRICT
+
     fieldwork_id: int = Field(foreign_key="fieldwork.id", primary_key=True)
     data_collector_id: int = Field(foreign_key="datacollector.id", primary_key=True)
 
@@ -142,23 +179,29 @@ class FieldworkDataCollector(SQLModel, table=True):
 class Fieldwork(Table, table=True):
     """A fieldwork session. Project, year and data collectors are normalised
     into their own tables."""
+    __table_args__ = _STRICT
+
     project_id: Optional[int] = Field(default=None, foreign_key="project.id")
     collection_year_id: Optional[int] = Field(default=None, foreign_key="collectionyear.id")
-    consultants: Optional[str] = None      # comma-separated (not yet normalised)
-    archive: Optional[str] = None
-    data_entered_by: Optional[str] = None
+    consultants: Optional[str] = _text(default=None)  # comma-separated (not yet normalised)
+    archive: Optional[str] = _text(default=None)
+    data_entered_by: Optional[str] = _text(default=None)
 
     project: Optional[Project] = Relationship(back_populates="fieldworks")
     collection_year: Optional[CollectionYear] = Relationship(back_populates="fieldworks")
     data_collector_links: List[FieldworkDataCollector] = Relationship(
         back_populates="fieldwork"
     )
+
     entries: List["Entry"] = Relationship(back_populates="fieldwork")
 
 
 class SourceEntries(Table, table=True):
     """Link table between Entry and Source (citation with a role)."""
-    role: str = Field(index=True)  # primary | second | cited | second_cited
+    __table_args__ = _STRICT
+
+    role: str = _text(index=True)  # primary | secondary | cited | second_cited
+    pages: Optional[str] = _text(default=None)  # page number as printed, per entry
 
     entry_id: Optional[int] = Field(default=None, foreign_key="entry.id")
     source_id: Optional[int] = Field(default=None, foreign_key="source.id")
@@ -169,21 +212,23 @@ class SourceEntries(Table, table=True):
 
 class Entry(Table, table=True):
     """A single lexical entry."""
+    __table_args__ = _STRICT
+
     # Original spreadsheet IDs
     original_id: Optional[int] = None
-    # ID beginning is the primary business identifier and must be unique
+    # beginning_id is the primary business identifier and must be unique
     beginning_id: Optional[int] = Field(default=None, unique=True, index=True)
 
-    term: Optional[str] = None
-    term_morph_analysis: Optional[str] = None
-    translation: Optional[str] = None
-    meaning: Optional[str] = None
-    scientific_name: Optional[str] = None
-    semantic_field: Optional[str] = None
-    part_of_speech: Optional[str] = None
-    blr_index: Optional[str] = None
-    ipa: Optional[str] = None
-    notes: Optional[str] = None
+    term: Optional[str] = _text(default=None)
+    term_morph_analysis: Optional[str] = _text(default=None)
+    translation: Optional[str] = _text(default=None)
+    meaning: Optional[str] = _text(default=None)
+    scientific_name: Optional[str] = _text(default=None)
+    semantic_field: Optional[str] = _text(default=None)
+    part_of_speech: Optional[str] = _text(default=None)
+    blr_index: Optional[str] = _text(default=None)
+    ipa: Optional[str] = _text(default=None)
+    notes: Optional[str] = _text(default=None)
 
     # Foreign Keys
     variety_id: Optional[int] = Field(default=None, foreign_key="variety.id")

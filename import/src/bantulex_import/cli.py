@@ -443,11 +443,12 @@ def main() -> None:
                                 fieldworks_cache[f_key] = fieldwork
 
                         # 5. Sources
-                        def _get_source(auth_col: str, title_col: str) -> Optional[Source]:
+                        def _get_source(auth_col: str, title_col: str, pages_col: str) -> Optional[Source]:
                             auth_raw  = clean_value(row.get(auth_col))
                             title_val = clean_value(row.get(title_col))
+                            pages_val = clean_value(row.get(pages_col))
                             if not auth_raw and not title_val:
-                                return None
+                                return None, None
                             auth_val, unc = parse_uncertainty(auth_raw)
                             if unc:
                                 import_report.add("uncertainty", {
@@ -457,16 +458,17 @@ def main() -> None:
                                     "Note": "Uncertain year; check for alternative if present.",
                                 })
                             s_key = (auth_val, title_val)
-                            return get_or_create(
+                            source = get_or_create(
                                 sources_cache, s_key,
                                 lambda k=s_key, u=unc: Source(
                                     author_year=k[0], year_uncertain=u, title=k[1]),
                                 session)
+                            return source, pages_val
 
-                        src1  = _get_source("Source (Author YEAR)", "Title")
-                        src2  = _get_source("Second source (Author Year)", "Title second source")
-                        cite1 = _get_source("Cited source", "Title cited source")
-                        cite2 = _get_source("Second cited source", "Title second cited source")
+                        src1, pages1  = _get_source("Source (Author YEAR)", "Title", "Page number")
+                        src2, pages2  = _get_source("Second source (Author Year)", "Title second source", "Page number second source")
+                        cite1, cpages1 = _get_source("Cited source", "Title cited source", "Pages cited source")
+                        cite2, cpages2 = _get_source("Second cited source", "Title second cited source", "Pages second cited source")
 
                         # 6. Entry — parse IDs with explicit invalid-format reporting
                         original_id, oid_ok = parse_int(row.get("ID 20250825"))
@@ -519,17 +521,18 @@ def main() -> None:
                         session.flush()
 
                         # 7. Source links
-                        for src, role in [
-                            (src1,  "primary"),
-                            (src2,  "second"),
-                            (cite1, "cited"),
-                            (cite2, "second_cited"),
+                        for src, role, pages in [
+                            (src1,  "primary", pages1),
+                            (src2,  "second", pages2),
+                            (cite1, "cited", cpages1),
+                            (cite2, "second_cited", cpages2),
                         ]:
                             if src:
                                 session.add(SourceEntries(
                                     entry_id=entry.id,
                                     source_id=src.id,
                                     role=role,
+                                    pages=pages,
                                 ))
 
                     except Exception as e:
