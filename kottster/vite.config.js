@@ -4,12 +4,12 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   root: './app',
+  base: process.env.VITE_BASE_PATH || '/',
   server: {
     port: 5480,
     open: false,
     // Required for Docker
     host: '0.0.0.0',
-    base: process.env.VITE_BASE_PATH || '/',
   },
   build: {
     outDir: '../dist/client',
