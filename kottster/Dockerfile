@@ -33,6 +33,11 @@ COPY . .
 ARG KOTTSTER_BASE_PATH=""
 ENV VITE_BASE_PATH=${KOTTSTER_BASE_PATH}
 
+# Inject basePath into kottster-app.json for the build
+RUN apk add --no-cache jq && \
+    jq --arg bp "${KOTTSTER_BASE_PATH}" '. + if $bp != "" then {basePath: $bp} else {} end' kottster-app.json > kottster-app.tmp.json && \
+    mv kottster-app.tmp.json kottster-app.json
+
 RUN npm run build
 
 # Runtime: pad naar de SQLite database
