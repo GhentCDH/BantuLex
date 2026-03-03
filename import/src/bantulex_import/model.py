@@ -97,7 +97,6 @@ class Source(Table, table=True):
     author_year: Optional[str] = None
     year_uncertain: bool = Field(default=False)
     title: Optional[str] = None
-    pages: Optional[str] = None
 
 
 class Project(Table, table=True):
@@ -158,7 +157,8 @@ class Fieldwork(Table, table=True):
 
 class SourceEntries(Table, table=True):
     """Link table between Entry and Source (citation with a role)."""
-    role: str = Field(index=True)  # primary | second | cited | second_cited
+    role: str = Field(index=True)  # primary | secondary | cited | second_cited
+    pages: Optional[str] = None # page number as printed, per entry
 
     entry_id: Optional[int] = Field(default=None, foreign_key="entry.id")
     source_id: Optional[int] = Field(default=None, foreign_key="source.id")
