@@ -6,6 +6,35 @@
   "config": {
     "dataSource": "bantulex_db",
     "fetchStrategy": "databaseTable",
-    "table": "fieldwork"
+    "table": "fieldwork",
+    "columns": [
+      {
+        "column": "id",
+        "hiddenInTable": true
+      },
+      {
+        "column": "created_at",
+        "hiddenInTable": true
+      },
+      {
+        "column": "updated_at",
+        "hiddenInTable": true
+      },
+      {
+        "column": "consultants",
+        "label": "Consultants",
+        "hiddenInTable": false,
+        "hiddenInForm": false,
+        "filterable": true,
+        "sortable": true,
+        "searchable": true,
+        "fieldInput": {
+          "type": "textarea",
+          "asArray": false
+        },
+        "fieldRequirement": "none",
+        "formFieldSpan": "12"
+      }
+    ]
   }
 }

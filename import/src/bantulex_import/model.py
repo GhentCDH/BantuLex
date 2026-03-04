@@ -33,6 +33,65 @@ class Table(SQLModel):
     )
 
 
+class BLRContributor(Table, table=True):
+    """Person who added a BLR entry (Added by)."""
+    __table_args__ = _STRICT
+
+    name: Optional[str] = _text(default=None)
+
+    blr_entries: List["BLREntry"] = Relationship(back_populates="contributor")
+
+
+class BLRReliability(Table, table=True):
+    """Reliability score of a BLR reconstruction (Fiab:)."""
+    __table_args__ = _STRICT
+
+    value: Optional[str] = _text(default=None)
+
+    blr_entries: List["BLREntry"] = Relationship(back_populates="reliability")
+
+
+class BLRConsonantStructure(Table, table=True):
+    """Consonant profile shared across BLR entries."""
+    __table_args__ = _STRICT
+
+    c1: Optional[str] = _text(default=None)
+    c2: Optional[str] = _text(default=None)
+    c3: Optional[str] = _text(default=None)
+    c4: Optional[str] = _text(default=None)
+    cs: Optional[str] = _text(default=None)  # consonant structure label
+
+    blr_entries: List["BLREntry"] = Relationship(back_populates="consonant_structure")
+
+
+class BLRVowelStructure(Table, table=True):
+    """Vowel profile shared across BLR entries."""
+    __table_args__ = _STRICT
+
+    v11: Optional[str] = _text(default=None)
+    v12: Optional[str] = _text(default=None)
+    v21: Optional[str] = _text(default=None)
+    v22: Optional[str] = _text(default=None)
+    v3: Optional[str] = _text(default=None)
+    v4: Optional[str] = _text(default=None)
+
+    blr_entries: List["BLREntry"] = Relationship(back_populates="vowel_structure")
+
+
+class BLRToneStructure(Table, table=True):
+    """Tone profile shared across BLR entries."""
+    __table_args__ = _STRICT
+
+    t11: Optional[str] = _text(default=None)
+    t12: Optional[str] = _text(default=None)
+    t21: Optional[str] = _text(default=None)
+    t22: Optional[str] = _text(default=None)
+    t3: Optional[str] = _text(default=None)
+    t4: Optional[str] = _text(default=None)
+
+    blr_entries: List["BLREntry"] = Relationship(back_populates="tone_structure")
+
+
 class BLREntry(Table, table=True):
     """
     A single BLR (Bantu Lexical Reconstructions) entry.
@@ -40,37 +99,30 @@ class BLREntry(Table, table=True):
     """
     __table_args__ = _STRICT
 
-    blr_index: Optional[int] = Field(default=None, index=True)  # "Index" column
-    word_tone: Optional[str] = _text(default=None)    # "Word\Tone" — reconstructed form with tone
+    blr_index: Optional[int] = Field(default=None, index=True)
+    word_tone: Optional[str] = _text(default=None)    # "Word\Tone" — with tone diacritics
     word: Optional[str] = _text(default=None)          # "Word"      — without tone diacritics
-    english: Optional[str] = _text(default=None)       # "English"
-    french: Optional[str] = _text(default=None)        # "Français:"
-    c1: Optional[str] = _text(default=None)
-    c2: Optional[str] = _text(default=None)
-    c3: Optional[str] = _text(default=None)
-    c4: Optional[str] = _text(default=None)
-    cs: Optional[str] = _text(default=None)            # consonant structure label
-    noun_class: Optional[str] = _text(default=None)    # "N class"
+    english: Optional[str] = _text(default=None)
+    french: Optional[str] = _text(default=None)
+    noun_class: Optional[str] = _text(default=None)
     distribution: Optional[str] = _text(default=None)  # "Distr:" — Bantu zones
-    reliability: Optional[str] = _text(default=None)   # "Fiab:"
     note: Optional[str] = _text(default=None)
     proto_kk: Optional[str] = _text(default=None)
-    added_by: Optional[str] = _text(default=None)
     date_of_entry: Optional[str] = _text(default=None)
-    # Tone slots
-    t11: Optional[str] = _text(default=None)
-    t12: Optional[str] = _text(default=None)
-    t21: Optional[str] = _text(default=None)
-    t22: Optional[str] = _text(default=None)
-    t3: Optional[str] = _text(default=None)
-    t4: Optional[str] = _text(default=None)
-    # Vowel slots
-    v11: Optional[str] = _text(default=None)
-    v12: Optional[str] = _text(default=None)
-    v21: Optional[str] = _text(default=None)
-    v22: Optional[str] = _text(default=None)
-    v3: Optional[str] = _text(default=None)
-    v4: Optional[str] = _text(default=None)
+
+    # Foreign Keys
+    contributor_id: Optional[int] = Field(default=None, foreign_key="blrcontributor.id")
+    reliability_id: Optional[int] = Field(default=None, foreign_key="blrreliability.id")
+    consonant_structure_id: Optional[int] = Field(default=None, foreign_key="blrconsonantstructure.id")
+    vowel_structure_id: Optional[int] = Field(default=None, foreign_key="blrvowelstructure.id")
+    tone_structure_id: Optional[int] = Field(default=None, foreign_key="blrtonestructure.id")
+
+    # Relationships
+    contributor: Optional[BLRContributor] = Relationship(back_populates="blr_entries")
+    reliability: Optional[BLRReliability] = Relationship(back_populates="blr_entries")
+    consonant_structure: Optional[BLRConsonantStructure] = Relationship(back_populates="blr_entries")
+    vowel_structure: Optional[BLRVowelStructure] = Relationship(back_populates="blr_entries")
+    tone_structure: Optional[BLRToneStructure] = Relationship(back_populates="blr_entries")
 
     entries: List["Entry"] = Relationship(back_populates="blr_entry")
 

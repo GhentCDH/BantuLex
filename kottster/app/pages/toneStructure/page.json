@@ -1,0 +1,11 @@
+{
+  "version": "3.4",
+  "type": "table",
+  "title": "ToneStructure",
+  "hideInSidebar": false,
+  "config": {
+    "dataSource": "bantulex_db",
+    "fetchStrategy": "databaseTable",
+    "table": "blrtonestructure"
+  }
+}

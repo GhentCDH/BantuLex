@@ -7,10 +7,13 @@
     "country",
     "fieldwork",
     "place",
-    "dataCollector",
     "project",
     "region",
     "variety",
-    "bLR"
+    "bLR",
+    "consonantStructure",
+    "contributor",
+    "toneStructure",
+    "vowelStructure"
   ]
 }

@@ -6,6 +6,20 @@
   "config": {
     "dataSource": "bantulex_db",
     "fetchStrategy": "databaseTable",
-    "table": "country"
+    "table": "country",
+    "columns": [
+      {
+        "column": "created_at",
+        "hiddenInTable": true
+      },
+      {
+        "column": "updated_at",
+        "hiddenInTable": true
+      },
+      {
+        "column": "id",
+        "hiddenInTable": true
+      }
+    ]
   }
 }

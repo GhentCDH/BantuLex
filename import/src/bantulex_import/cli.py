@@ -9,7 +9,8 @@ from sqlmodel import SQLModel, Session, select
 from .config import EXCEL, BLR_EXCEL
 from .db import create_updated_at_trigger, engine
 from .model import (
-    BLREntry,
+    BLRContributor, BLRConsonantStructure, BLREntry,
+    BLRReliability, BLRToneStructure, BLRVowelStructure,
     CollectionYear, Coordinate, Country, DataCollector, Entry,
     Fieldwork, FieldworkDataCollector, Location, Place, Project,
     Region, Source, SourceEntries, Variety,
@@ -188,14 +189,29 @@ def import_blr() -> None:
     def row_to_dict(rc) -> dict:
         return {h: c.value for h, c in zip(headers, rc) if h is not None}
 
-    # BLR integer index -> BLREntry.id  (used for linking entries afterwards)
     blr_index_map: Dict[int, int] = {}
 
+    contributors_cache: Dict[tuple, BLRContributor] = {}
+    reliability_cache: Dict[tuple, BLRReliability] = {}
+    consonant_cache: Dict[tuple, BLRConsonantStructure] = {}
+    vowel_cache: Dict[tuple, BLRVowelStructure] = {}
+    tone_cache: Dict[tuple, BLRToneStructure] = {}
+
     with Session(engine, expire_on_commit=False) as session:
-        # Pre-load existing BLR entries to allow re-runs without duplicates
+        # Pre-load existing records (idempotent re-runs)
         for existing in session.exec(select(BLREntry)).all():
             if existing.blr_index is not None:
                 blr_index_map[existing.blr_index] = existing.id
+        for x in session.exec(select(BLRContributor)).all():
+            if x.name: contributors_cache[(x.name,)] = x
+        for x in session.exec(select(BLRReliability)).all():
+            if x.value: reliability_cache[(x.value,)] = x
+        for x in session.exec(select(BLRConsonantStructure)).all():
+            consonant_cache[(x.c1, x.c2, x.c3, x.c4, x.cs)] = x
+        for x in session.exec(select(BLRVowelStructure)).all():
+            vowel_cache[(x.v11, x.v12, x.v21, x.v22, x.v3, x.v4)] = x
+        for x in session.exec(select(BLRToneStructure)).all():
+            tone_cache[(x.t11, x.t12, x.t21, x.t22, x.t3, x.t4)] = x
 
         inserted = 0
         for row_cells in rows:
@@ -203,9 +219,67 @@ def import_blr() -> None:
 
             idx_raw, idx_ok = parse_int(row.get("Index"))
             if not idx_ok or idx_raw is None:
-                continue  # skip rows without a valid integer index
+                continue
             if idx_raw in blr_index_map:
-                continue  # already imported (idempotent)
+                continue
+
+            # Contributor
+            contributor_name = clean_value(row.get("Added by"))
+            contributor = get_or_create(
+                contributors_cache, (contributor_name,),
+                lambda n=contributor_name: BLRContributor(name=n),
+                session) if contributor_name else None
+
+            # Reliability
+            reliability_val = clean_value(row.get("Fiab:"))
+            reliability = get_or_create(
+                reliability_cache, (reliability_val,),
+                lambda v=reliability_val: BLRReliability(value=v),
+                session) if reliability_val else None
+
+            # Consonant structure
+            c_key = (
+                clean_value(row.get("C1")),
+                clean_value(row.get("C2")),
+                clean_value(row.get("C3")),
+                clean_value(row.get("C4")),
+                clean_value(row.get("CS")),
+            )
+            consonant_structure = get_or_create(
+                consonant_cache, c_key,
+                lambda k=c_key: BLRConsonantStructure(
+                    c1=k[0], c2=k[1], c3=k[2], c4=k[3], cs=k[4]),
+                session) if any(c_key) else None
+
+            # Vowel structure
+            v_key = (
+                clean_value(row.get("V11")),
+                clean_value(row.get("V12")),
+                clean_value(row.get("V21")),
+                clean_value(row.get("V22")),
+                clean_value(row.get("V3")),
+                clean_value(row.get("V4")),
+            )
+            vowel_structure = get_or_create(
+                vowel_cache, v_key,
+                lambda k=v_key: BLRVowelStructure(
+                    v11=k[0], v12=k[1], v21=k[2], v22=k[3], v3=k[4], v4=k[5]),
+                session) if any(v_key) else None
+
+            # Tone structure
+            t_key = (
+                clean_value(row.get("T11")),
+                clean_value(row.get("T12")),
+                clean_value(row.get("T21")),
+                clean_value(row.get("T22")),
+                clean_value(row.get("T3")),
+                clean_value(row.get("T4")),
+            )
+            tone_structure = get_or_create(
+                tone_cache, t_key,
+                lambda k=t_key: BLRToneStructure(
+                    t11=k[0], t12=k[1], t21=k[2], t22=k[3], t3=k[4], t4=k[5]),
+                session) if any(t_key) else None
 
             blr = BLREntry(
                 blr_index=idx_raw,
@@ -213,30 +287,16 @@ def import_blr() -> None:
                 word=clean_value(row.get("Word")),
                 english=clean_value(row.get("English")),
                 french=clean_value(row.get("Français:")),
-                c1=clean_value(row.get("C1")),
-                c2=clean_value(row.get("C2")),
-                c3=clean_value(row.get("C3")),
-                c4=clean_value(row.get("C4")),
-                cs=clean_value(row.get("CS")),
                 noun_class=clean_value(row.get("N class")),
                 distribution=clean_value(row.get("Distr:")),
-                reliability=clean_value(row.get("Fiab:")),
                 note=clean_value(row.get("Note")),
                 proto_kk=clean_value(row.get("Proto KK")),
-                added_by=clean_value(row.get("Added by")),
                 date_of_entry=clean_value(row.get("Date of entry")),
-                t11=clean_value(row.get("T11")),
-                t12=clean_value(row.get("T12")),
-                t21=clean_value(row.get("T21")),
-                t22=clean_value(row.get("T22")),
-                t3=clean_value(row.get("T3")),
-                t4=clean_value(row.get("T4")),
-                v11=clean_value(row.get("V11")),
-                v12=clean_value(row.get("V12")),
-                v21=clean_value(row.get("V21")),
-                v22=clean_value(row.get("V22")),
-                v3=clean_value(row.get("V3")),
-                v4=clean_value(row.get("V4")),
+                contributor_id=contributor.id if contributor else None,
+                reliability_id=reliability.id if reliability else None,
+                consonant_structure_id=consonant_structure.id if consonant_structure else None,
+                vowel_structure_id=vowel_structure.id if vowel_structure else None,
+                tone_structure_id=tone_structure.id if tone_structure else None,
             )
             session.add(blr)
             session.flush()
