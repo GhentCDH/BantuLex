@@ -33,6 +33,48 @@ class Table(SQLModel):
     )
 
 
+class BLREntry(Table, table=True):
+    """
+    A single BLR (Bantu Lexical Reconstructions) entry.
+    blr_index is the numeric BLR identifier used to link with Entry.blr_index.
+    """
+    __table_args__ = _STRICT
+
+    blr_index: Optional[int] = Field(default=None, index=True)  # "Index" column
+    word_tone: Optional[str] = _text(default=None)    # "Word\Tone" — reconstructed form with tone
+    word: Optional[str] = _text(default=None)          # "Word"      — without tone diacritics
+    english: Optional[str] = _text(default=None)       # "English"
+    french: Optional[str] = _text(default=None)        # "Français:"
+    c1: Optional[str] = _text(default=None)
+    c2: Optional[str] = _text(default=None)
+    c3: Optional[str] = _text(default=None)
+    c4: Optional[str] = _text(default=None)
+    cs: Optional[str] = _text(default=None)            # consonant structure label
+    noun_class: Optional[str] = _text(default=None)    # "N class"
+    distribution: Optional[str] = _text(default=None)  # "Distr:" — Bantu zones
+    reliability: Optional[str] = _text(default=None)   # "Fiab:"
+    note: Optional[str] = _text(default=None)
+    proto_kk: Optional[str] = _text(default=None)
+    added_by: Optional[str] = _text(default=None)
+    date_of_entry: Optional[str] = _text(default=None)
+    # Tone slots
+    t11: Optional[str] = _text(default=None)
+    t12: Optional[str] = _text(default=None)
+    t21: Optional[str] = _text(default=None)
+    t22: Optional[str] = _text(default=None)
+    t3: Optional[str] = _text(default=None)
+    t4: Optional[str] = _text(default=None)
+    # Vowel slots
+    v11: Optional[str] = _text(default=None)
+    v12: Optional[str] = _text(default=None)
+    v21: Optional[str] = _text(default=None)
+    v22: Optional[str] = _text(default=None)
+    v3: Optional[str] = _text(default=None)
+    v4: Optional[str] = _text(default=None)
+
+    entries: List["Entry"] = Relationship(back_populates="blr_entry")
+
+
 class Variety(Table, table=True):
     """A Bantu language variety."""
     __table_args__ = _STRICT
@@ -54,7 +96,7 @@ class Variety(Table, table=True):
 class Coordinate(Table, table=True):
     """Geographical coordinate attached to a location.
 
-    description='default' -> columns BK/BL (primary, possibly corrected)
+    description='default'  -> columns BK/BL (primary, possibly corrected)
     description='original' -> columns BM/BN (as found in original source)
     """
     __table_args__ = _STRICT
@@ -142,9 +184,9 @@ class CollectionYear(Table, table=True):
     """
     A year of data collection with its certainty status.
     status: 'known' | 'uncertain' | 'unknown'
-    known     -> normal year value
-    uncertain -> year with ? marker (e.g. 'Bouka 1989?')
-    unknown   -> was '?????' or unresolvable
+      known     -> normal year value
+      uncertain -> year with ? marker (e.g. 'Bouka 1989?')
+      unknown   -> was '?????' or unresolvable
     """
     __table_args__ = _STRICT
 
@@ -200,7 +242,7 @@ class SourceEntries(Table, table=True):
     """Link table between Entry and Source (citation with a role)."""
     __table_args__ = _STRICT
 
-    role: str = _text(index=True)  # primary | secondary | cited | second_cited
+    role: str = _text(index=True)              # primary | second | cited | second_cited
     pages: Optional[str] = _text(default=None)  # page number as printed, per entry
 
     entry_id: Optional[int] = Field(default=None, foreign_key="entry.id")
@@ -226,7 +268,7 @@ class Entry(Table, table=True):
     scientific_name: Optional[str] = _text(default=None)
     semantic_field: Optional[str] = _text(default=None)
     part_of_speech: Optional[str] = _text(default=None)
-    blr_index: Optional[str] = _text(default=None)
+    blr_index: Optional[str] = _text(default=None)  # raw string from BantuLex spreadsheet
     ipa: Optional[str] = _text(default=None)
     notes: Optional[str] = _text(default=None)
 
@@ -234,9 +276,11 @@ class Entry(Table, table=True):
     variety_id: Optional[int] = Field(default=None, foreign_key="variety.id")
     location_id: Optional[int] = Field(default=None, foreign_key="location.id")
     fieldwork_id: Optional[int] = Field(default=None, foreign_key="fieldwork.id")
+    blr_entry_id: Optional[int] = Field(default=None, foreign_key="blrentry.id", index=True)
 
     # Relationships
     variety: Optional[Variety] = Relationship(back_populates="entries")
     location: Optional[Location] = Relationship(back_populates="entries")
     fieldwork: Optional[Fieldwork] = Relationship(back_populates="entries")
     sources: List[SourceEntries] = Relationship(back_populates="entry")
+    blr_entry: Optional[BLREntry] = Relationship(back_populates="entries")

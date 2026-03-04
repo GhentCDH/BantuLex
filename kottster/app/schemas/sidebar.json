@@ -1,15 +1,16 @@
 {
-    "menuPageOrder": [
-        "entry",
-        "source",
-        "location",
-        "coordinate",
-        "country",
-        "fieldwork",
-        "place",
-        "dataCollector",
-        "project",
-        "region",
-        "variety"
-    ]
+  "menuPageOrder": [
+    "entry",
+    "source",
+    "location",
+    "coordinate",
+    "country",
+    "fieldwork",
+    "place",
+    "dataCollector",
+    "project",
+    "region",
+    "variety",
+    "bLR"
+  ]
 }

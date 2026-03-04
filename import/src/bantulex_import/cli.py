@@ -6,9 +6,10 @@ from openpyxl import load_workbook
 from rich.logging import RichHandler
 from sqlmodel import SQLModel, Session, select
 
-from .config import EXCEL
+from .config import EXCEL, BLR_EXCEL
 from .db import create_updated_at_trigger, engine
 from .model import (
+    BLREntry,
     CollectionYear, Coordinate, Country, DataCollector, Entry,
     Fieldwork, FieldworkDataCollector, Location, Place, Project,
     Region, Source, SourceEntries, Variety,
@@ -62,12 +63,12 @@ def parse_uncertainty(val: Any) -> Tuple[Optional[str], bool]:
     Strip uncertainty markers; return (cleaned_value, is_uncertain).
 
     Examples:
-      "?????" or "???"           -> (None,                      True)
-      "Bouka 1989?"              -> ("Bouka 1989",              True)
-      "Crine 1981 (?)"           -> ("Crine 1981",              True)
-      "Daeleman 1975 (or 1976?)" -> ("Daeleman 1975 (or 1976)", True)
-        Alternative year is preserved to avoid data loss.
-        These entries are flagged in the report for manual review.
+        "?????" or "???"              -> (None, True)
+        "Bouka 1989?"                 -> ("Bouka 1989", True)
+        "Crine 1981 (?)"              -> ("Crine 1981", True)
+        "Daeleman 1975 (or 1976?)"    -> ("Daeleman 1975 (or 1976)", True)
+    Alternative year is preserved to avoid data loss.
+    These entries are flagged in the report for manual review.
     """
     if not val:
         return None, False
@@ -78,26 +79,23 @@ def parse_uncertainty(val: Any) -> Tuple[Optional[str], bool]:
         return s, False
     # Remove standalone (?) marker but preserve other parenthetical content
     cleaned = re.sub(r"\s*\(\?\)\s*", " ", s).strip()
-    cleaned = re.sub(r"(?<!\()\?(?!\))", "", cleaned).strip()
-    return (cleaned if cleaned else None), True
+    cleaned = re.sub(r"\?", "", cleaned).strip()
+    return cleaned, True
 
 
 # ---------------------------------------------------------------------------
-# Import Report
+# Import report
 # ---------------------------------------------------------------------------
 
 class ImportReport:
-    """Writes a structured multi-sheet Excel validation report."""
-
-    CATEGORIES = (
+    CATEGORIES = [
         "uncertainty",
         "fallback_used",
-        "value_normalized",
+        "coordinate_conflict",
         "invalid_format",
         "duplicate_beginning_id",
-        "coordinate_conflict",
         "critical_error",
-    )
+    ]
 
     def __init__(self) -> None:
         self.categories: Dict[str, List[Dict[str, Any]]] = {
@@ -160,6 +158,122 @@ def _chunked(iterable, n: int):
 
 
 # ---------------------------------------------------------------------------
+# BLR import
+# ---------------------------------------------------------------------------
+
+def import_blr() -> None:
+    """Import BLR.xlsx into the blrentry table and link existing entries."""
+    SQLModel.metadata.create_all(engine)
+
+    if not BLR_EXCEL.exists():
+        logger.warning(f"BLR file not found at {BLR_EXCEL}")
+        return
+
+    logger.info(f"Reading BLR: {BLR_EXCEL}")
+    wb = load_workbook(BLR_EXCEL, read_only=True, data_only=True)
+    ws = wb.active
+    rows = ws.rows
+
+    try:
+        header_row = next(rows)
+    except StopIteration:
+        logger.error("Empty BLR file.")
+        return
+
+    headers = [
+        str(c.value).strip() if c.value is not None else None
+        for c in header_row
+    ]
+
+    def row_to_dict(rc) -> dict:
+        return {h: c.value for h, c in zip(headers, rc) if h is not None}
+
+    # BLR integer index -> BLREntry.id  (used for linking entries afterwards)
+    blr_index_map: Dict[int, int] = {}
+
+    with Session(engine, expire_on_commit=False) as session:
+        # Pre-load existing BLR entries to allow re-runs without duplicates
+        for existing in session.exec(select(BLREntry)).all():
+            if existing.blr_index is not None:
+                blr_index_map[existing.blr_index] = existing.id
+
+        inserted = 0
+        for row_cells in rows:
+            row = row_to_dict(row_cells)
+
+            idx_raw, idx_ok = parse_int(row.get("Index"))
+            if not idx_ok or idx_raw is None:
+                continue  # skip rows without a valid integer index
+            if idx_raw in blr_index_map:
+                continue  # already imported (idempotent)
+
+            blr = BLREntry(
+                blr_index=idx_raw,
+                word_tone=clean_value(row.get("Word\\Tone")),
+                word=clean_value(row.get("Word")),
+                english=clean_value(row.get("English")),
+                french=clean_value(row.get("Français:")),
+                c1=clean_value(row.get("C1")),
+                c2=clean_value(row.get("C2")),
+                c3=clean_value(row.get("C3")),
+                c4=clean_value(row.get("C4")),
+                cs=clean_value(row.get("CS")),
+                noun_class=clean_value(row.get("N class")),
+                distribution=clean_value(row.get("Distr:")),
+                reliability=clean_value(row.get("Fiab:")),
+                note=clean_value(row.get("Note")),
+                proto_kk=clean_value(row.get("Proto KK")),
+                added_by=clean_value(row.get("Added by")),
+                date_of_entry=clean_value(row.get("Date of entry")),
+                t11=clean_value(row.get("T11")),
+                t12=clean_value(row.get("T12")),
+                t21=clean_value(row.get("T21")),
+                t22=clean_value(row.get("T22")),
+                t3=clean_value(row.get("T3")),
+                t4=clean_value(row.get("T4")),
+                v11=clean_value(row.get("V11")),
+                v12=clean_value(row.get("V12")),
+                v21=clean_value(row.get("V21")),
+                v22=clean_value(row.get("V22")),
+                v3=clean_value(row.get("V3")),
+                v4=clean_value(row.get("V4")),
+            )
+            session.add(blr)
+            session.flush()
+            blr_index_map[idx_raw] = blr.id
+            inserted += 1
+
+        session.commit()
+        logger.info(f"BLR import done — {inserted} new entries inserted.")
+
+        # ------------------------------------------------------------------
+        # Link Entry.blr_entry_id via Entry.blr_index (integer match)
+        # ------------------------------------------------------------------
+        linked = 0
+        unresolved = 0
+        for entry in session.exec(
+            select(Entry).where(
+                Entry.blr_index.is_not(None),
+                Entry.blr_entry_id.is_(None),
+            )
+        ).all():
+            try:
+                idx = int(entry.blr_index)
+            except (ValueError, TypeError):
+                unresolved += 1
+                continue
+            blr_id = blr_index_map.get(idx)
+            if blr_id:
+                entry.blr_entry_id = blr_id
+                linked += 1
+            else:
+                unresolved += 1
+
+        session.commit()
+        logger.info(f"Linked {linked} entries to BLR — {unresolved} unresolved.")
+
+
+# ---------------------------------------------------------------------------
 # Main import
 # ---------------------------------------------------------------------------
 
@@ -193,16 +307,16 @@ def main() -> None:
     # -----------------------------------------------------------------------
     # In-memory caches (key -> ORM object)
     # -----------------------------------------------------------------------
-    varieties_cache:       Dict[tuple, Variety]         = {}
-    countries_cache:       Dict[tuple, Country]         = {}
-    regions_cache:         Dict[tuple, Region]          = {}
-    places_cache:          Dict[tuple, Place]           = {}
-    locations_cache:       Dict[tuple, Location]        = {}
-    sources_cache:         Dict[tuple, Source]          = {}
-    projects_cache:        Dict[tuple, Project]         = {}
-    years_cache:           Dict[tuple, CollectionYear]  = {}
-    data_collectors_cache: Dict[tuple, DataCollector]   = {}
-    fieldworks_cache:      Dict[tuple, Fieldwork]       = {}
+    varieties_cache: Dict[tuple, Variety] = {}
+    countries_cache: Dict[tuple, Country] = {}
+    regions_cache: Dict[tuple, Region] = {}
+    places_cache: Dict[tuple, Place] = {}
+    locations_cache: Dict[tuple, Location] = {}
+    sources_cache: Dict[tuple, Source] = {}
+    projects_cache: Dict[tuple, Project] = {}
+    years_cache: Dict[tuple, CollectionYear] = {}
+    data_collectors_cache: Dict[tuple, DataCollector] = {}
+    fieldworks_cache: Dict[tuple, Fieldwork] = {}
 
     # (location_id, description) -> (lat, lon, excel_row) for conflict detection
     coord_seen: Dict[Tuple[int, str], Tuple[float, float, int]] = {}
@@ -410,7 +524,7 @@ def main() -> None:
                             for j in range(1, 5)
                         ])) or None
                         archive_val = clean_value(row.get("Archive"))
-                        entered_by  = clean_value(row.get("Data entered by"))
+                        entered_by = clean_value(row.get("Data entered by"))
                         dc_id_tuple = tuple(sorted(dc.id for dc in dc_objects))
 
                         f_key = (
@@ -421,6 +535,7 @@ def main() -> None:
                             entered_by,
                             dc_id_tuple,
                         )
+
                         fieldwork = None
                         if any(k is not None for k in f_key):
                             if f_key in fieldworks_cache:
@@ -443,8 +558,8 @@ def main() -> None:
                                 fieldworks_cache[f_key] = fieldwork
 
                         # 5. Sources
-                        def _get_source(auth_col: str, title_col: str, pages_col: str) -> Optional[Source]:
-                            auth_raw  = clean_value(row.get(auth_col))
+                        def _get_source(auth_col: str, title_col: str, pages_col: str):
+                            auth_raw = clean_value(row.get(auth_col))
                             title_val = clean_value(row.get(title_col))
                             pages_val = clean_value(row.get(pages_col))
                             if not auth_raw and not title_val:
@@ -465,10 +580,10 @@ def main() -> None:
                                 session)
                             return source, pages_val
 
-                        src1, pages1  = _get_source("Source (Author YEAR)", "Title", "Page number")
-                        src2, pages2  = _get_source("Second source (Author Year)", "Title second source", "Page number second source")
-                        cite1, cpages1 = _get_source("Cited source", "Title cited source", "Pages cited source")
-                        cite2, cpages2 = _get_source("Second cited source", "Title second cited source", "Pages second cited source")
+                        src1,  pages1  = _get_source("Source (Author YEAR)",        "Title",                     "Page number")
+                        src2,  pages2  = _get_source("Second source (Author Year)",  "Title second source",       "Page number second source")
+                        cite1, cpages1 = _get_source("Cited source",                "Title cited source",        "Pages cited source")
+                        cite2, cpages2 = _get_source("Second cited source",         "Title second cited source", "Pages second cited source")
 
                         # 6. Entry — parse IDs with explicit invalid-format reporting
                         original_id, oid_ok = parse_int(row.get("ID 20250825"))
@@ -522,9 +637,9 @@ def main() -> None:
 
                         # 7. Source links
                         for src, role, pages in [
-                            (src1,  "primary", pages1),
-                            (src2,  "second", pages2),
-                            (cite1, "cited", cpages1),
+                            (src1,  "primary",      pages1),
+                            (src2,  "second",       pages2),
+                            (cite1, "cited",        cpages1),
                             (cite2, "second_cited", cpages2),
                         ]:
                             if src:
@@ -550,6 +665,8 @@ def main() -> None:
                 logger.error(f"Batch error: {e}")
                 session.rollback()
                 continue
+
+    import_blr()
 
     logger.info("Import complete.")
     import_report.save("import_validation.xlsx")

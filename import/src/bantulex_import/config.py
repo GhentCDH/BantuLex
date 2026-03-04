@@ -14,3 +14,4 @@ DB_STRING = f"sqlite:///{DB_PATH}"
 
 CSV = ROOT / "data" / "bantulex.csv"
 EXCEL = ROOT / "data" / "bantulex.xlsx"
+BLR_EXCEL = ROOT / "data" / "BLR.xlsx"
