@@ -52,6 +52,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            KOTTSTER_BASE_PATH=${{ vars.KOTTSTER_BASE_PATH || '' }}
+            KOTTSTER_BASE_PATH=${{ vars.KOTTSTER_BASE_PATH || '/bantulex/admin' }}
           cache-from: type=registry,ref=ghcr.io/ghentcdh/bantulex:buildcache
           cache-to: type=registry,ref=ghcr.io/ghentcdh/bantulex:buildcache,mode=max
