@@ -17,7 +17,7 @@ export:
     docker compose exec export uv run export
 
 kottster:
-    docker compose exec kottster /dev.sh
+    docker compose exec kottster ./scripts/dev.sh
 
 reinit: rebuild import
 

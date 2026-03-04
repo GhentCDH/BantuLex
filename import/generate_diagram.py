@@ -9,6 +9,7 @@ models = [
     Source, SourceEntries,
     Fieldwork, FieldworkDataCollector,
     Project, CollectionYear, DataCollector,
+    BLREntry, BLRContributor, BLRConsonantStructure, BLRToneStructure, BLRVowelStructure, BLRReliability,
 ]
 output_file_name = '../data/bantulex_model'
 try:

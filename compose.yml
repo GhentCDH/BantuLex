@@ -34,8 +34,9 @@ services:
       - "5480:5480"
       - "5481:5481"
     volumes:
-      - ./kottster:/app
-      - /app/node_modules
+      - ./kottster:/app           # source mount voor dev
+      - /app/node_modules         # container's node_modules bewaren
+      - /app/dist                 # container's dist bewaren (gebouwd in image)
       - ./data:/data
     environment:
       - PORT=5480
@@ -43,9 +44,11 @@ services:
       - VITE_DOCKER_MODE=true
       - ROOT_USER_PASSWORD=admin
       - DB_PATH=/data/bantulex.db
+    user: root                    # nodig voor file writes tijdens dev
     tty: true
     stdin_open: true
-    command: tail -f /dev/null
+    command: ["sh", "/app/scripts/dev.sh"]
+
 
   bantulex-map:
     build:
