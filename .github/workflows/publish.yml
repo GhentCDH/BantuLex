@@ -55,4 +55,3 @@ jobs:
             KOTTSTER_BASE_PATH=${{ vars.KOTTSTER_BASE_PATH || '' }}
           cache-from: type=registry,ref=ghcr.io/ghentcdh/bantulex:buildcache
           cache-to: type=registry,ref=ghcr.io/ghentcdh/bantulex:buildcache,mode=max
-          target: prd
