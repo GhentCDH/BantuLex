@@ -22,7 +22,7 @@ kottster:
 reinit: rebuild import
 
 reset-db:
-    rm -f data/bantulex.db
+    rm -f data/bantulex.db*
 
 map-up:
     docker compose up --build -d bantulex-map
