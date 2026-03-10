@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BantuLex Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 450px;
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            display: flex;
+        }
+
+        #map {
+            flex-grow: 1;
+            height: 100vh;
+        }
+
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--bg-color);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: white;
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #1e293b;
+        }
+
+        .sidebar-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .variety-info {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .variety-info h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.5rem;
+        }
+
+        .variety-meta {
+            font-size: 0.875rem;
+            color: #64748b;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+        }
+
+        .badge {
+            background: #e2e8f0;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .badge-substrate {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem;
+            background: #f1f5f9;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:hover {
+            background: #f1f5f9;
+        }
+
+        .empty-state {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* Map controls override */
+        .maplibregl-popup-content {
+            padding: 0;
+            border-radius: 8px;
+        }
+
+        .custom-popup {
+            padding: 0.75rem;
+        }
+
+        .custom-popup b {
+            display: block;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h1>BantuLex Explorer</h1>
+        </div>
+        <div id="sidebar-content" class="sidebar-content">
+            <div class="empty-state">
+                Click on a marker to see variety details
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/pmtiles@4/dist/pmtiles.js"></script>
+    <script src="https://unpkg.com/@protomaps/basemaps@5/dist/basemaps.js"></script>
+
+    <script>
+        const protocol = new pmtiles.Protocol();
+        maplibregl.addProtocol("pmtiles", protocol.tile);
+
+        // Using window.location.origin for robustness in dev/prod
+        const base = window.location.href.replace(/\/[^/]*$/, '');
+        const worldUrl = `pmtiles://${base}/data/africa.pmtiles`;
+
+        const map = new maplibregl.Map({
+            container: "map",
+            center: [23, -3],
+            zoom: 3.5,
+            style: {
+                version: 8,
+                glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+                sprite: "https://protomaps.github.io/basemaps-assets/sprites/v4/light",
+                sources: {
+                    protomaps: {
+                        type: "vector",
+                        url: worldUrl,
+                        attribution: '<a href="https://protomaps.com">Protomaps</a> &copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
+                    },
+                },
+                layers: basemaps.layers("protomaps", basemaps.namedFlavor("light"), { lang: "en" }),
+            },
+        });
+
+        map.addControl(new maplibregl.NavigationControl());
+
+        map.on("load", async () => {
+            // Load BantuLex entries
+            map.addSource("bantulex", {
+                type: "geojson",
+                data: `${base}/map/data/bantulex_entries.geojson`,
+                cluster: true,
+                clusterMaxZoom: 14,
+                clusterRadius: 50
+            });
+
+            // Clusters
+            map.addLayer({
+                id: "clusters",
+                type: "circle",
+                source: "bantulex",
+                filter: ["has", "point_count"],
+                paint: {
+                    "circle-color": [
+                        "step",
+                        ["get", "point_count"],
+                        "#51bbd6",
+                        100,
+                        "#f1f075",
+                        750,
+                        "#f28cb1"
+                    ],
+                    "circle-radius": [
+                        "step",
+                        ["get", "point_count"],
+                        20,
+                        100,
+                        30,
+                        750,
+                        40
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: "cluster-count",
+                type: "symbol",
+                source: "bantulex",
+                filter: ["has", "point_count"],
+                layout: {
+                    "text-field": "{point_count_abbreviated}",
+                    "text-font": ["Noto Sans Regular"],
+                    "text-size": 12
+                }
+            });
+
+            // Unclustered points
+            map.addLayer({
+                id: "unclustered-point",
+                type: "circle",
+                source: "bantulex",
+                filter: ["!", ["has", "point_count"]],
+                paint: {
+                    "circle-color": [
+                        "case",
+                        ["get", "substrate"], "#f59e0b",
+                        "#3b82f6"
+                    ],
+                    "circle-radius": 8,
+                    "circle-stroke-width": 2,
+                    "circle-stroke-color": "#fff"
+                }
+            });
+
+            // Interactivity
+            map.on("click", "clusters", (e) => {
+                const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
+                const clusterId = features[0].properties.cluster_id;
+                map.getSource("bantulex").getClusterExpansionZoom(clusterId, (err, zoom) => {
+                    if (err) return;
+                    map.easeTo({
+                        center: features[0].geometry.coordinates,
+                        zoom: zoom
+                    });
+                });
+            });
+
+            map.on("click", "unclustered-point", (e) => {
+                const props = e.features[0].properties;
+                const coordinates = e.features[0].geometry.coordinates.slice();
+                const entries = JSON.parse(props.entries);
+
+                showVarietyDetails(props, entries);
+
+                // Optional: center map on clicked point
+                map.flyTo({ center: coordinates });
+            });
+
+            map.on("mouseenter", "unclustered-point", () => {
+                map.getCanvas().style.cursor = "pointer";
+            });
+            map.on("mouseleave", "unclustered-point", () => {
+                map.getCanvas().style.cursor = "";
+            });
+        });
+
+        function showVarietyDetails(props, entries) {
+            const container = document.getElementById("sidebar-content");
+
+            let tableRows = entries.map(e => `
+        <tr>
+          <td><b>${e.term}</b></td>
+          <td>${e.translation}</td>
+          <td>${e.meaning || ''}</td>
+          <td><small>${e.semantic_field || ''}</small></td>
+        </tr>
+      `).join('');
+
+            container.innerHTML = `
+        <div class="variety-info">
+          <h2>${props.name}</h2>
+          <div class="variety-meta">
+            <span class="badge">Branch: ${props.branch || '?'}</span>
+            <span class="badge">Guthrie: ${props.guthrie || '?'}</span>
+            ${props.substrate ? '<span class="badge badge-substrate">Substrate Suspect</span>' : ''}
+            <span>📍 ${props.location}</span>
+          </div>
+        </div>
+        
+        <div class="table-container">
+          <h3>Entries (${props.entry_count})</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Term</th>
+                <th>Translation</th>
+                <th>Meaning</th>
+                <th>Field</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
+      `;
+        }
+    </script>
+</body>
+
+</html>

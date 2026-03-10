@@ -4,11 +4,11 @@
         reverse_proxy kottster:5481
     }
 
+    handle_path /map* {
+        reverse_proxy bantulex-map:80
+    }
+
     handle {
         reverse_proxy kottster:5480
     }
 }
-
-# handle /map* {
-#     reverse_proxy bantulex-map:<POORT>
-# }

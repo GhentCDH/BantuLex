@@ -41,6 +41,9 @@ services:
       - VITE_DOCKER_MODE=true
       - ROOT_USER_PASSWORD=admin
       - DB_PATH=/data/bantulex.db
+    ports:
+      - "5480:5480"
+      - "5481:5481"
     user: root                    # nodig voor file writes tijdens dev
     tty: true
     stdin_open: true
@@ -54,11 +57,14 @@ services:
 
 
   bantulex-map:
+    container_name: bantulex-map
     build:
-      context: .
-      dockerfile: app/Dockerfile
+      context: local-map/
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
     volumes:
-      - ./data:/data:ro
+      - ./local-map/data:/usr/share/caddy/data:ro
     restart: unless-stopped
 
   caddy:
@@ -74,7 +80,8 @@ services:
     depends_on:
       kottster:
         condition: service_healthy
-
+      bantulex-map:
+        condition: service_started
     restart: always
 
 volumes:
