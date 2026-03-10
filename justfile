@@ -11,7 +11,9 @@ up:
     docker compose up -d
 
 import:
-    docker compose exec import uv run import
+	docker compose exec import uv run import
+	docker compose exec kottster rm -rf /app/.cache
+	docker compose restart kottster
 
 export:
     docker compose exec export uv run export
