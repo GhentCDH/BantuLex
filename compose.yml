@@ -30,9 +30,6 @@ services:
     build:
       context: kottster
       dockerfile: Dockerfile
-    ports:
-      - "5480:5480"
-      - "5481:5481"
     volumes:
       - ./kottster:/app           # source mount voor dev
       - /app/node_modules         # container's node_modules bewaren
@@ -48,18 +45,40 @@ services:
     tty: true
     stdin_open: true
     command: ["sh", "/app/scripts/dev.sh"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5480/bantulex/admin/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
 
   bantulex-map:
     build:
       context: .
       dockerfile: app/Dockerfile
-    ports:
-      - "8000:8000"
     volumes:
       - ./data:/data:ro
     restart: unless-stopped
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: bantulex-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      kottster:
+        condition: service_healthy
+
+    restart: always
+
 volumes:
   import-venv:
   export-venv:
+  caddy-data:
+  caddy-config:

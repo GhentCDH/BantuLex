@@ -1,0 +1,14 @@
+:80 {
+    handle_path /bantulex/admin/kottster-dev-server* {
+        rewrite * /bantulex/admin{path}
+        reverse_proxy kottster:5481
+    }
+
+    handle {
+        reverse_proxy kottster:5480
+    }
+}
+
+# handle /map* {
+#     reverse_proxy bantulex-map:<POORT>
+# }
