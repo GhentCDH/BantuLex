@@ -28,8 +28,14 @@ map-up:
     docker compose up --build -d bantulex-map
 
 map-data:
-    just --justfile local-map/justfile --working-directory local-map download-africa
     just --justfile local-map/justfile --working-directory local-map export
+    docker run --rm \
+        -v "$(pwd)/local-map/data:/usr/share/caddy/data" \
+        bantulex-bantulex-map pmtiles extract \
+        "https://build.protomaps.com/$(curl -s https://build-metadata.protomaps.dev/builds.json | node -e "const b=require('fs').readFileSync('/dev/stdin','utf8');console.log(JSON.parse(b).sort((a,b)=>b.key<a.key?-1:1)[0].key)")" \
+        /usr/share/caddy/data/africa.pmtiles \
+        --bbox=-18,-35,52,38 \
+        --maxzoom=8
 
 reinit: rebuild import map-data map-up
 

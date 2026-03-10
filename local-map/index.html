@@ -159,7 +159,8 @@
         maplibregl.addProtocol("pmtiles", protocol.tile);
 
         // Using window.location.origin for robustness in dev/prod
-        const base = window.location.href.replace(/\/[^/]*$/, '');
+        const basePath = window.location.pathname.replace(/\/$/, '');
+        const base = `${window.location.origin}${basePath}`;
         const worldUrl = `pmtiles://${base}/data/africa.pmtiles`;
 
         const map = new maplibregl.Map({
@@ -187,7 +188,7 @@
             // Load BantuLex entries
             map.addSource("bantulex", {
                 type: "geojson",
-                data: `${base}/map/data/bantulex_entries.geojson`,
+                data: `${base}/data/bantulex_entries.geojson`,
                 cluster: true,
                 clusterMaxZoom: 14,
                 clusterRadius: 50
