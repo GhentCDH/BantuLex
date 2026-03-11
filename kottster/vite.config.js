@@ -2,19 +2,17 @@ import { defineConfig } from 'vite';
 import { vitePlugin as kottster } from '@kottster/react';
 import react from '@vitejs/plugin-react';
 
+console.log('VITE_BASE_PATH:', process.env.VITE_BASE_PATH);
+
 export default defineConfig({
   root: './app',
   server: {
     port: 5480,
     open: false,
     host: '0.0.0.0',
-    base: process.env.VITE_BASE_PATH || '/bantulex/admin',
-    proxy: {
-      '/bantulex/admin/kottster-dev-server': {
-        target: 'http://localhost:5481',
-        rewrite: (path) =>
-          path.replace('/bantulex/admin/kottster-dev-server', '/bantulex/admin'),
-      },
+    hmr: {
+      path: '/admin/kottster-dev-server',
+      clientPort: 80,
     },
   },
   build: {

@@ -5,9 +5,9 @@ services:
     container_name: bantulex-data-management
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/kottster.Dockerfile
       args:
-        - KOTTSTER_BASE_PATH=/bantulex/admin
+        - KOTTSTER_BASE_PATH=/admin
     volumes:
       - ./kottster:/app
       - /app/node_modules
@@ -16,8 +16,7 @@ services:
     environment:
       - PORT=5480
       - DEV_API_SERVER_PORT=5481
-      - VITE_DOCKER_MODE=true
-      - ROOT_USER_PASSWORD=admin
+      - VITE_BASE_PATH=/admin/
       - DB_PATH=/data/bantulex.db
     ports:
       - "5480:5480"
@@ -27,7 +26,7 @@ services:
     stdin_open: true
     command: ["sh", "/app/scripts/dev.sh"]
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5480/bantulex/admin/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5480/admin/"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -38,7 +37,7 @@ services:
     container_name: bantulex-python
     build:
       context: .
-      dockerfile: Dockerfile.python
+      dockerfile: docker/python-tools.Dockerfile
     volumes:
       - ./data:/app/data
       - ./import/src:/app/import/src

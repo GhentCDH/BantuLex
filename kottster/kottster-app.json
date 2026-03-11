@@ -4,5 +4,5 @@
     "name": "BantuLex Admin",
     "icon": "https://web.kottster.app/icon.png"
   },
-  "basePath": "/bantulex/admin"
+  "basePath": "/admin/"
 }

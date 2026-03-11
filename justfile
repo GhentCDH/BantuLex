@@ -1,6 +1,6 @@
 KOTTSTER_HOST := "localhost"
 KOTTSTER_PORT := "5480"
-KOTTSTER_PATH := "/bantulex/admin"
+KOTTSTER_PATH := "/admin"
 KOTTSTER_URL  := "http://{{KOTTSTER_HOST}}:{{KOTTSTER_PORT}}{{KOTTSTER_PATH}}"
 
 # ── Docker lifecycle ─────────────────────────────────────────────────────────
@@ -46,15 +46,15 @@ map-data:
         "https://build.protomaps.com/$(curl -s https://build-metadata.protomaps.dev/builds.json | \
           node -e "const b=require('fs').readFileSync('/dev/stdin','utf8');\
           console.log(JSON.parse(b).sort((a,b)=>b.key<a.key?-1:1)[0].key)")" \
-        /out/africa.pmtiles \
+        /out/world.pmtiles \
         --bbox=10,-35,45,10 \
         --maxzoom=8
 
 # Een alternatieve download-script optie (indien pmtiles binary niet beschikbaar is)
-download-africa:
+download-world:
     node local-map/scripts/download-world-pmtiles.js \
         --bbox=10,-35,45,10 \
-        --output=local-map/data/africa.pmtiles \
+        --output=local-map/data/world.pmtiles \
         --maxzoom=8
 
 # ── Data Management (Kottster) ───────────────────────────────────────────────
