@@ -18,6 +18,9 @@ import:
 export:
     docker compose exec export uv run export
 
+export-blr:
+    docker compose exec export uv run export-blr
+
 kottster:
     docker compose exec kottster ./scripts/dev.sh
 
@@ -28,7 +31,7 @@ map-up:
     docker compose up --build -d bantulex-map
 
 map-data:
-    just --justfile local-map/justfile --working-directory local-map export
+    just --justfile local-map/justfile --working-directory local-map export-blr
     docker run --rm \
         -v "$(pwd)/local-map/data:/usr/share/caddy/data" \
         bantulex-bantulex-map pmtiles extract \
