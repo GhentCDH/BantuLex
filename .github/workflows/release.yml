@@ -53,8 +53,13 @@ jobs:
             type=raw,value=main,enable={{is_default_branch}}
             # :sha-<kortHash> voor traceerbaarheid
             type=sha,prefix=sha-,format=short
-            # :v1.2.3 bij een versie-tag (optioneel)
+            # :v1.2.3, 1.2, 1 bij een versie-tag
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # branch/PR tags
+            type=ref,event=branch
+            type=ref,event=pr
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -62,17 +67,17 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context:   kottster/
-          file:      kottster/Dockerfile
+          context:   .
+          file:      docker/kottster.Dockerfile
           push:      true
           tags:      ${{ steps.meta.outputs.tags }}
           labels:    ${{ steps.meta.outputs.labels }}
-          # Bake KOTTSTER_BASE_PATH in bij build
+          # Bake KOTTSTER_BASE_PATH in bij build (default for Nomad)
           build-args: |
-            KOTTSTER_BASE_PATH=/bantulex/admin
-          # GitHub Actions cache voor snellere builds
-          cache-from: type=gha
-          cache-to:   type=gha,mode=max
+            KOTTSTER_BASE_PATH=/data/admin
+          # Build cache in GHCR to speed up subsequent builds
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to:   type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
 
       - name: Image digest
         run: echo "Pushed ${{ env.IMAGE }}:main — digest ${{ steps.build-and-push.outputs.digest }}"

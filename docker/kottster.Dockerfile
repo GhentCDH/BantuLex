@@ -30,7 +30,7 @@ ENV VITE_BASE_PATH=${KOTTSTER_BASE_PATH}
 ENV VITE_DOCKER_MODE=true
 ENV PORT=5480
 ENV DEV_API_SERVER_PORT=5481
-ENV DATABASE_PATH=/app/app.db
+ENV DATABASE_PATH=/app/data/bantulex.db
 
 # Inject optional basePath into kottster-app.json before the Vite build
 RUN jq --arg bp "${KOTTSTER_BASE_PATH}" \
