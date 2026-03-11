@@ -16,8 +16,9 @@ services:
     environment:
       - PORT=5480
       - DEV_API_SERVER_PORT=5481
-      - VITE_BASE_PATH=/admin/
+      - VITE_BASE_PATH=
       - DB_PATH=/data/bantulex.db
+      - DEBUG=vite:*
     ports:
       - "5480:5480"
       - "5481:5481"

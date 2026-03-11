@@ -2,14 +2,13 @@ import { defineConfig } from 'vite';
 import { vitePlugin as kottster } from '@kottster/react';
 import react from '@vitejs/plugin-react';
 
-console.log('VITE_BASE_PATH:', process.env.VITE_BASE_PATH);
-
 export default defineConfig({
   root: './app',
   server: {
     port: 5480,
     open: false,
     host: '0.0.0.0',
+    allowedHosts: ['data-management', 'gateway', 'localhost'],
     hmr: {
       path: '/admin/kottster-dev-server',
       clientPort: 80,

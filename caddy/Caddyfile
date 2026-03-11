@@ -1,18 +1,26 @@
 :80 {
-    # ── Admin Panel (Kottster) ────────────────────────────────────────────────
-    # Ensure trailing slash for /admin
-    redir /admin /admin/
-
-    handle /admin* {
+    # ── 1. Kottster/Vite Assets (Root leaks) ──────────────────────────────────
+    # Vite dev mode often requests these at the domain root regardless of base path.
+    @kottster_assets {
+        path /main.jsx* /@vite/* /@id/* /@fs/* /node_modules/* /src/* /@react-refresh*
+    }
+    handle @kottster_assets {
         reverse_proxy data-management:5480
     }
 
-    # Vite HMR (Websocket) - must go to port 5480
-    handle /admin/kottster-dev-server* {
-        reverse_proxy data-management:5480
+    # ── 2. Admin Panel (Stripped Prefix) ──────────────────────────────────────
+    # Strip /admin so the backend (configured with basePath: "") sees root-level paths.
+    # This solves the Internal API and WebSocket resolution issues.
+    redir /admin /admin/ 308
+
+    handle_path /admin* {
+        reverse_proxy data-management:5480 {
+            header_up Upgrade {http.request.header.Upgrade}
+            header_up Connection {http.request.header.Connection}
+        }
     }
 
-    # ── Map Tiles & Data ──────────────────────────────────────────────────────
+    # ── 3. Map Tiles & Data ───────────────────────────────────────────────────
     handle_path /maps* {
         root * /srv/local-map/data
         file_server
@@ -23,20 +31,14 @@
         file_server
     }
 
-    # ── Root Routing (Map + Kottster Assets) ──────────────────────────────────
-    # Catch assets that Vite/Kottster serves at root instead of /admin/ and rewrite them
-    @kottster_assets {
-        path /@vite/* /@id/* /@fs/* /node_modules/* /src/* /main.jsx* /@react-refresh*
-    }
-    handle @kottster_assets {
-        rewrite * /admin{path}
-        reverse_proxy data-management:5480
-    }
-
-    # Main Map viewer
-    handle /* {
+    # ── 4. Map Viewer (Root index only) ───────────────────────────────────────
+    handle / {
         root * /srv/local-map
         file_server
-        header Cache-Control "public, max-age=3600"
+    }
+
+    # ── 5. Catch-all Fallback (Kottster) ──────────────────────────────────────
+    handle /* {
+        reverse_proxy data-management:5480
     }
 }
