@@ -1,91 +1,72 @@
 services:
-  import:
-    container_name: bantulex-import
+  # ── Data Management (Kottster) ─────────────────────────────────────────────
+  # Primair pre-built container voor beheer, draait op /data/admin
+  data-management:
+    container_name: bantulex-data-management
     build:
-      context: import/
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/kottster.Dockerfile
+      args:
+        - KOTTSTER_BASE_PATH=/admin
     volumes:
-      - ./data:/data
-      - ./import:/app
-      - import-venv:/app/.venv
-    env_file:
-      - .env
-    command: tail -f /dev/null
-
-  export:
-    container_name: bantulex-export
-    build:
-      context: export/
-      dockerfile: Dockerfile
-    volumes:
-      - ./data:/data
-      - ./export:/app
-      - export-venv:/app/.venv
-    env_file:
-      - .env
-    command: tail -f /dev/null
-
-  kottster:
-    container_name: bantulex-kottster
-    build:
-      context: kottster
-      dockerfile: Dockerfile
-    volumes:
-      - ./kottster:/app           # source mount voor dev
-      - /app/node_modules         # container's node_modules bewaren
-      - /app/dist                 # container's dist bewaren (gebouwd in image)
+      - ./kottster:/app
+      - /app/node_modules
+      - /app/dist
       - ./data:/data
     environment:
       - PORT=5480
       - DEV_API_SERVER_PORT=5481
-      - VITE_DOCKER_MODE=true
-      - ROOT_USER_PASSWORD=admin
+      - VITE_BASE_PATH=
       - DB_PATH=/data/bantulex.db
+      - DEBUG=vite:*
     ports:
       - "5480:5480"
       - "5481:5481"
-    user: root                    # nodig voor file writes tijdens dev
+    user: root
     tty: true
     stdin_open: true
     command: ["sh", "/app/scripts/dev.sh"]
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5480/bantulex/admin/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5480/admin/"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 60s
 
-
-  bantulex-map:
-    container_name: bantulex-map
+  # ── Python Tools (Import/Export CLI) ───────────────────────────────────────
+  python-tools:
+    container_name: bantulex-python
     build:
-      context: local-map/
-      dockerfile: Dockerfile
-    ports:
-      - "8000:80"
+      context: .
+      dockerfile: docker/python-tools.Dockerfile
     volumes:
-      - ./local-map/data:/usr/share/caddy/data:ro
-    restart: unless-stopped
+      - ./data:/app/data
+      - ./import/src:/app/import/src
+      - ./export/src:/app/export/src
+      - ./local-map/data:/app/local-map/data
+      - python-venv:/app/.venv
+    env_file:
+      - .env
+    command: tail -f /dev/null
 
-  caddy:
+  # ── Gateway & Data Publishing (Caddy) ──────────────────────────────────────
+  gateway:
     image: caddy:2-alpine
-    container_name: bantulex-caddy
+    container_name: bantulex-gateway
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./local-map:/srv/local-map:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
-      kottster:
+      data-management:
         condition: service_healthy
-      bantulex-map:
-        condition: service_started
     restart: always
 
 volumes:
-  import-venv:
-  export-venv:
+  python-venv:
   caddy-data:
   caddy-config:

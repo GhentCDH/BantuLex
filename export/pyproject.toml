@@ -23,4 +23,6 @@ requires = ["uv_build>=0.9.18,<0.10.0"]
 build-backend = "uv_build"
 
 [project.scripts]
-export = "evolex_export.cli:main"
+export-evolex = "evolex_export.cli:main"
+export-map = "evolex_export.export_map:main"
+export-blr = "evolex_export.export_blr:main"

@@ -6,7 +6,7 @@ from openpyxl import load_workbook
 from rich.logging import RichHandler
 from sqlmodel import SQLModel, Session, select
 
-from .config import EXCEL, BLR_EXCEL
+from .config import EXCEL, BLR_EXCEL, ROOT
 from .db import create_updated_at_trigger, engine
 from .model import (
     BLRContributor, BLRConsonantStructure, BLREntry,
@@ -729,8 +729,8 @@ def main() -> None:
     import_blr()
 
     logger.info("Import complete.")
-    import_report.save("import_validation.xlsx")
-    logger.info("Validation report saved to import_validation.xlsx")
+    import_report.save(str(ROOT / "data" / "import_validation.xlsx"))
+    logger.info(f"Validation report saved to {ROOT / 'data' / 'import_validation.xlsx'}")
 
 
 if __name__ == "__main__":
