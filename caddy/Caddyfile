@@ -1,13 +1,19 @@
 :80 {
+    # ── Kottster dev-server (HMR / Vite) ─────────────────────────────────────
     handle_path /bantulex/admin/kottster-dev-server* {
         rewrite * /bantulex/admin{path}
         reverse_proxy kottster:5481
     }
 
-    handle_path /map* {
-        reverse_proxy bantulex-map:80
+    # ── Kaartviewer: statische bestanden vanuit local-map/ ────────────────────
+    # index.html + data/ (geojson, pmtiles) worden direct geserveerd.
+    handle_path /map/* {
+        root * /srv/local-map
+        file_server
+        header Cache-Control "public, max-age=3600"
     }
 
+    # ── Kottster admin (productie) ────────────────────────────────────────────
     handle {
         reverse_proxy kottster:5480
     }

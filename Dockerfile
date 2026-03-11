@@ -16,12 +16,12 @@ RUN pnpm init && \
     pnpm add better-sqlite3
 
 # Install app dependencies (patches* assumes the directory exists in the repo)
-COPY package*.json ./
-COPY patches* ./
+COPY kottster/package*.json ./
+COPY kottster/patches* ./
 RUN pnpm install
 
 # Copy full source
-COPY . .
+COPY kottster/ .
 
 # ── Build-time config ─────────────────────────────────────────────────────────
 # KOTTSTER_BASE_PATH is a build ARG: Vite bakes it into the bundle at build time
