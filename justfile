@@ -29,16 +29,18 @@ export: export-evolex export-map export-blr
 
 # Volledig EvoLex Excel-export
 export-evolex:
-    docker compose run  -w /app/exporter --rm utils  uv run export-evolex  
+    docker compose run  -w /app/exporter --rm utils  uv run export-evolex
+    
 
 # GeoJSON-export van alle taalvariëteiten met coördinaten (voor de kaart)
 export-map:
     docker compose run  -w /app/exporter --rm utils  uv run export-map
-
+    cp data/bantulex_entries.geojson local-map/data/
 
 # BLR kaartdata: genereert local-map/data/bantulex_entries.geojson + blr_catalog.json
 export-blr:
     docker compose run  -w /app/exporter --rm utils  uv run export-blr
+    cp data/blr_catalog.json local-map/data/
 
 # Alle exports in één keer
 export-all: export-evolex export-map export-blr

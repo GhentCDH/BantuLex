@@ -27,7 +27,7 @@ node_modules/
 *.pmtiles
 *.geojson
 
-blr_catalog.json
+*lr_catalog.json
 
 
 # OS generated files

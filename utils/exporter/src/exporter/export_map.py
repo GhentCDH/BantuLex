@@ -19,7 +19,7 @@ from typing import Any, Dict, List
 from rich.logging import RichHandler
 from sqlmodel import Session, select
 
-from utilities.config import ROOT
+from utilities.config import EXPORT_GEOJSON
 from utilities.db import engine
 from utilities.model import Entry, Variety
 from utilities.utils import load_default_coords, load_location_by_variety
@@ -32,7 +32,7 @@ handler = RichHandler(rich_tracebacks=True, markup=True, show_time=True, show_pa
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
 logger = logging.getLogger(__name__)
 
-OUTPUT = ROOT / "local-map" / "data" / "bantulex_entries.geojson"
+
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ def _build_feature(variety: Variety, lat: float, lon: float, count: int) -> Dict
 
 def main() -> None:
     logger.info("BantuLex → GeoJSON map export gestart…")
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    EXPORT_GEOJSON.parent.mkdir(parents=True, exist_ok=True)
 
     with Session(engine, expire_on_commit=False) as session:
         # Count entries per variety
@@ -96,8 +96,8 @@ def main() -> None:
         "features": features,
     }
 
-    OUTPUT.write_text(json.dumps(geojson, ensure_ascii=False, indent=2), encoding="utf-8")
-    logger.info(f"Opgeslagen: {OUTPUT}")
+    EXPORT_GEOJSON.write_text(json.dumps(geojson, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info(f"Opgeslagen: {EXPORT_GEOJSON}")
     logger.info(f"  Features:  {len(features)} taalvariëteiten met coördinaten")
     logger.info(f"  Overgeslagen: {skipped} variëteiten zonder locatie")
 
