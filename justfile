@@ -24,6 +24,9 @@ import:
 
 # ── Export (één script per "ding") ───────────────────────────────────────────
 
+# All exports in one command
+export: export-evolex export-map export-blr
+
 # Volledig EvoLex Excel-export
 export-evolex:
     docker compose run  -w /app/exporter --rm utils  uv run export-evolex  
