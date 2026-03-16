@@ -4,8 +4,7 @@
 .python-version
 __pycache__
 kottster/dist
-kottster/app.db
-data/bantulex.db
+*.db
 data/bantulex.csv
 import/erd.mermaid
 *.db-shm
@@ -14,3 +13,22 @@ import/erd.mermaid
 
 .claude
 .DS_Store
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+node_modules
+nbuild
+.cache
+
+node_modules/
+*.pmtiles
+*.geojson
+*.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini

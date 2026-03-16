@@ -1,44 +1,34 @@
+{
+	auto_https off
+	admin off
+}
+
 :80 {
-    # ── 1. Kottster/Vite Assets (Root leaks) ──────────────────────────────────
-    # Vite dev mode often requests these at the domain root regardless of base path.
-    @kottster_assets {
-        path /main.jsx* /@vite/* /@id/* /@fs/* /node_modules/* /src/* /@react-refresh*
-    }
-    handle @kottster_assets {
-        reverse_proxy data-management:5480
-    }
+	# ── 2. Admin Panel (Stripped Prefix) ──────────────────────────────────────
+	# Strip /admin so the backend (configured with basePath: "") sees root-level paths.
+	# reverse proxy websockets to the data management service
+	@websockets {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @websockets data-management:5480
 
-    # ── 2. Admin Panel (Stripped Prefix) ──────────────────────────────────────
-    # Strip /admin so the backend (configured with basePath: "") sees root-level paths.
-    # This solves the Internal API and WebSocket resolution issues.
-    redir /admin /admin/ 308
+	# serve index.html for the root path
+	handle / {
+		file_server {
+			root /srv/local-map
+			index index.html
+		}
+	}
 
-    handle_path /admin* {
-        reverse_proxy data-management:5480 {
-            header_up Upgrade {http.request.header.Upgrade}
-            header_up Connection {http.request.header.Connection}
-        }
-    }
+	# match static files and serve them directly
+	@file file
+	handle @file {
+		file_server
+	}
 
-    # ── 3. Map Tiles & Data ───────────────────────────────────────────────────
-    handle_path /maps* {
-        root * /srv/local-map/data
-        file_server
-    }
-
-    handle_path /data* {
-        root * /srv/local-map/data
-        file_server
-    }
-
-    # ── 4. Map Viewer (Root index only) ───────────────────────────────────────
-    handle / {
-        root * /srv/local-map
-        file_server
-    }
-
-    # ── 5. Catch-all Fallback (Kottster) ──────────────────────────────────────
-    handle /* {
-        reverse_proxy data-management:5480
-    }
+	# forward other requests to the data management service
+	handle /* {
+		reverse_proxy data-management:5480
+	}
 }

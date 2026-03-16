@@ -14,14 +14,15 @@ Gebruik:
 import json
 import logging
 from collections import Counter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from rich.logging import RichHandler
 from sqlmodel import Session, select
 
-from .config import ROOT
-from .db import engine
-from .model import Coordinate, Entry, Variety
+from utilities.config import ROOT
+from utilities.db import engine
+from utilities.model import Entry, Variety
+from utilities.utils import load_default_coords, load_location_by_variety
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -31,7 +32,7 @@ handler = RichHandler(rich_tracebacks=True, markup=True, show_time=True, show_pa
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
 logger = logging.getLogger(__name__)
 
-OUTPUT = ROOT / "data" / "bantulex_map.geojson"
+OUTPUT = ROOT / "local-map" / "data" / "bantulex_entries.geojson"
 
 
 # ---------------------------------------------------------------------------
@@ -71,19 +72,8 @@ def main() -> None:
             e.variety_id for e in entries if e.variety_id is not None
         )
 
-        # Coördinaten (description='default') per location_id
-        coord_by_location: Dict[int, tuple] = {}
-        for coord in session.exec(
-            select(Coordinate).where(Coordinate.description == "default")
-        ).all():
-            if coord.location_id and coord.location_id not in coord_by_location:
-                coord_by_location[coord.location_id] = (coord.latitude, coord.longitude)
-
-        # location_id per variety (eerste entry met location)
-        location_by_variety: Dict[int, Optional[int]] = {}
-        for e in entries:
-            if e.variety_id and e.variety_id not in location_by_variety:
-                location_by_variety[e.variety_id] = e.location_id
+        coord_by_location = load_default_coords(session)
+        location_by_variety = load_location_by_variety(entries)
 
         varieties = session.exec(select(Variety)).all()
 
