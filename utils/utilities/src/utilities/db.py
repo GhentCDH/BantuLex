@@ -1,3 +1,5 @@
+from typing import Any, Callable
+
 import sqlmodel
 from sqlalchemy import event
 from sqlalchemy.pool import StaticPool
@@ -17,6 +19,21 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.execute("PRAGMA busy_timeout = 5000")
     cursor.execute("PRAGMA synchronous = NORMAL")
     cursor.close()
+
+
+def get_or_create(cache: dict, key: tuple, factory: Callable, session) -> Any:
+    """Return cached ORM object for key, or create/persist/cache a new one.
+    Returns None when all key components are None.
+    """
+    if all(k is None for k in key):
+        return None
+    if key in cache:
+        return cache[key]
+    obj = factory()
+    session.add(obj)
+    session.flush()
+    cache[key] = obj
+    return obj
 
 
 def create_updated_at_trigger(engine):

@@ -6,9 +6,9 @@ from openpyxl import load_workbook
 from rich.logging import RichHandler
 from sqlmodel import SQLModel, Session, select
 
-from .config import EXCEL, BLR_EXCEL, ROOT
-from .db import create_updated_at_trigger, engine
-from .model import (
+from utilities.config import EXCEL, BLR_EXCEL, DATA_ROOT, DB_PATH
+from utilities.db import create_updated_at_trigger, engine, get_or_create
+from utilities.model import (
     BLRContributor, BLRConsonantStructure, BLREntry,
     BLRReliability, BLRToneStructure, BLRVowelStructure,
     CollectionYear, Coordinate, Country, DataCollector, Entry,
@@ -122,26 +122,6 @@ class ImportReport:
             for entry in sorted(entries, key=lambda x: x.get("Row", 0)):
                 ws.append([entry.get(h, "") for h in headers])
         wb.save(path)
-
-
-# ---------------------------------------------------------------------------
-# Generic get-or-create
-# ---------------------------------------------------------------------------
-
-def get_or_create(cache: dict, key: tuple, factory, session) -> Any:
-    """
-    Return cached ORM object for *key*, or create/persist/cache a new one
-    via factory(). Returns None when all key components are None.
-    """
-    if all(k is None for k in key):
-        return None
-    if key in cache:
-        return cache[key]
-    obj = factory()
-    session.add(obj)
-    session.flush()
-    cache[key] = obj
-    return obj
 
 
 # ---------------------------------------------------------------------------
@@ -338,6 +318,8 @@ def import_blr() -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    logger.info(f"Using database at {DB_PATH}")
+    
     SQLModel.metadata.create_all(engine)
     create_updated_at_trigger(engine)
 
@@ -729,8 +711,8 @@ def main() -> None:
     import_blr()
 
     logger.info("Import complete.")
-    import_report.save(str(ROOT / "data" / "import_validation.xlsx"))
-    logger.info(f"Validation report saved to {ROOT / 'data' / 'import_validation.xlsx'}")
+    import_report.save(str(DATA_ROOT / "import_validation.xlsx"))
+    logger.info(f"Validation report saved to {DATA_ROOT / 'import_validation.xlsx'}")
 
 
 if __name__ == "__main__":

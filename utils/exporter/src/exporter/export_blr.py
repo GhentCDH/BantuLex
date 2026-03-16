@@ -24,18 +24,19 @@ Gebruik:
 import json
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 from rich.logging import RichHandler
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
 
-from .config import ROOT
-from .db import engine
-from .model import (
+from utilities.config import ROOT
+from utilities.db import engine
+from utilities.model import (
     BLRConsonantStructure, BLREntry, BLRVowelStructure,
-    Coordinate, Entry, Location, Place, Region, Variety,
+    Entry, Location, Place, Region, Variety,
 )
+from utilities.utils import load_default_coords, load_location_by_variety
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -216,13 +217,7 @@ def main() -> None:
         ).all()
         blr_by_id   = {b.id: b for b in blr_entries}
 
-        # Coördinaten (description='default') per location_id
-        coord_by_location: Dict[int, Tuple[float, float]] = {}
-        for coord in session.exec(
-            select(Coordinate).where(Coordinate.description == "default")
-        ).all():
-            if coord.location_id and coord.location_id not in coord_by_location:
-                coord_by_location[coord.location_id] = (coord.latitude, coord.longitude)
+        coord_by_location = load_default_coords(session)
 
         # Locatienaam (place of region) per location_id
         locations = {loc.id: loc for loc in session.exec(select(Location)).all()}
@@ -243,12 +238,10 @@ def main() -> None:
 
     # Groepeer entries per variëteit, bewaar ook de locatie-id
     entries_by_variety: Dict[int, List[Entry]] = defaultdict(list)
-    location_by_variety: Dict[int, Optional[int]] = {}
     for e in entries:
         if e.variety_id:
             entries_by_variety[e.variety_id].append(e)
-            if e.variety_id not in location_by_variety:
-                location_by_variety[e.variety_id] = e.location_id
+    location_by_variety = load_location_by_variety(entries)
 
     # Bouw GeoJSON features
     features = []

@@ -72,11 +72,12 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from rich.logging import RichHandler
 from sqlmodel import Session, select
 
-from .config import EXPORT_EXCEL
-from .db import engine
-from .model import (
-    Coordinate, Entry, Source, SourceEntries, Variety,
+from utilities.config import EXPORT_EVOLEX_EXCEL
+from utilities.db import engine
+from utilities.model import (
+    Entry, Source, SourceEntries, Variety,
 )
+from utilities.utils import load_default_coords, load_location_by_variety
 
 
 # ---------------------------------------------------------------------------
@@ -231,6 +232,7 @@ def build_data_sheet(
     ws,
     entries: List[Entry],
     source_by_entry: Dict[int, Optional[Source]],
+    pages_by_entry: Dict[int, Optional[str]],
 ) -> None:
     ws.title = "Data"
     ws.append(_DATA_ROW1_LABELS)
@@ -270,7 +272,7 @@ def build_data_sheet(
             source.author_year if source else None,     # Data[24]  Source
             None,                                       # Data[25]  Questions and notes [AS] — leeg
             None,                                       # Data[26]  Answers to questions (col Z) — leeg
-            source.pages if source else None,           # Data[27]  page number in column "Source" (as printed on page)
+            pages_by_entry.get(entry.id),                                # Data[27]  page number in column "Source" (as printed on page)
             None,                                       # Data[28]  page number in PDF of dictionary source — leeg
         ])
 
@@ -288,7 +290,7 @@ def main() -> None:
     logger.info("BantuLex → EvoLex export gestart...")
 
     # We make sure the export directory exists
-    EXPORT_EXCEL.parent.mkdir(parents=True, exist_ok=True)
+    EXPORT_EVOLEX_EXCEL.parent.mkdir(parents=True, exist_ok=True)
 
     with Session(engine, expire_on_commit=False) as session:
 
@@ -297,32 +299,24 @@ def main() -> None:
 
         # Primaire source per entry
         source_by_entry: Dict[int, Optional[Source]] = {}
+        pages_by_entry: Dict[int, Optional[str]] = {}
         sources_map = {s.id: s for s in session.exec(select(Source)).all()}
         for link in session.exec(
             select(SourceEntries).where(SourceEntries.role == "primary")
         ).all():
-            source_by_entry.setdefault(link.entry_id, sources_map.get(link.source_id))
+            if link.entry_id not in source_by_entry:
+                source_by_entry[link.entry_id] = sources_map.get(link.source_id)
+                pages_by_entry[link.entry_id] = link.pages
 
-        # Coördinaten (description='default') per location_id
-        coord_by_location: Dict[int, Tuple[Optional[float], Optional[float]]] = {}
-        for coord in session.exec(
-            select(Coordinate).where(Coordinate.description == "default")
-        ).all():
-            if coord.location_id and coord.location_id not in coord_by_location:
-                coord_by_location[coord.location_id] = (coord.latitude, coord.longitude)
-
-        # Eerste location_id per variety_id (via entries)
-        location_by_variety: Dict[int, Optional[int]] = {}
-        for entry in entries:
-            if entry.variety_id and entry.variety_id not in location_by_variety:
-                location_by_variety[entry.variety_id] = entry.location_id
+        coord_by_location = load_default_coords(session)
+        location_by_variety = load_location_by_variety(entries)
 
         varieties    = session.exec(select(Variety)).all()
         all_sources  = list(sources_map.values())
 
         wb = Workbook()
 
-        build_data_sheet(wb.active, entries, source_by_entry)
+        build_data_sheet(wb.active, entries, source_by_entry, pages_by_entry)
 
         ws_lang = wb.create_sheet()
         build_languages_sheet(ws_lang, varieties, coord_by_location, location_by_variety)
@@ -330,8 +324,8 @@ def main() -> None:
         ws_ref = wb.create_sheet()
         build_references_sheet(ws_ref, all_sources)
 
-        wb.save(EXPORT_EXCEL)
-        logger.info(f"Opgeslagen: {EXPORT_EXCEL}")
+        wb.save(EXPORT_EVOLEX_EXCEL)
+        logger.info(f"Opgeslagen: {EXPORT_EVOLEX_EXCEL}")
         logger.info(f"  Data sheet:       {len(entries)} rijen")
         logger.info(f"  Languages sheet:  {len(set((v.branch, v.name_english) for v in varieties))} rijen")
         logger.info(f"  References sheet: {len(all_sources)} rijen")

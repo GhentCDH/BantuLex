@@ -1,5 +1,5 @@
 KOTTSTER_HOST := "localhost"
-KOTTSTER_PORT := "5480"
+KOTTSTER_PORT := "5490"
 KOTTSTER_PATH := "/admin"
 KOTTSTER_URL  := "http://{{KOTTSTER_HOST}}:{{KOTTSTER_PORT}}{{KOTTSTER_PATH}}"
 
@@ -12,26 +12,30 @@ rebuild:
 up:
     docker compose up -d
 
+down:
+    docker compose down
+
 # ── Import ───────────────────────────────────────────────────────────────────
 
 import:
-    docker compose exec python-tools uv run --package bantulex-import import
-    docker compose exec data-management rm -rf /app/.cache
-    docker compose restart data-management
+    docker compose run  -w /app/importer --rm utils  uv run importer
+
+
 
 # ── Export (één script per "ding") ───────────────────────────────────────────
 
 # Volledig EvoLex Excel-export
 export-evolex:
-    docker compose exec python-tools uv run --package evolex-export export-evolex
+    docker compose run  -w /app/exporter --rm utils  uv run export-evolex  
 
 # GeoJSON-export van alle taalvariëteiten met coördinaten (voor de kaart)
 export-map:
-    docker compose exec python-tools uv run --package evolex-export export-map
+    docker compose run  -w /app/exporter --rm utils  uv run export-map
+
 
 # BLR kaartdata: genereert local-map/data/bantulex_entries.geojson + blr_catalog.json
 export-blr:
-    docker compose exec python-tools uv run --package evolex-export export-blr
+    docker compose run  -w /app/exporter --rm utils  uv run export-blr
 
 # Alle exports in één keer
 export-all: export-evolex export-map export-blr
