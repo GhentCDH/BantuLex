@@ -72,9 +72,6 @@ jobs:
           push:      true
           tags:      ${{ steps.meta.outputs.tags }}
           labels:    ${{ steps.meta.outputs.labels }}
-          # Build cache in GHCR to speed up subsequent builds
-          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
-          cache-to:   type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
 
       - name: Image digest
         run: echo "Pushed ${{ env.IMAGE }}:main — digest ${{ steps.build-and-push.outputs.digest }}"
