@@ -1,7 +1,4 @@
-KOTTSTER_HOST := "localhost"
-KOTTSTER_PORT := "5490"
-KOTTSTER_PATH := "/admin"
-KOTTSTER_URL  := "http://{{KOTTSTER_HOST}}:{{KOTTSTER_PORT}}{{KOTTSTER_PATH}}"
+KOTTSTER_URL  := "http://localhost:9160"
 
 # ── Docker lifecycle ─────────────────────────────────────────────────────────
 
@@ -19,8 +16,6 @@ down:
 
 import:
     docker compose run  -w /app/importer --rm utils  uv run importer
-
-
 
 # ── Export (één script per "ding") ───────────────────────────────────────────
 
@@ -46,7 +41,7 @@ export-blr:
 export-all: export-evolex export-map export-blr
 
 # ── Kaartdata (pmtiles) ──────────────────────────────────────────────────────
-# Haalt de nieuwste Protomaps Africa-tegel op en zet die in ./local-map/data/
+# Haalt de nieuwste Protomaps world op en zet die in ./local-map/data/
 map-data:
     mkdir -p local-map/data
     docker run --rm \
@@ -56,15 +51,7 @@ map-data:
           node -e "const b=require('fs').readFileSync('/dev/stdin','utf8');\
           console.log(JSON.parse(b).sort((a,b)=>b.key<a.key?-1:1)[0].key)")" \
         /out/world.pmtiles \
-        --bbox=10,-35,45,10 \
-        --maxzoom=8
-
-# Een alternatieve download-script optie (indien pmtiles binary niet beschikbaar is)
-download-world:
-    node local-map/scripts/download-world-pmtiles.js \
-        --bbox=10,-35,45,10 \
-        --output=local-map/data/world.pmtiles \
-        --maxzoom=8
+        --maxzoom=6
 
 # ── Data Management (Kottster) ───────────────────────────────────────────────
 
@@ -81,24 +68,7 @@ reinit: rebuild reset-db import map-data
 # ── Dev helpers ──────────────────────────────────────────────────────────────
 
 open-admin:
-    @echo "Waiting for {{KOTTSTER_URL}}..."
-    @until nc -z {{KOTTSTER_HOST}} {{KOTTSTER_PORT}}; do \
-      printf "."; sleep 0.5; \
-    done
-    @echo "\n{{KOTTSTER_URL}} ready!"
-    @if [ "{{os()}}" = "macos" ]; then \
-      open "{{KOTTSTER_URL}}"; \
-    elif [ "{{os()}}" = "linux" ]; then \
-      xdg-open "{{KOTTSTER_URL}}"; \
-    else \
-      start "{{KOTTSTER_URL}}"; \
-    fi
+    open "{{KOTTSTER_URL}}/admin"
 
-open-map:
-    @if [ "{{os()}}" = "macos" ]; then \
-      open "http://localhost/map/"; \
-    elif [ "{{os()}}" = "linux" ]; then \
-      xdg-open "http://localhost/map/"; \
-    else \
-      start "http://localhost/map/"; \
-    fi
+open:
+       open "{{KOTTSTER_URL}}"
