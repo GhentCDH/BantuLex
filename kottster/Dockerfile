@@ -4,7 +4,6 @@ WORKDIR /app
 COPY kottster/package*.json .
 COPY kottster/*json .
 COPY kottster/vite.config.js .
-COPY kottster/.npmrc .
 
 COPY kottster/scripts ./scripts
 

@@ -32,7 +32,7 @@ handler = RichHandler(rich_tracebacks=True, markup=True, show_time=True, show_pa
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
 logger = logging.getLogger(__name__)
 
-OUTPUT = ROOT / "data" / "bantulex_map.geojson"
+OUTPUT = ROOT / "local-map" / "data" / "bantulex_entries.geojson"
 
 
 # ---------------------------------------------------------------------------

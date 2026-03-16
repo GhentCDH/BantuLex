@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 env_path = Path(__file__).parent.parent.parent.parent
+ROOT = Path(__file__).parents[4]
 
 # load environment variables for development
 # in production (docker), env variables are loaded by Docker (.env)

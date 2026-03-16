@@ -899,7 +899,7 @@ const map = new maplibregl.Map({
     sources: {
       protomaps: {
         type: "vector",
-        url:  `pmtiles:///maps/world.pmtiles`,
+        url:  `pmtiles:///local-map/data/world.pmtiles`,
         attribution: '<a href="https://protomaps.com">Protomaps</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
       }
     },
@@ -914,8 +914,8 @@ map.addControl(new maplibregl.NavigationControl());
 ═══════════════════════════════════════════════════════════════ */
 async function loadData() {
   const [geoRes, catRes] = await Promise.allSettled([
-    fetch(`/data/bantulex_entries.geojson`).then(r => r.ok ? r.json() : null),
-    fetch(`/data/blr_catalog.json`).then(r => r.ok ? r.json() : null),
+    fetch(`local-map/data/bantulex_entries.geojson`).then(r => r.ok ? r.json() : null),
+    fetch(`local-map/data/blr_catalog.json`).then(r => r.ok ? r.json() : null),
   ]);
 
   const geojson = geoRes.status === 'fulfilled' ? geoRes.value : null;
