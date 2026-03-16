@@ -1,10 +1,14 @@
 import { KnexBetterSqlite3Adapter } from '@kottster/server'
+import { getEnvOrThrow } from '@kottster/common';
+
 import knex from 'knex'
+
+const KOTTSTER_DATABASE_PATH = getEnvOrThrow('KOTTSTER_DATABASE_PATH');
 
 const client = knex({
   client: 'better-sqlite3',
   connection: {
-    filename: process.env.DATABASE_PATH ?? process.env.DB_PATH ?? '../data/bantulex.db',
+    filename: KOTTSTER_DATABASE_PATH,
   },
   useNullAsDefault: true,
   pool: {
