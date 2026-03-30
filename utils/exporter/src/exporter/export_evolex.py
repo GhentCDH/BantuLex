@@ -239,12 +239,6 @@ def build_cogsets_sheet(
             cog_id = f"BLR_MISSING_{blr_id}"
         _write_cogset(cog_id, recon, group)
 
-    # 2. Ongelinkte reflexes -- elk als aparte "UNL_" cogset
-    for entry in grouped.get(None, []):
-        bid = entry.beginning_id or entry.id
-        cog_id = f"UNL_{bid:06d}" if bid is not None else "UNL_UNKNOWN"
-        _write_cogset(cog_id, None, [entry])
-
     for i, w in enumerate(COGSETS_COL_WIDTHS):
         ws.column_dimensions[ws.cell(row=1, column=i + 1).column_letter].width = w
 
@@ -387,9 +381,11 @@ def main(mode: str = "local") -> None:
     with Session(engine, expire_on_commit=False) as session:
 
         entries: List[Reflex] = list(session.exec(
-            select(Reflex).options(joinedload(Reflex.variety))
+            select(Reflex)
+            .where(Reflex.blr_entry_id.is_not(None))
+            .options(joinedload(Reflex.variety))
         ).all())
-        logger.info(f"Reflexes geladen: {len(entries)}")
+        logger.info(f"Reflexes geladen (enkel met BLR-link): {len(entries)}")
 
         source_by_entry: Dict[int, Optional[Source]] = {}
         pages_by_entry: Dict[int, Optional[str]] = {}
