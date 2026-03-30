@@ -4,7 +4,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 env_path = Path(__file__).parent.parent.parent.parent
-ROOT = Path(__file__).parents[4]
 
 # load environment variables for development
 # in production (docker), env variables are loaded by Docker (.env)
@@ -13,7 +12,6 @@ load_dotenv(env_path / "utils.env")
 print(f"Loading environment variables from: {env_path / 'utils.env'}")
 print(f"DB_PATH: {os.getenv('DB_PATH')}")
 print(f"DATA_ROOT: {os.getenv('DATA_ROOT')}")
-
 
 required_env_vars = ["DB_PATH", "DATA_ROOT"]
 for var in required_env_vars:
@@ -30,3 +28,5 @@ EXCEL = DATA_ROOT / "bantulex.xlsx"
 BLR_EXCEL = DATA_ROOT / "BLR.xlsx"
 
 EXPORT_EVOLEX_EXCEL = DATA_ROOT / "evolex_export.xlsx"
+EXPORT_BLR_JSON = DATA_ROOT / "blr_catalog.json"
+EXPORT_GEOJSON = DATA_ROOT / "bantulex_entries.geojson"

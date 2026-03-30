@@ -30,7 +30,7 @@ from rich.logging import RichHandler
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
 
-from utilities.config import ROOT
+from utilities.config import EXPORT_BLR_JSON
 from utilities.db import engine
 from utilities.model import (
     BLRConsonantStructure, Reconstruction, BLRVowelStructure,
@@ -46,9 +46,6 @@ handler = RichHandler(rich_tracebacks=True, markup=True, show_time=True, show_pa
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
 logger = logging.getLogger(__name__)
 
-MAP_DATA = ROOT / "local-map" / "data"
-GEOJSON_OUT = MAP_DATA / "bantulex_entries.geojson"
-CATALOG_OUT  = MAP_DATA / "blr_catalog.json"
 
 
 # ---------------------------------------------------------------------------
@@ -203,7 +200,6 @@ def _build_catalog(blr_entries: List[Reconstruction]) -> Dict[str, Any]:
 
 def main() -> None:
     logger.info("BantuLex → Klankzoeker kaartdata export gestart…")
-    MAP_DATA.mkdir(parents=True, exist_ok=True)
 
     with Session(engine, expire_on_commit=False) as session:
         entries     = session.exec(select(Reflex)).all()
@@ -264,19 +260,19 @@ def main() -> None:
         ))
 
     geojson = {"type": "FeatureCollection", "features": features}
-    GEOJSON_OUT.write_text(
+    EXPORT_BLR_JSON.write_text(
         json.dumps(geojson, ensure_ascii=False),
         encoding="utf-8",
     )
-    logger.info(f"GeoJSON opgeslagen: {GEOJSON_OUT}  ({len(features)} variëteiten)")
+    logger.info(f"GeoJSON opgeslagen: {EXPORT_BLR_JSON}  ({len(features)} variëteiten)")
     logger.info(f"  Overgeslagen: {skipped} variëteiten zonder coördinaten")
 
     # Bouw BLR-catalogus
     catalog = _build_catalog(blr_entries)
-    CATALOG_OUT.write_text(
+    EXPORT_BLR_JSON.write_text(
         json.dumps(catalog, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     linked = sum(1 for e in entries if e.blr_entry_id is not None)
-    logger.info(f"Catalogus opgeslagen: {CATALOG_OUT}  ({len(catalog['entries'])} BLR-entries)")
+    logger.info(f"Catalogus opgeslagen: {EXPORT_BLR_JSON}  ({len(catalog['entries'])} BLR-entries)")
     logger.info(f"  BantuLex-entries met BLR-koppeling: {linked} / {len(entries)}")

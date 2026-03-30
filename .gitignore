@@ -26,7 +26,9 @@ nbuild
 node_modules/
 *.pmtiles
 *.geojson
-*.json
+
+*lr_catalog.json
+
 
 # OS generated files
 .DS_Store
