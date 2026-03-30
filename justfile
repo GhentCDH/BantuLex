@@ -31,6 +31,10 @@ export: export-evolex export-map export-blr
 export-evolex:
     docker compose run  -w /app/exporter --rm utils  uv run export-evolex  
 
+# Volledig EvoLex Excel+Google Sheets export
+export-evolex-google:
+    docker compose run  -w /app/exporter --rm utils  uv run export-evolex-google
+
 # GeoJSON-export van alle taalvariëteiten met coördinaten (voor de kaart)
 export-map:
     docker compose run  -w /app/exporter --rm utils  uv run export-map

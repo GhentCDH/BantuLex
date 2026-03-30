@@ -1,19 +1,6 @@
 {
   "menuPageOrder": [
-    "entry",
-    "source",
-    "location",
-    "coordinate",
-    "country",
-    "fieldwork",
-    "place",
-    "project",
-    "region",
-    "variety",
-    "bLR",
-    "consonantStructure",
-    "contributor",
-    "toneStructure",
-    "vowelStructure"
+    "reflex",
+    "reconstruction"
   ]
 }

@@ -48,7 +48,7 @@ class Variety(Table, table=True):
     # BOOLEAN is not STRICT-compatible; store as INTEGER (0/1)
     substrate_suspect: Optional[int] = Field(default=None, sa_type=Integer())
 
-    entries: List["Entry"] = Relationship(back_populates="variety")
+    entries: List["Reflex"] = Relationship(back_populates="variety")
 
 
 class Coordinate(Table, table=True):
@@ -116,7 +116,7 @@ class Location(Table, table=True):
     country: Optional[Country] = Relationship(back_populates="locations")
 
     coordinates: List[Coordinate] = Relationship(back_populates="location")
-    entries: List["Entry"] = Relationship(back_populates="location")
+    entries: List["Reflex"] = Relationship(back_populates="location")
 
 
 class Source(Table, table=True):
@@ -193,20 +193,20 @@ class Fieldwork(Table, table=True):
         back_populates="fieldwork"
     )
 
-    entries: List["Entry"] = Relationship(back_populates="fieldwork")
+    entries: List["Reflex"] = Relationship(back_populates="fieldwork")
 
 
 class SourceEntries(Table, table=True):
-    """Link table between Entry and Source (citation with a role)."""
+    """Link table between Reflex and Source (citation with a role)."""
     __table_args__ = _STRICT
 
     role: str = _text(index=True)  # primary | secondary | cited | second_cited
-    pages: Optional[str] = _text(default=None)  # page number as printed, per entry
+    pages: Optional[str] = _text(default=None)  # page number as printed, per Reflex
 
-    entry_id: Optional[int] = Field(default=None, foreign_key="entry.id")
+    entry_id: Optional[int] = Field(default=None, foreign_key="reflex.id")
     source_id: Optional[int] = Field(default=None, foreign_key="source.id")
 
-    entry: "Entry" = Relationship(back_populates="sources")
+    reflex: "Reflex" = Relationship(back_populates="sources")
     source: "Source" = Relationship()
 
 
@@ -220,7 +220,7 @@ class BLRContributor(Table, table=True):
 
     name: Optional[str] = _text(default=None)
 
-    blr_entries: List["BLREntry"] = Relationship(back_populates="contributor")
+    blr_entries: List["Reconstruction"] = Relationship(back_populates="contributor")
 
 
 class BLRReliability(Table, table=True):
@@ -229,7 +229,7 @@ class BLRReliability(Table, table=True):
 
     value: Optional[str] = _text(default=None)
 
-    blr_entries: List["BLREntry"] = Relationship(back_populates="reliability")
+    blr_entries: List["Reconstruction"] = Relationship(back_populates="reliability")
 
 
 class BLRConsonantStructure(Table, table=True):
@@ -242,7 +242,7 @@ class BLRConsonantStructure(Table, table=True):
     c4: Optional[str] = _text(default=None)
     cs: Optional[str] = _text(default=None)
 
-    blr_entries: List["BLREntry"] = Relationship(back_populates="consonant_structure")
+    blr_entries: List["Reconstruction"] = Relationship(back_populates="consonant_structure")
 
 
 class BLRVowelStructure(Table, table=True):
@@ -256,7 +256,7 @@ class BLRVowelStructure(Table, table=True):
     v3:  Optional[str] = _text(default=None)
     v4:  Optional[str] = _text(default=None)
 
-    blr_entries: List["BLREntry"] = Relationship(back_populates="vowel_structure")
+    blr_entries: List["Reconstruction"] = Relationship(back_populates="vowel_structure")
 
 
 class BLRToneStructure(Table, table=True):
@@ -270,10 +270,10 @@ class BLRToneStructure(Table, table=True):
     t3:  Optional[str] = _text(default=None)
     t4:  Optional[str] = _text(default=None)
 
-    blr_entries: List["BLREntry"] = Relationship(back_populates="tone_structure")
+    blr_entries: List["Reconstruction"] = Relationship(back_populates="tone_structure")
 
 
-class BLREntry(Table, table=True):
+class Reconstruction(Table, table=True):
     """A single BLR (Bantu Lexical Reconstructions) entry."""
     __table_args__ = _STRICT
 
@@ -300,13 +300,13 @@ class BLREntry(Table, table=True):
     vowel_structure:    Optional[BLRVowelStructure]    = Relationship(back_populates="blr_entries")
     tone_structure:     Optional[BLRToneStructure]     = Relationship(back_populates="blr_entries")
 
-    linked_entries: List["Entry"] = Relationship(back_populates="blr_entry")
+    linked_entries: List["Reflex"] = Relationship(back_populates="blr_entry")
 
 
 # ---------------------------------------------------------------------------
 
-class Entry(Table, table=True):
-    """A single lexical entry."""
+class Reflex(Table, table=True):
+    """A single lexical Reflex."""
     __table_args__ = _STRICT
 
     # Original spreadsheet IDs
@@ -329,11 +329,11 @@ class Entry(Table, table=True):
     variety_id:   Optional[int] = Field(default=None, foreign_key="variety.id")
     location_id:  Optional[int] = Field(default=None, foreign_key="location.id")
     fieldwork_id: Optional[int] = Field(default=None, foreign_key="fieldwork.id")
-    blr_entry_id: Optional[int] = Field(default=None, foreign_key="blrentry.id")
+    blr_entry_id: Optional[int] = Field(default=None, foreign_key="reconstruction.id")
 
     # Relationships
     variety:   Optional[Variety]   = Relationship(back_populates="entries")
     location:  Optional[Location]  = Relationship(back_populates="entries")
     fieldwork: Optional[Fieldwork] = Relationship(back_populates="entries")
-    sources:   List[SourceEntries] = Relationship(back_populates="entry")
-    blr_entry: Optional[BLREntry]  = Relationship(back_populates="linked_entries")
+    sources:   List[SourceEntries] = Relationship(back_populates="reflex")
+    blr_entry: Optional[Reconstruction]  = Relationship(back_populates="linked_entries")

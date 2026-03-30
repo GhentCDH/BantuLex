@@ -9,9 +9,9 @@ from sqlmodel import SQLModel, Session, select
 from utilities.config import EXCEL, BLR_EXCEL, DATA_ROOT, DB_PATH
 from utilities.db import create_updated_at_trigger, engine, get_or_create
 from utilities.model import (
-    BLRContributor, BLRConsonantStructure, BLREntry,
+    BLRContributor, BLRConsonantStructure, Reconstruction,
     BLRReliability, BLRToneStructure, BLRVowelStructure,
-    CollectionYear, Coordinate, Country, DataCollector, Entry,
+    CollectionYear, Coordinate, Country, DataCollector, Reflex,
     Fieldwork, FieldworkDataCollector, Location, Place, Project,
     Region, Source, SourceEntries, Variety,
 )
@@ -143,7 +143,7 @@ def _chunked(iterable, n: int):
 # ---------------------------------------------------------------------------
 
 def import_blr() -> None:
-    """Import BLR.xlsx into the blrentry table and link existing entries."""
+    """Import BLR.xlsx into the reconstruction table and link existing entries."""
     SQLModel.metadata.create_all(engine)
 
     if not BLR_EXCEL.exists():
@@ -179,7 +179,7 @@ def import_blr() -> None:
 
     with Session(engine, expire_on_commit=False) as session:
         # Pre-load existing records (idempotent re-runs)
-        for existing in session.exec(select(BLREntry)).all():
+        for existing in session.exec(select(Reconstruction)).all():
             if existing.blr_index is not None:
                 blr_index_map[existing.blr_index] = existing.id
         for x in session.exec(select(BLRContributor)).all():
@@ -261,7 +261,7 @@ def import_blr() -> None:
                     t11=k[0], t12=k[1], t21=k[2], t22=k[3], t3=k[4], t4=k[5]),
                 session) if any(t_key) else None
 
-            blr = BLREntry(
+            blr = Reconstruction(
                 blr_index=idx_raw,
                 word_tone=clean_value(row.get("Word\\Tone")),
                 word=clean_value(row.get("Word")),
@@ -287,24 +287,24 @@ def import_blr() -> None:
         logger.info(f"BLR import done — {inserted} new entries inserted.")
 
         # ------------------------------------------------------------------
-        # Link Entry.blr_entry_id via Entry.blr_index (integer match)
+        # Link Reflex.blr_entry_id via Reflex.blr_index (integer match)
         # ------------------------------------------------------------------
         linked = 0
         unresolved = 0
-        for entry in session.exec(
-            select(Entry).where(
-                Entry.blr_index.is_not(None),
-                Entry.blr_entry_id.is_(None),
+        for reflex in session.exec(
+            select(Reflex).where(
+                Reflex.blr_index.is_not(None),
+                Reflex.blr_entry_id.is_(None),
             )
         ).all():
             try:
-                idx = int(entry.blr_index)
+                idx = int(reflex.blr_index)
             except (ValueError, TypeError):
                 unresolved += 1
                 continue
             blr_id = blr_index_map.get(idx)
             if blr_id:
-                entry.blr_entry_id = blr_id
+                reflex.blr_entry_id = blr_id
                 linked += 1
             else:
                 unresolved += 1
@@ -627,7 +627,7 @@ def main() -> None:
                         cite1, cpages1 = _get_source("Cited source",                "Title cited source",        "Pages cited source")
                         cite2, cpages2 = _get_source("Second cited source",         "Title second cited source", "Pages second cited source")
 
-                        # 6. Entry — parse IDs with explicit invalid-format reporting
+                        # 6. Reflex — parse IDs with explicit invalid-format reporting
                         original_id, oid_ok = parse_int(row.get("ID 20250825"))
                         if not oid_ok:
                             import_report.add("invalid_format", {
@@ -657,7 +657,7 @@ def main() -> None:
                         if not term:
                             continue  # skip rows without a term (silently)
 
-                        entry = Entry(
+                        reflex = Reflex(
                             original_id=original_id,
                             beginning_id=beginning_id,
                             term=term,
@@ -674,7 +674,7 @@ def main() -> None:
                             location_id=location.id if location else None,
                             fieldwork_id=fieldwork.id if fieldwork else None,
                         )
-                        session.add(entry)
+                        session.add(reflex)
                         session.flush()
 
                         # 7. Source links
@@ -686,7 +686,7 @@ def main() -> None:
                         ]:
                             if src:
                                 session.add(SourceEntries(
-                                    entry_id=entry.id,
+                                    entry_id=reflex.id,
                                     source_id=src.id,
                                     role=role,
                                     pages=pages,

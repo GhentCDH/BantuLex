@@ -1,306 +1,401 @@
 """
-export_to_evolex.py  –  BantuLex DB → EvoLex Excel export
+export_evolex.py – BantuLex DB -> EvoLex Excel export  (GECORRIGEERDE VERSIE)
 
-Richting:  BantuLex PostgreSQL (via model.py) → EvoLex spreadsheet formaat
-Output:    evolex_export.xlsx   (Data + Languages + References sheets)
+Output: evolex_export.xlsx
+  Sheet "CogSets"    : cogset-gegroepeerde data conform EvoLex template (20 kolommen)
+  Sheet "Lg-metadata": een rij per taalvariant (5 kolommen)
 
-Sheet layout (EvoLex conventie):
-  Data       : rij 1 = korte Excel-labels, rij 2 = canonieke EvoLex-namen, rij 3+ = data
-  Languages  : rij 1 = headers, rij 2+ = één rij per unieke taalvariant
-  References : rij 1 = headers, rij 2+ = één rij per unieke bron
+MAPPING BantuLex -> EvoLex  CogSets  (20 kolommen)
+Col  0  CogId              <- "BLR_{blr_index:04d}" (via Reconstruction.blr_index)
+                              ongelinkt: "UNL_{beginning_id:06d}"
+Col  1  pr-language        <- leeg  (proto-taalsubgroep; niet in model)
+Col  2  root               <- Reconstruction.word
+Col  3  etymon             <- Reconstruction.word_tone  (proto-vorm met toon)
+Col  4  pr-gloss           <- Reconstruction.english
+Col  5  picture-URL        <- leeg
+Col  6  pic-caption        <- leeg
+Col  7  cogset-note        <- Reconstruction.note
+Col  8  lg_code            <- Variety.guthrie_index  (fallback: bastin_index)
+Col  9  lg_name            <- Variety.name_english
+Col 10  form_IPA           <- Reflex.ipa
+Col 11  form-orthog        <- Reflex.term
+Col 12  pos                <- Reflex.part_of_speech
+Col 13  definition-evolex  <- Reflex.meaning
+Col 14  glosses-evosem     <- leeg  (semantische gloss voor Evosem; niet in model)
+Col 15  orig_gloss         <- Reflex.translation  (gloss zoals in originele bron)
+Col 16  source             <- Source.author_year  (primaire bron)
+Col 17  page               <- SourceEntries.pages
+Col 18  public_note_reflex <- Reflex.notes
+Col 19  comment            <- leeg  (intern; niet in model)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MAPPING  BantuLex model  →  EvoLex kolom
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MAPPING BantuLex -> EvoLex  Lg-metadata  (5 kolommen)
+Col 0  Our_code   <- Variety.guthrie_index  (fallback: bastin_index)
+Col 1  Lg-name    <- Variety.name_english
+Col 2  glottocode <- leeg  (niet in model)
+Col 3  latitude   <- Coordinate.latitude   (float, description='default')
+Col 4  longitude  <- Coordinate.longitude  (float, description='default')
 
-DIRECT 1-op-1
-  Entry.ipa                  →  Data[12]  Reflex_IPA
-  Entry.term                 →  Data[13]  Ortho
-  Entry.semantic_field       →  Data[15]  Semantic field
-  Entry.translation          →  Data[16]  Dict_entry
-  Entry.part_of_speech       →  Data[17]  POS
-  Entry.term_morph_analysis  →  Data[18]  Morph
-  Entry.meaning              →  Data[22]  final version of definition for EvoLex (all in English)
-  Entry.notes                →  Data[23]  note for each reflex (row)
-  Source.author_year         →  Data[24]  Source
-                             →  References[0]  abbrev
-  Source.pages               →  Data[27]  page number in column "Source" (as printed on page)
-  Source.title               →  References[2]  full ref
-  Variety.name_english       →  Data[9]   Language
-                             →  Languages[2]  Language/Dialect
-  Variety.branch             →  Languages[0]  Subgroup
-  Coordinate.latitude        →  Languages[5]  Latitude   (float → "X.XX N/S")
-  Coordinate.longitude       →  Languages[6]  Longitude  (float → "X.XX E/W")
+BEKENDE HIATEN  (BantuLex heeft het niet, EvoLex verwacht het wel)
+  lg_code / Our_code : guthrie_index gebruikt als korte code; mogelijks handmatige
+                       correctie nodig (Guthrie-codes zijn bv. "C30", niet "kar")
+  pr-language        : proto-taalsubgroep -- niet opgeslagen
+  glosses-evosem     : vereenvoudigde semantische gloss -- niet opgeslagen
+  glottocode         : niet opgeslagen
+  picture-URL / cap  : niet opgeslagen
+  comment            : intern; niet nodig
 
-LEEG IN EXPORT (EvoLex verwacht, BantuLex heeft niet)
-  Data[0]   CogId
-  Data[1]   Family
-  Data[2]   Root
-  Data[3]   Etymon
-  Data[4]   Protogloss
-  Data[7]   public note for whole etymon / entry
-  Data[8]   Language cluster
-  Data[10]  Isocode
-  Data[11]  Glottocode
-  Data[14]  lit.
-  Data[19]  ES_Gloss
-  Data[20]  Dict_Ortho
-  Data[21]  dictionary data [AS]
-  Data[25]  Questions and notes [AS]
-  Data[26]  Answers to questions (col Z)
-  Data[28]  page number in PDF of dictionary source [single number]
-  Languages[1]  Language Cluster
-  Languages[3]  Iso
-  Languages[4]  Glotto
-  References[1]  URL of pdf for future user
+STRUCTUREEL VERSCHIL  oud vs. nieuw
+  OUD: "Data" (29 kolommen, 2 headerrijen) + "Languages" + "References"
+  NIEUW: "CogSets" (20 kolommen, 1 headerrij) + "Lg-metadata"
 
-VALT WEG (BantuLex heeft, geen EvoLex kolom voor)
-  Entry.original_id, Entry.beginning_id, Entry.scientific_name, Entry.blr_index
-  Variety.name_french, .name_bantu, .name_bastin, .bastin_index,
-          .guthrie_index, .guthrie_plus, .substrate_suspect
-  Country.name, Region.name, Place.name
-  Fieldwork.project_id, .collection_year_id, .consultants, .archive, .data_entered_by
-  Source.year_uncertain
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CogSets groepeert reflexes per Reconstruction (blr_entry_id):
+    - Eerste rij van elke groep: CogId + proto-velden (col 0-7) ingevuld.
+    - Volgende rijen: col 0-7 leeg (conform Excel-groepering in template).
+    - Reflexes zonder Reconstruction -> aparte "UNL_" cogsets onderaan.
+
+  Coordinaten: raw float in Lg-metadata (niet de "X.XX N/S" string).
 """
 
+import argparse
 import logging
+import time
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
+from pathlib import Path
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
-from rich.logging import RichHandler
 from sqlmodel import Session, select
+from sqlalchemy.orm import joinedload
 
 from utilities.config import EXPORT_EVOLEX_EXCEL
 from utilities.db import engine
-from utilities.model import (
-    Entry, Source, SourceEntries, Variety,
-)
+from utilities.model import Reconstruction, Reflex, Source, SourceEntries, Variety
 from utilities.utils import load_default_coords, load_location_by_variety
 
+# ---------------------------------------------------------------------------
+# ⚙️  CONFIGURATIE  –  pas hier aan
+# ---------------------------------------------------------------------------
+
+GOOGLE_SPREADSHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/1O1kyVfKhCDWFA1c-XJocI3jiBqnaAjwf7QAk_1K2644/edit?usp=sharing"
+)
+
+GOOGLE_SERVICE_ACCOUNT_FILE = Path(__file__).parent / "service_account.json"
+#
+# Eenmalige setup voor Google Sheets:
+#   1. Activeer Google Sheets API op https://console.cloud.google.com/
+#   2. Maak een Service Account aan en download de JSON-sleutel.
+#   3. Sla de sleutel op als het pad in GOOGLE_SERVICE_ACCOUNT_FILE.
+#   4. Deel de spreadsheet met het 'client_email' uit de JSON als Bewerker.
+#   5. pip install gspread
 
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 
-handler = RichHandler(
-    rich_tracebacks=True,
-    tracebacks_show_locals=True,
-    markup=True,
-    show_time=True,
-    show_path=True,
-)
+from rich.logging import RichHandler
+handler = RichHandler(rich_tracebacks=True, show_time=True, show_path=False)
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Constanten
+# ---------------------------------------------------------------------------
+
+COGSETS_HEADERS = [
+    "CogId", "pr-language", "root", "etymon", "pr-gloss",
+    "picture-URL", "pic-caption", "cogset-note",
+    "lg_code", "lg_name", "form_IPA", "form-orthog",
+    "pos", "definition-evolex", "glosses-evosem", "orig_gloss",
+    "source", "page", "public_note_reflex", "comment",
+]
+
+LG_METADATA_HEADERS = ["Our_code", "Lg-name", "glottocode", "latitude", "longitude"]
+
+COGSETS_COL_WIDTHS = [
+    12, 12, 12, 12, 28, 30, 25, 30,
+    12, 28, 15, 22, 8, 38, 22, 28, 15, 8, 32, 20,
+]
 
 # ---------------------------------------------------------------------------
-# Pure helpers
+# Helpers
 # ---------------------------------------------------------------------------
 
-def fmt_coord(value: Optional[float], axis: str) -> Optional[str]:
+def _lg_code(variety: Optional[Variety]) -> Optional[str]:
     """
-    Zet een signed float om naar EvoLex coordinate-notatie.
-      axis='lat': positief → 'N', negatief → 'S'   bv. -15.8 → "15.8 S"
-      axis='lon': positief → 'E', negatief → 'W'   bv.  11.85 → "11.85 E"
+    Geeft de beste beschikbare korte taalcode.
+    Voorkeur: guthrie_index > bastin_index > None.
+
+    NOTE: Guthrie-codes zijn zone+nummer (bv. "C30"), geen 3-letter afkortingen
+    zoals in het EvoLex-voorbeeld ("kar", "tat"). Als de EvoLex-beheerder een
+    aparte korte-code kolom wil, voeg dan 'short_code' toe aan het Variety-model.
     """
-    if value is None:
+    if variety is None:
         return None
-    direction = ("N" if value >= 0 else "S") if axis == "lat" else ("E" if value >= 0 else "W")
-    return f"{abs(value)} {direction}"
+    return variety.guthrie_index or variety.bastin_index or None
 
 
 def _style_header_row(ws, row_num: int) -> None:
-    fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    from openpyxl.styles import Font, PatternFill, Alignment
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
     for cell in ws[row_num]:
-        if cell.value is not None:
-            cell.font = Font(bold=True)
-            cell.fill = fill
-            cell.alignment = Alignment(wrap_text=True)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
 # ---------------------------------------------------------------------------
-# Sheet builders
+# Sheet: CogSets
 # ---------------------------------------------------------------------------
 
-# ── Sheet: References ──
+def build_cogsets_sheet(
+    ws,
+    entries: List[Reflex],
+    source_by_entry: Dict[int, Optional[Source]],
+    pages_by_entry: Dict[int, Optional[str]],
+    reconstructions_map: Dict[int, Reconstruction],
+) -> None:
+    """
+    CogSets: één headerrij + cogset-gegroepeerde datarijen (conform EvoLex template).
 
-def build_references_sheet(ws, sources: List[Source]) -> None:
+    Groepering:
+      - Reflexes met blr_entry_id  -> gegroepeerd per Reconstruction, gesorteerd op blr_index.
+      - Reflexes zonder blr_entry_id -> aparte "UNL_" eenrij-cogsets achteraan.
+
+    Eerste rij per cogset: CogId + proto-velden (col 0-7) ingevuld.
+    Volgende rijen: col 0-7 leeg.
     """
-    References[0]  abbrev              ← Source.author_year
-    References[1]  URL of pdf          ← leeg (niet in model)
-    References[2]  full ref            ← Source.title
-    """
-    ws.title = "References"
-    ws.append(["abbrev", "URL of pdf for future user", "full ref"])
+    ws.title = "CogSets"
+    ws.append(COGSETS_HEADERS)
     _style_header_row(ws, 1)
 
-    for source in sources:
-        ws.append([
-            source.author_year,  # References[0]  abbrev
-            None,                # References[1]  URL of pdf for future user — leeg
-            source.title,        # References[2]  full ref
-        ])
+    grouped: Dict[Optional[int], List[Reflex]] = defaultdict(list)
+    for entry in entries:
+        grouped[entry.blr_entry_id].append(entry)
 
-    ws.column_dimensions["A"].width = 25
-    ws.column_dimensions["B"].width = 40
-    ws.column_dimensions["C"].width = 80
+    def _write_cogset(
+        cog_id: str,
+        recon: Optional[Reconstruction],
+        group: List[Reflex],
+    ) -> None:
+        first_row = True
+        for entry in group:
+            source = source_by_entry.get(entry.id)
+            variety = entry.variety
+
+            # Kolommen 0-7: alleen in de eerste rij van de cogset
+            if first_row:
+                proto_cols: List[Any] = [
+                    cog_id,                               # CogId
+                    None,                                 # pr-language (niet in model)
+                    recon.word if recon else None,        # root
+                    recon.word_tone if recon else None,   # etymon
+                    recon.english if recon else None,     # pr-gloss
+                    None,                                 # picture-URL
+                    None,                                 # pic-caption
+                    recon.note if recon else None,        # cogset-note
+                ]
+                first_row = False
+            else:
+                proto_cols = [None] * 8  # Col 0-7 leeg voor volgende rijen
+
+            # Kolommen 8-19: per reflex
+            reflex_cols: List[Any] = [
+                _lg_code(variety),                         # lg_code
+                variety.name_english if variety else None, # lg_name
+                entry.ipa,                                 # form_IPA
+                entry.term,                                # form-orthog
+                entry.part_of_speech,                      # pos
+                entry.meaning,                             # definition-evolex
+                None,                                      # glosses-evosem (niet in model)
+                entry.translation,                         # orig_gloss
+                source.author_year if source else None,    # source
+                pages_by_entry.get(entry.id),              # page
+                entry.notes,                               # public_note_reflex
+                None,                                      # comment (niet in model)
+            ]
+            ws.append(proto_cols + reflex_cols)
+
+    # 1. Gelinkte cogsets -- gesorteerd op blr_index
+    linked_groups = [
+        (blr_id, group)
+        for blr_id, group in grouped.items()
+        if blr_id is not None
+    ]
+    linked_groups.sort(
+        key=lambda kv: (
+            reconstructions_map[kv[0]].blr_index or 0
+            if kv[0] in reconstructions_map else 0
+        )
+    )
+    for blr_id, group in linked_groups:
+        recon = reconstructions_map.get(blr_id)
+        if recon and recon.blr_index is not None:
+            cog_id = f"BLR_{recon.blr_index:04d}"
+        elif recon:
+            cog_id = f"BLR_UNKNOWN_{blr_id}"
+        else:
+            cog_id = f"BLR_MISSING_{blr_id}"
+        _write_cogset(cog_id, recon, group)
+
+    # 2. Ongelinkte reflexes -- elk als aparte "UNL_" cogset
+    for entry in grouped.get(None, []):
+        bid = entry.beginning_id or entry.id
+        cog_id = f"UNL_{bid:06d}" if bid is not None else "UNL_UNKNOWN"
+        _write_cogset(cog_id, None, [entry])
+
+    for i, w in enumerate(COGSETS_COL_WIDTHS):
+        ws.column_dimensions[ws.cell(row=1, column=i + 1).column_letter].width = w
 
 
-# ── Sheet: Languages ──
+# ---------------------------------------------------------------------------
+# Sheet: Lg-metadata
+# ---------------------------------------------------------------------------
 
-def build_languages_sheet(
+def build_lg_metadata_sheet(
     ws,
     varieties: List[Variety],
     coord_by_location: Dict[int, Tuple[Optional[float], Optional[float]]],
     location_by_variety: Dict[int, Optional[int]],
 ) -> None:
     """
-    Languages[0]  Subgroup           ← Variety.branch
-    Languages[1]  Language Cluster   ← leeg (niet in model)
-    Languages[2]  Language/Dialect   ← Variety.name_english
-    Languages[3]  Iso                ← leeg (niet in model)
-    Languages[4]  Glotto             ← leeg (niet in model)
-    Languages[5]  Latitude           ← Coordinate.latitude  (fmt_coord)
-    Languages[6]  Longitude          ← Coordinate.longitude (fmt_coord)
+    Lg-metadata: één headerrij + een rij per unieke variety.
+
+    Coordinaten als raw float (niet de "X.XX N/S" string die de oude export gebruikte).
+    Our_code = guthrie_index (of bastin_index als fallback).
     """
-    ws.title = "Languages"
-    ws.append(["Subgroup", "Language Cluster", "Language/Dialect",
-               "Iso", "Glotto", "Latitude", "Longitude"])
+    ws.title = "Lg-metadata"
+    ws.append(LG_METADATA_HEADERS)
     _style_header_row(ws, 1)
 
     seen: set = set()
     for v in varieties:
-        key = (v.branch, v.name_english)
+        key = (_lg_code(v), v.name_english)
         if key in seen:
             continue
         seen.add(key)
 
         loc_id = location_by_variety.get(v.id)
-        lat_raw, lon_raw = coord_by_location.get(loc_id, (None, None)) if loc_id else (None, None)
-
+        lat, lon = (
+            coord_by_location.get(loc_id, (None, None))
+            if loc_id is not None else (None, None)
+        )
         ws.append([
-            v.branch,                    # Languages[0]  Subgroup
-            None,                        # Languages[1]  Language Cluster — leeg
-            v.name_english,              # Languages[2]  Language/Dialect
-            None,                        # Languages[3]  Iso — leeg
-            None,                        # Languages[4]  Glotto — leeg
-            fmt_coord(lat_raw, "lat"),   # Languages[5]  Latitude
-            fmt_coord(lon_raw, "lon"),   # Languages[6]  Longitude
+            _lg_code(v),    # Our_code
+            v.name_english, # Lg-name
+            None,           # glottocode (niet in model)
+            lat,            # latitude (raw float)
+            lon,            # longitude (raw float)
         ])
 
-    for col, width in zip("ABCDEFG", [20, 20, 30, 10, 15, 12, 12]):
+    for col, width in zip("ABCDE", [15, 32, 15, 12, 12]):
         ws.column_dimensions[col].width = width
 
 
-# ── Sheet: Data ──
+# ---------------------------------------------------------------------------
+# Google Sheets integratie
+# ---------------------------------------------------------------------------
 
-# Rij 1 (Excel-labels) en rij 2 (canonieke EvoLex-namen) identiek aan bronbestand
-_DATA_ROW1_LABELS = [
-    "bra", None, None, None, None,
-    "picture (URL) (in https://__ or in pix/__)", "caption of picture",
-    "public note for whole etymon / entry",
-    "language or lg cluster", "lang / variety name",
-    "iso", "glottoc.", None, "orig. orth.", "lit.",
-    "Semantic field",
-    "glosses [AMF] as meant to appear on EvoLex (unless colT)",
-    "pos", "gender",
-    "[AF, AS] simplified glosses for Evosem (when col Q or V would not be recognized as lemma)",
-    "dictionary data [AS]: orthog of entry form",
-    "dictionary data [AS]",
-    "final version of definition for EvoLex (all in English)",
-    "note for each reflex (row)", "Source",
-    "Questions and notes [AS]",
-    "Answers to questions (col Z) - see also this document",
-    'page number in column "Source" (as printed on page)',
-    "page number in PDF of dictionary source [single number]",
-]
+def push_to_google_sheets(wb: Workbook, mode: str) -> None:
+    """
+    Schrijft de werkboekinhoud naar GOOGLE_SPREADSHEET_URL via GOOGLE_SERVICE_ACCOUNT_FILE.
 
-_DATA_ROW2_CANONICAL = [
-    "CogId", "Family", "Root", "Etymon", "Protogloss",
-    None, None, None,
-    "Language cluster", "Language",
-    "Isocode", "Glottocode", "Reflex_IPA", "Ortho",
-    None, None, "Dict_entry", "POS", "Morph",
-    "ES_Gloss", "Dict_Ortho", None, None, None,
-    "Source", None, None, None, None,
-]
+    mode='overwrite' : wist en herschrijft elk tabblad volledig.
+    mode='append'    : voegt alleen nieuwe datarijen toe (headerrij overgeslagen).
+    """
+    try:
+        import gspread
+        from gspread.exceptions import SpreadsheetNotFound, WorksheetNotFound
+    except ImportError:
+        logger.error("gspread niet gevonden. Installeer via: pip install gspread")
+        return
 
+    try:
+        gc = gspread.service_account(filename=GOOGLE_SERVICE_ACCOUNT_FILE)
+    except FileNotFoundError:
+        logger.error(
+            f"Service account JSON niet gevonden: {GOOGLE_SERVICE_ACCOUNT_FILE!r}\n"
+            "Pas GOOGLE_SERVICE_ACCOUNT_FILE bovenaan het script aan."
+        )
+        return
 
-def build_data_sheet(
-    ws,
-    entries: List[Entry],
-    source_by_entry: Dict[int, Optional[Source]],
-    pages_by_entry: Dict[int, Optional[str]],
-) -> None:
-    ws.title = "Data"
-    ws.append(_DATA_ROW1_LABELS)
-    ws.append(_DATA_ROW2_CANONICAL)
-    _style_header_row(ws, 1)
-    _style_header_row(ws, 2)
+    try:
+        spreadsheet = gc.open_by_url(GOOGLE_SPREADSHEET_URL)
+    except SpreadsheetNotFound:
+        logger.error(
+            f"Spreadsheet niet bereikbaar: {GOOGLE_SPREADSHEET_URL}\n"
+            "Controleer of het 'client_email' is toegevoegd als Bewerker."
+        )
+        return
 
-    for entry in entries:
-        source  = source_by_entry.get(entry.id)
-        variety = entry.variety
+    logger.info(f"[Sheets] Verbonden: {spreadsheet.title!r}")
 
-        ws.append([
-            None,                                       # Data[0]   CogId — leeg
-            None,                                       # Data[1]   Family — leeg
-            None,                                       # Data[2]   Root — leeg
-            None,                                       # Data[3]   Etymon — leeg
-            None,                                       # Data[4]   Protogloss — leeg
-            None,                                       # Data[5]   picture (URL) — leeg
-            None,                                       # Data[6]   caption of picture — leeg
-            None,                                       # Data[7]   public note for whole etymon / entry — leeg
-            None,                                       # Data[8]   Language cluster — leeg
-            variety.name_english if variety else None,  # Data[9]   Language
-            None,                                       # Data[10]  Isocode — leeg
-            None,                                       # Data[11]  Glottocode — leeg
-            entry.ipa,                                  # Data[12]  Reflex_IPA
-            entry.term,                                 # Data[13]  Ortho
-            None,                                       # Data[14]  lit. — leeg
-            entry.semantic_field,                       # Data[15]  Semantic field
-            entry.translation,                          # Data[16]  Dict_entry
-            entry.part_of_speech,                       # Data[17]  POS
-            entry.term_morph_analysis,                  # Data[18]  Morph
-            None,                                       # Data[19]  ES_Gloss — leeg
-            None,                                       # Data[20]  Dict_Ortho — leeg
-            None,                                       # Data[21]  dictionary data [AS] — leeg
-            entry.meaning,                              # Data[22]  final version of definition for EvoLex (all in English)
-            entry.notes,                                # Data[23]  note for each reflex (row)
-            source.author_year if source else None,     # Data[24]  Source
-            None,                                       # Data[25]  Questions and notes [AS] — leeg
-            None,                                       # Data[26]  Answers to questions (col Z) — leeg
-            pages_by_entry.get(entry.id),                                # Data[27]  page number in column "Source" (as printed on page)
-            None,                                       # Data[28]  page number in PDF of dictionary source — leeg
-        ])
+    for sheet_name in [sheet.title for sheet in wb.worksheets]:
+        ws_xls = wb[sheet_name]
+        all_rows: List[List[Any]] = [
+            [v if v is not None else "" for v in row]
+            for row in ws_xls.iter_rows(values_only=True)
+        ]
 
-    widths = [12,10,10,10,20, 20,20,30,20,25, 10,12,15,20,10,
-              15,30,10,15,20, 20,20,40,30,25, 20,30,15,15]
-    for i, w in enumerate(widths):
-        ws.column_dimensions[ws.cell(row=1, column=i+1).column_letter].width = w
+        try:
+            gws = spreadsheet.worksheet(sheet_name)
+        except WorksheetNotFound:
+            gws = spreadsheet.add_worksheet(
+                title=sheet_name,
+                rows=max(len(all_rows) + 100, 1000),
+                cols=max(len(all_rows[0]) if all_rows else 20, 20),
+            )
+            logger.info(f"[Sheets] Tabblad '{sheet_name}' aangemaakt.")
+
+        if mode == "overwrite":
+            gws.clear()
+            if all_rows:
+                batch_size = 5000
+                total_batches = (len(all_rows) + batch_size - 1) // batch_size
+                for i in range(0, len(all_rows), batch_size):
+                    batch = all_rows[i : i + batch_size]
+                    range_name = f"A{i+1}"
+                    gws.update(values=batch, range_name=range_name)
+                    
+                    logger.info(f"[Sheets] '{sheet_name}' batch {i//batch_size + 1}/{total_batches} verzonden.")
+                    # Voorkom "Quota exceeded" errors
+                    time.sleep(1) 
+            logger.info(f"[Sheets] OVERWRITE '{sheet_name}' voltooid.")
+        elif mode == "append":
+            data_rows = all_rows[1:]  # Sla headerrij over
+            if data_rows:
+                gws.append_rows(data_rows, value_input_option="RAW")
+                logger.info(f"[Sheets] APPEND '{sheet_name}': {len(data_rows)} rijen.")
+            else:
+                logger.warning(f"[Sheets] Geen datarijen voor '{sheet_name}'.")
 
 
 # ---------------------------------------------------------------------------
-# Main export
+# Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    logger.info("BantuLex → EvoLex export gestart...")
-
-    # We make sure the export directory exists
+def main(mode: str = "local") -> None:
+    """
+    mode='local'     : alleen lokale .xlsx aanmaken.
+    mode='overwrite' : lokale .xlsx + Google Sheets volledig overschrijven.
+    mode='append'    : lokale .xlsx + nieuwe rijen toevoegen aan Google Sheets.
+    """
+    logger.info(f"BantuLex -> EvoLex export gestart  [modus: {mode}]")
     EXPORT_EVOLEX_EXCEL.parent.mkdir(parents=True, exist_ok=True)
 
     with Session(engine, expire_on_commit=False) as session:
 
-        entries  = session.exec(select(Entry)).all()
-        logger.info(f"Entries geladen: {len(entries)}")
+        entries: List[Reflex] = list(session.exec(
+            select(Reflex).options(joinedload(Reflex.variety))
+        ).all())
+        logger.info(f"Reflexes geladen: {len(entries)}")
 
-        # Primaire source per entry
         source_by_entry: Dict[int, Optional[Source]] = {}
         pages_by_entry: Dict[int, Optional[str]] = {}
-        sources_map = {s.id: s for s in session.exec(select(Source)).all()}
+        sources_map: Dict[int, Source] = {
+            s.id: s for s in session.exec(select(Source)).all()
+        }
         for link in session.exec(
             select(SourceEntries).where(SourceEntries.role == "primary")
         ).all():
@@ -308,28 +403,59 @@ def main() -> None:
                 source_by_entry[link.entry_id] = sources_map.get(link.source_id)
                 pages_by_entry[link.entry_id] = link.pages
 
+        reconstructions_map: Dict[int, Reconstruction] = {
+            r.id: r for r in session.exec(select(Reconstruction)).all()
+        }
+        logger.info(f"Reconstructions geladen: {len(reconstructions_map)}")
+
         coord_by_location = load_default_coords(session)
         location_by_variety = load_location_by_variety(entries)
-
-        varieties    = session.exec(select(Variety)).all()
-        all_sources  = list(sources_map.values())
+        varieties: List[Variety] = list(session.exec(select(Variety)).all())
 
         wb = Workbook()
+        build_cogsets_sheet(
+            wb.active, entries, source_by_entry, pages_by_entry, reconstructions_map
+        )
+        ws_lg = wb.create_sheet()
+        build_lg_metadata_sheet(ws_lg, varieties, coord_by_location, location_by_variety)
 
-        build_data_sheet(wb.active, entries, source_by_entry, pages_by_entry)
+    wb.save(EXPORT_EVOLEX_EXCEL)
+    logger.info(f"Lokaal opgeslagen: {EXPORT_EVOLEX_EXCEL}")
 
-        ws_lang = wb.create_sheet()
-        build_languages_sheet(ws_lang, varieties, coord_by_location, location_by_variety)
+    linked = sum(1 for e in entries if e.blr_entry_id is not None)
+    unlinked = len(entries) - linked
+    n_varieties = len({(_lg_code(v), v.name_english) for v in varieties})
+    logger.info(f"  CogSets    : {linked} gelinkte reflexes | {unlinked} ongelinkte reflexes")
+    logger.info(f"  Lg-metadata: {n_varieties} unieke varieties")
 
-        ws_ref = wb.create_sheet()
-        build_references_sheet(ws_ref, all_sources)
+    if mode in ("overwrite", "append"):
+        push_to_google_sheets(wb, mode)
 
-        wb.save(EXPORT_EVOLEX_EXCEL)
-        logger.info(f"Opgeslagen: {EXPORT_EVOLEX_EXCEL}")
-        logger.info(f"  Data sheet:       {len(entries)} rijen")
-        logger.info(f"  Languages sheet:  {len(set((v.branch, v.name_english) for v in varieties))} rijen")
-        logger.info(f"  References sheet: {len(all_sources)} rijen")
+    logger.info("Export klaar.")
+
+
+def main_google_overwrite():
+    """Wrapper voor entry-point: overschrijf Google Sheets."""
+    main(mode="overwrite")
+
+def main_google_append():
+    """Wrapper voor entry-point: voeg toe aan Google Sheets."""
+    main(mode="append")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="BantuLex -> EvoLex export  (lokaal .xlsx + optioneel Google Sheets)"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["local", "overwrite", "append"],
+        default="local",
+        help=(
+            "local     : alleen .xlsx opslaan (standaard).\n"
+            "overwrite : .xlsx + Google Sheets volledig overschrijven.\n"
+            "append    : .xlsx + nieuwe rijen toevoegen aan Google Sheets."
+        ),
+    )
+    args = parser.parse_args()
+    main(mode=args.mode)

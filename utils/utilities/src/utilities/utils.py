@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Tuple
 
 from sqlmodel import Session, select
 
-from .model import Coordinate, Entry
+from .model import Coordinate, Reflex
 
 
 def load_default_coords(session: Session) -> Dict[int, Tuple[Optional[float], Optional[float]]]:
@@ -16,8 +16,8 @@ def load_default_coords(session: Session) -> Dict[int, Tuple[Optional[float], Op
     return result
 
 
-def load_location_by_variety(entries: List[Entry]) -> Dict[int, Optional[int]]:
-    """Build a variety_id → location_id mapping from a list of Entry objects."""
+def load_location_by_variety(entries: List[Reflex]) -> Dict[int, Optional[int]]:
+    """Build a variety_id → location_id mapping from a list of Reflex objects."""
     result: Dict[int, Optional[int]] = {}
     for e in entries:
         if e.variety_id and e.variety_id not in result:

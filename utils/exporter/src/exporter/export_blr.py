@@ -33,8 +33,8 @@ from sqlmodel import Session, select
 from utilities.config import ROOT
 from utilities.db import engine
 from utilities.model import (
-    BLRConsonantStructure, BLREntry, BLRVowelStructure,
-    Entry, Location, Place, Region, Variety,
+    BLRConsonantStructure, Reconstruction, BLRVowelStructure,
+    Reflex, Location, Place, Region, Variety,
 )
 from utilities.utils import load_default_coords, load_location_by_variety
 
@@ -67,8 +67,8 @@ def _build_feature(
     variety: Variety,
     lat: float,
     lon: float,
-    entries: List[Entry],
-    blr_by_id: Dict[int, BLREntry],
+    entries: List[Reflex],
+    blr_by_id: Dict[int, Reconstruction],
     location_name: Optional[str],
 ) -> Dict[str, Any]:
     entry_list = []
@@ -126,7 +126,7 @@ def _build_feature(
 # BLR catalog builder
 # ---------------------------------------------------------------------------
 
-def _build_catalog(blr_entries: List[BLREntry]) -> Dict[str, Any]:
+def _build_catalog(blr_entries: List[Reconstruction]) -> Dict[str, Any]:
     c1s: Set[str] = set()
     c2s: Set[str] = set()
     c3s: Set[str] = set()
@@ -206,13 +206,13 @@ def main() -> None:
     MAP_DATA.mkdir(parents=True, exist_ok=True)
 
     with Session(engine, expire_on_commit=False) as session:
-        entries     = session.exec(select(Entry)).all()
+        entries     = session.exec(select(Reflex)).all()
         varieties   = {v.id: v for v in session.exec(select(Variety)).all()}
         blr_entries = session.exec(
-            select(BLREntry).options(
-                joinedload(BLREntry.vowel_structure),
-                joinedload(BLREntry.consonant_structure),
-                joinedload(BLREntry.tone_structure)
+            select(Reconstruction).options(
+                joinedload(Reconstruction.vowel_structure),
+                joinedload(Reconstruction.consonant_structure),
+                joinedload(Reconstruction.tone_structure)
             )
         ).all()
         blr_by_id   = {b.id: b for b in blr_entries}
@@ -237,7 +237,7 @@ def main() -> None:
             return r.name if r else None
 
     # Groepeer entries per variëteit, bewaar ook de locatie-id
-    entries_by_variety: Dict[int, List[Entry]] = defaultdict(list)
+    entries_by_variety: Dict[int, List[Reflex]] = defaultdict(list)
     for e in entries:
         if e.variety_id:
             entries_by_variety[e.variety_id].append(e)

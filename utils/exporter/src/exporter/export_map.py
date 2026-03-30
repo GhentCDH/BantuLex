@@ -21,7 +21,7 @@ from sqlmodel import Session, select
 
 from utilities.config import ROOT
 from utilities.db import engine
-from utilities.model import Entry, Variety
+from utilities.model import Reflex, Variety
 from utilities.utils import load_default_coords, load_location_by_variety
 
 # ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@ def main() -> None:
 
     with Session(engine, expire_on_commit=False) as session:
         # Count entries per variety
-        entries = session.exec(select(Entry)).all()
+        entries = session.exec(select(Reflex)).all()
         count_by_variety: Counter = Counter(
             e.variety_id for e in entries if e.variety_id is not None
         )
