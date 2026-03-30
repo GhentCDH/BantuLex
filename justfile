@@ -12,6 +12,11 @@ up:
 down:
     docker compose down
 
+# ── Modelgeneratie ───────────────────────────────────────────────────────────
+
+generate-diagram:
+    docker compose run  -w /app/documenter --rm utils  uv run document
+
 # ── Import ───────────────────────────────────────────────────────────────────
 
 import:
