@@ -392,12 +392,21 @@ def main(mode: str = "local") -> None:
         sources_map: Dict[int, Source] = {
             s.id: s for s in session.exec(select(Source)).all()
         }
+        # Collect all primary sources per entry, sorted by order
+        entry_sources = defaultdict(list)
         for link in session.exec(
-            select(SourceEntries).where(SourceEntries.role == "primary")
+            select(SourceEntries)
+            .where(SourceEntries.role == "primary")
+            .order_by(SourceEntries.entry_id, SourceEntries.order)
         ).all():
-            if link.entry_id not in source_by_entry:
-                source_by_entry[link.entry_id] = sources_map.get(link.source_id)
-                pages_by_entry[link.entry_id] = link.pages
+            source = sources_map.get(link.source_id)
+            if source:
+                entry_sources[link.entry_id].append((source.author_year, link.pages))
+        
+        for entry_id, items in entry_sources.items():
+            # Join multiple sources: "Author A 2000; Author B 2005"
+            source_by_entry[entry_id] = "; ".join(filter(None, [it[0] for it in items]))
+            pages_by_entry[entry_id]  = "; ".join(filter(None, [it[1] for it in items]))
 
         reconstructions_map: Dict[int, Reconstruction] = {
             r.id: r for r in session.exec(select(Reconstruction)).all()
