@@ -222,10 +222,11 @@ class Fieldwork(Table, table=True):
 
 
 class SourceEntries(Table, table=True):
-    """Link table between Reflex and Source (citation with a role)."""
+    """Link table between Reflex and Source (citation with a role and order)."""
     __table_args__ = _STRICT
 
-    role: str = _text(index=True)  # primary | secondary | cited | second_cited
+    role: str = _text(index=True)  # primary | secondary | cited | ...
+    order: int = Field(default=1, sa_type=Integer())
     pages: Optional[str] = _text(default=None)  # page number as printed, per Reflex
 
     entry_id: Optional[int] = Field(default=None, foreign_key="reflex.id")
