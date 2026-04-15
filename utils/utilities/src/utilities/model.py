@@ -199,13 +199,12 @@ class FieldworkConsultant(SQLModel, table=True):
 
 
 class Fieldwork(Table, table=True):
-    """A fieldwork session. Project, year and data collectors are normalised
+    """A fieldwork session. Project, year, collectors and consultants are normalised
     into their own tables."""
     __table_args__ = _STRICT
 
     project_id: Optional[int] = Field(default=None, foreign_key="project.id")
     collection_year_id: Optional[int] = Field(default=None, foreign_key="collectionyear.id")
-    consultants: Optional[str] = _text(default=None)  # comma-separated (not yet normalised)
     archive: Optional[str] = _text(default=None)
     data_entered_by: Optional[str] = _text(default=None)
 
