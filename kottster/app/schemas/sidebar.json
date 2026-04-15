@@ -1,6 +1,7 @@
 {
   "menuPageOrder": [
     "reflex",
-    "reconstruction"
+    "reconstruction",
+    "sourceEntries"
   ]
 }

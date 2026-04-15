@@ -1,0 +1,28 @@
+{
+  "version": "3.4",
+  "type": "table",
+  "title": "SourceEntries",
+  "hideInSidebar": false,
+  "config": {
+    "dataSource": "bantulex_db",
+    "fetchStrategy": "databaseTable",
+    "table": "sourceentries",
+    "columns": [
+      {
+        "column": "role",
+        "label": "Role",
+        "hiddenInTable": false,
+        "hiddenInForm": false,
+        "filterable": true,
+        "sortable": true,
+        "searchable": true,
+        "fieldInput": {
+          "type": "textarea",
+          "asArray": false
+        },
+        "fieldRequirement": "notEmpty",
+        "formFieldSpan": "12"
+      }
+    ]
+  }
+}
