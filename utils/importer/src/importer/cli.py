@@ -12,8 +12,8 @@ from utilities.db import create_updated_at_trigger, engine, get_or_create
 from utilities.model import (
     BLRContributor, BLRConsonantStructure, Reconstruction,
     BLRReliability, BLRToneStructure, BLRVowelStructure,
-    CollectionYear, Coordinate, Country, DataCollector, Reflex,
-    Fieldwork, FieldworkDataCollector, Location, Place, Project,
+    CollectionYear, Coordinate, Country, DataCollector, Consultant, Reflex,
+    Fieldwork, FieldworkDataCollector, FieldworkConsultant, Location, Place, Project,
     Region, Source, SourceEntries, Variety,
 )
 
@@ -203,6 +203,10 @@ EXPECTED_COLUMNS = [
     "Semantic field", "Part of Speech", "BLR Index", "IPA",
     "Opmerking", "Notes",
 ]
+
+# Field names for dynamic grouping
+_COLLECTOR_PATTERN = re.compile(r"Data collector \d+")
+_CONSULTANT_PATTERN = re.compile(r"Consultant \d+")
 
 # Fields to check for leading/trailing whitespace before clean_value strips them
 _WHITESPACE_CHECK_FIELDS = [
@@ -454,6 +458,7 @@ def main() -> None:
     projects_cache:        Dict[tuple, Project]        = {}
     years_cache:           Dict[tuple, CollectionYear] = {}
     data_collectors_cache: Dict[tuple, DataCollector]  = {}
+    consultants_cache:     Dict[tuple, Consultant]     = {}
     fieldworks_cache:      Dict[tuple, Fieldwork]      = {}
 
     # Normalised caches for case-variant detection (normalised_key -> original_key)
@@ -461,6 +466,7 @@ def main() -> None:
     countries_norm:       Dict[tuple, tuple] = {}
     regions_norm:         Dict[tuple, tuple] = {}
     data_collectors_norm: Dict[tuple, tuple] = {}
+    consultants_norm:     Dict[tuple, tuple] = {}
     sources_norm:         Dict[tuple, tuple] = {}
 
     # (location_id, description) -> (lat, lon, excel_row)
@@ -509,6 +515,10 @@ def main() -> None:
             if dc.name:
                 data_collectors_cache[(dc.name,)] = dc
                 data_collectors_norm.setdefault(_normalize_key((dc.name,)), (dc.name,))
+        for c in session.exec(select(Consultant)).all():
+            if c.name:
+                consultants_cache[(c.name,)] = c
+                consultants_norm.setdefault(_normalize_key((c.name,)), (c.name,))
         for fw in session.exec(select(Fieldwork)).all():
             dc_ids = tuple(sorted(
                 lnk.data_collector_id for lnk in session.exec(
@@ -517,8 +527,15 @@ def main() -> None:
                     )
                 ).all()
             ))
+            con_ids = tuple(sorted(
+                lnk.consultant_id for lnk in session.exec(
+                    select(FieldworkConsultant).where(
+                        FieldworkConsultant.fieldwork_id == fw.id
+                    )
+                ).all()
+            ))
             k = (fw.project_id, fw.collection_year_id,
-                 fw.consultants, fw.archive, fw.data_entered_by, dc_ids)
+                 fw.archive, fw.data_entered_by, dc_ids, con_ids)
             fieldworks_cache[k] = fw
 
         logger.info("Caches pre-loaded.")
@@ -690,11 +707,11 @@ def main() -> None:
                                 lambda k=year_key: CollectionYear(value=k[0], status=k[1]),
                                 session)
 
-                        # 4c. Data collectors (one record per person)
-                        dc_names = list(filter(None, [
-                            clean_value(row.get(f"Data collector {j}"))
-                            for j in range(1, 3)
-                        ]))
+                        # 4c. Data collectors (dynamic detection)
+                        dc_names = sorted(list(filter(None, [
+                            clean_value(row.get(h))
+                            for h in headers if h and _COLLECTOR_PATTERN.match(h)
+                        ])))
                         dc_objects = []
                         for name in dc_names:
                             _check_case_variant(
@@ -705,22 +722,34 @@ def main() -> None:
                                 lambda n=name: DataCollector(name=n),
                                 session))
 
-                        # 4d. Fieldwork
-                        consultants = ", ".join(filter(None, [
-                            clean_value(row.get(f"Consultant {j}"))
-                            for j in range(1, 5)
-                        ])) or None
+                        # 4d. Consultants (dynamic detection)
+                        con_names = sorted(list(filter(None, [
+                            clean_value(row.get(h))
+                            for h in headers if h and _CONSULTANT_PATTERN.match(h)
+                        ])))
+                        con_objects = []
+                        for name in con_names:
+                            _check_case_variant(
+                                consultants_norm, (name,), "Consultant",
+                                excel_row, import_report)
+                            con_objects.append(get_or_create(
+                                consultants_cache, (name,),
+                                lambda n=name: Consultant(name=n),
+                                session))
+
+                        # 4e. Fieldwork
                         archive_val  = clean_value(row.get("Archive"))
                         entered_by   = clean_value(row.get("Data entered by"))
                         dc_id_tuple  = tuple(sorted(dc.id for dc in dc_objects))
+                        con_id_tuple = tuple(sorted(c.id for c in con_objects))
 
                         f_key = (
                             project.id if project else None,
                             collection_year.id if collection_year else None,
-                            consultants,
                             archive_val,
                             entered_by,
                             dc_id_tuple,
+                            con_id_tuple,
                         )
                         fieldwork = None
                         if any(k is not None for k in f_key):
@@ -730,7 +759,6 @@ def main() -> None:
                                 fieldwork = Fieldwork(
                                     project_id=project.id if project else None,
                                     collection_year_id=collection_year.id if collection_year else None,
-                                    consultants=consultants,
                                     archive=archive_val,
                                     data_entered_by=entered_by,
                                 )
@@ -740,6 +768,11 @@ def main() -> None:
                                     session.add(FieldworkDataCollector(
                                         fieldwork_id=fieldwork.id,
                                         data_collector_id=dc.id,
+                                    ))
+                                for con in con_objects:
+                                    session.add(FieldworkConsultant(
+                                        fieldwork_id=fieldwork.id,
+                                        consultant_id=con.id,
                                     ))
                                 fieldworks_cache[f_key] = fieldwork
 
