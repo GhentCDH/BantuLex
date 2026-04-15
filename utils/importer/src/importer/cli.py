@@ -208,6 +208,16 @@ EXPECTED_COLUMNS = [
 _COLLECTOR_PATTERN = re.compile(r"Data collector \d+")
 _CONSULTANT_PATTERN = re.compile(r"Consultant \d+")
 
+# Source groups (Author/Year, Title, Page, Role)
+# Unified role system: everyone is 'primary' or 'cited', 'order' handles slots.
+_SOURCE_GROUPS = [
+    ("Source (Author YEAR)", "Title", "Page number", "primary"),
+    ("Second source (Author Year)", "Title second source", "Page number second source", "primary"),
+    ("Source Fieldwork (data collector YEAR)", None, None, "primary"),
+    ("Cited source", "Title cited source", "Pages cited source", "cited"),
+    ("Second cited source", "Title second cited source", "Pages second cited source", "cited"),
+]
+
 # Fields to check for leading/trailing whitespace before clean_value strips them
 _WHITESPACE_CHECK_FIELDS = [
     "Variety (English)", "variety (French)", "Variety (Bantu)",
@@ -777,14 +787,17 @@ def main() -> None:
                                 fieldworks_cache[f_key] = fieldwork
 
                         # 5. Sources
-                        def _get_source(auth_col: str, title_col: str, pages_col: str):
-                            auth_raw  = clean_value(row.get(auth_col))
-                            title_val = clean_value(row.get(title_col))
-                            pages_val = clean_value(row.get(pages_col))
-                            if not auth_raw and not title_val:
-                                return None, None
-                            # Incomplete source: one field filled, the other empty
-                            if bool(auth_raw) != bool(title_val):
+                        source_objects = []
+                        for auth_col, title_col, page_col, role in _SOURCE_GROUPS:
+                            auth_raw = clean_value(row.get(auth_col))
+                            if not auth_raw:
+                                continue
+
+                            title_val = clean_value(row.get(title_col)) if title_col else None
+                            page_val  = clean_value(row.get(page_col)) if page_col else None
+
+                            # Basic validation: if title column exists, both should be present
+                            if title_col and bool(auth_raw) != bool(title_val):
                                 import_report.add("source_incomplete", {
                                     "Row": excel_row,
                                     "Author/Year Column": auth_col,
@@ -793,6 +806,7 @@ def main() -> None:
                                     "Title Value": title_val or "(leeg)",
                                     "Note": "Bron heeft wel auteur/jaar maar geen titel, of omgekeerd.",
                                 })
+
                             auth_val, unc = parse_uncertainty(auth_raw)
                             if unc:
                                 import_report.add("uncertainty", {
@@ -801,6 +815,7 @@ def main() -> None:
                                     "Cleaned Value": auth_val,
                                     "Note": "Onzeker jaar; controleer op alternatief indien aanwezig.",
                                 })
+
                             s_key = (auth_val, title_val)
                             _check_case_variant(
                                 sources_norm, s_key, "Source", excel_row, import_report,
@@ -811,12 +826,15 @@ def main() -> None:
                                 lambda k=s_key, u=unc: Source(
                                     author_year=k[0], year_uncertain=u, title=k[1]),
                                 session)
-                            return source, pages_val
 
-                        src1,  pages1  = _get_source("Source (Author YEAR)",       "Title",                     "Page number")
-                        src2,  pages2  = _get_source("Second source (Author Year)", "Title second source",       "Page number second source")
-                        cite1, cpages1 = _get_source("Cited source",               "Title cited source",        "Pages cited source")
-                        cite2, cpages2 = _get_source("Second cited source",        "Title second cited source", "Pages second cited source")
+                            # Determine order: increment for the same role within this record
+                            order = 1 + sum(1 for s in source_objects if s["role"] == role)
+                            source_objects.append({
+                                "source_id": source.id,
+                                "role": role,
+                                "order": order,
+                                "pages": page_val
+                            })
 
                         # 6. Reflex — parse IDs with explicit invalid-format reporting
                         original_id, oid_ok = parse_int(row.get("ID 20250825"))
@@ -894,19 +912,14 @@ def main() -> None:
                         session.flush()
 
                         # 7. Source links
-                        for src, role, pages in [
-                            (src1,  "primary",      pages1),
-                            (src2,  "second",       pages2),
-                            (cite1, "cited",        cpages1),
-                            (cite2, "second_cited", cpages2),
-                        ]:
-                            if src:
-                                session.add(SourceEntries(
-                                    entry_id=reflex.id,
-                                    source_id=src.id,
-                                    role=role,
-                                    pages=pages,
-                                ))
+                        for s_data in source_objects:
+                            session.add(SourceEntries(
+                                entry_id=reflex.id,
+                                source_id=s_data["source_id"],
+                                role=s_data["role"],
+                                order=s_data["order"],
+                                pages=s_data["pages"],
+                            ))
 
                     except Exception as e:
                         logger.error(f"Error on row {excel_row}: {e}")
