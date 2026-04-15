@@ -176,6 +176,28 @@ class FieldworkDataCollector(SQLModel, table=True):
     data_collector: DataCollector = Relationship(back_populates="fieldwork_links")
 
 
+class Consultant(Table, table=True):
+    """A person who provided linguistic data (consultant/informant)."""
+    __table_args__ = _STRICT
+
+    name: Optional[str] = _text(default=None)
+
+    fieldwork_links: List["FieldworkConsultant"] = Relationship(
+        back_populates="consultant"
+    )
+
+
+class FieldworkConsultant(SQLModel, table=True):
+    """Link table: Fieldwork <-> Consultant. Composite PK, no auto-id."""
+    __table_args__ = _STRICT
+
+    fieldwork_id: int = Field(foreign_key="fieldwork.id", primary_key=True)
+    consultant_id: int = Field(foreign_key="consultant.id", primary_key=True)
+
+    fieldwork: "Fieldwork" = Relationship(back_populates="consultant_links")
+    consultant: Consultant = Relationship(back_populates="fieldwork_links")
+
+
 class Fieldwork(Table, table=True):
     """A fieldwork session. Project, year and data collectors are normalised
     into their own tables."""
@@ -190,6 +212,9 @@ class Fieldwork(Table, table=True):
     project: Optional[Project] = Relationship(back_populates="fieldworks")
     collection_year: Optional[CollectionYear] = Relationship(back_populates="fieldworks")
     data_collector_links: List[FieldworkDataCollector] = Relationship(
+        back_populates="fieldwork"
+    )
+    consultant_links: List[FieldworkConsultant] = Relationship(
         back_populates="fieldwork"
     )
 
