@@ -36,25 +36,25 @@ Models are organized by their role in the BantuLex linguistics management workfl
 
 ### 3.1 Primary Entities (Linguistic Data)
 
-These models contain the core research data and are the primary focus of the Kottster Admin UI.
+These models contain the core research data and are the primary focus of the Kottster Admin UI. All primary and procedural models inherit `id`, `created_at`, and `updated_at` from a common base class.
 
 #### Reflex (Entry)
 A single linguistic record for a specific term in a specific variety.
-*   **Fields**: `term`, `term_morph_analysis`, `translation`, `meaning`, `ipa`, `scientific_name`, `semantic_field`, `part_of_speech`, `notes`, `beginning_id` (unique business ID).
+*   **Fields**: `original_id`, `beginning_id` (unique business ID), `term`, `term_morph_analysis`, `translation`, `meaning`, `scientific_name`, `semantic_field`, `part_of_speech`, `blr_index`, `ipa`, `notes`.
 *   **Relationships**: Linked to `Variety`, `Location`, `Fieldwork`, and `Reconstruction` (BLR).
 
 #### Reconstruction (BLR Entry)
 A Bantu Lexical Reconstruction (BLR) from the benchmark dataset.
-*   **Fields**: `blr_index`, `word_tone`, `word`, `english`, `french`, `noun_class`, `distribution`, `note`.
-*   **Relationships**: Links to phonological structures (Vowel/Consonant/Tone) and `BLRContributor`.
+*   **Fields**: `blr_index`, `word_tone`, `word`, `english`, `french`, `noun_class`, `distribution`, `note`, `proto_kk`, `date_of_entry`.
+*   **Relationships**: Links to phonological structures (Vowel/Consonant/Tone), `BLRContributor`, and `BLRReliability`.
 
 #### Variety
 A specific Bantu language variety/dialect.
-*   **Fields**: `name_english`, `name_french`, `name_bantu`, `name_bastin`, `branch`, `bastin_index`, `guthrie_index`.
+*   **Fields**: `name_english`, `name_french`, `name_bantu`, `name_bastin`, `branch`, `bastin_index`, `guthrie_index`, `guthrie_plus`, `substrate_suspect` (INTEGER 0/1).
 
 #### Source
 Bibliographic references.
-*   **Fields**: `author_year`, `title`, `year_uncertain`.
+*   **Fields**: `author_year`, `year_uncertain` (INTEGER 0/1), `title`.
 *   **Relationships**: Linked to `Reflex` entries via `SourceEntries`.
 
 ### 3.2 Geographic & Procedural Models
@@ -67,6 +67,11 @@ Normalized geographic hierarchy for linguistic fieldwork.
 Metadata about a data collection event.
 *   **Fields**: `archive`, `data_entered_by`.
 *   **Relationships**: Links to `Project`, `CollectionYear`, `DataCollector` (multiple), and `Consultant` (multiple).
+
+#### CollectionYear
+A year of data collection with its certainty status.
+*   **Fields**: `value`, `status` (known/uncertain/unknown).
+*   **Relationships**: Linked to `Fieldwork`.
 
 ### 3.3 Supporting Taxonomies
 
