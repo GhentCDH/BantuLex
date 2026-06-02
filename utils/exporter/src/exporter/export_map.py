@@ -14,7 +14,7 @@ Gebruik:
 import json
 import logging
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any
 
 from rich.logging import RichHandler
 from sqlmodel import Session, select
@@ -33,13 +33,14 @@ logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler]
 logger = logging.getLogger(__name__)
 
 
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _build_feature(variety: Variety, lat: float, lon: float, count: int) -> Dict[str, Any]:
+
+def _build_feature(
+    variety: Variety, lat: float, lon: float, count: int
+) -> dict[str, Any]:
     return {
         "type": "Feature",
         "geometry": {
@@ -47,12 +48,12 @@ def _build_feature(variety: Variety, lat: float, lon: float, count: int) -> Dict
             "coordinates": [lon, lat],  # GeoJSON: [longitude, latitude]
         },
         "properties": {
-            "id":            variety.id,
-            "name":          variety.name_english,
-            "branch":        variety.branch,
+            "id": variety.id,
+            "name": variety.name_english,
+            "branch": variety.branch,
             "guthrie_index": variety.guthrie_index,
-            "guthrie_plus":  variety.guthrie_plus,
-            "entry_count":   count,
+            "guthrie_plus": variety.guthrie_plus,
+            "entry_count": count,
         },
     }
 
@@ -60,6 +61,7 @@ def _build_feature(variety: Variety, lat: float, lon: float, count: int) -> Dict
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     logger.info("BantuLex → GeoJSON map export gestart…")
@@ -77,7 +79,7 @@ def main() -> None:
 
         varieties = session.exec(select(Variety)).all()
 
-        features: List[Dict[str, Any]] = []
+        features: list[dict[str, Any]] = []
         skipped = 0
         for v in varieties:
             loc_id = location_by_variety.get(v.id)
@@ -96,7 +98,9 @@ def main() -> None:
         "features": features,
     }
 
-    EXPORT_GEOJSON.write_text(json.dumps(geojson, ensure_ascii=False, indent=2), encoding="utf-8")
+    EXPORT_GEOJSON.write_text(
+        json.dumps(geojson, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     logger.info(f"Opgeslagen: {EXPORT_GEOJSON}")
     logger.info(f"  Features:  {len(features)} taalvariëteiten met coördinaten")
     logger.info(f"  Overgeslagen: {skipped} variëteiten zonder locatie")

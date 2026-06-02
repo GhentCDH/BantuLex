@@ -25,4 +25,4 @@ export-blr = "exporter.export_blr:main"
 export-evolex-google = "exporter.export_evolex:main_google_overwrite"
 
 [tool.uv.sources]
-utilities = { path = "../utilities", editable = true }
+utilities = { workspace = true }

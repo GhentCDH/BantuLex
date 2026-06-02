@@ -61,11 +61,12 @@ import logging
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from openpyxl import Workbook
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
+
 from utilities.config import EXPORT_EVOLEX_EXCEL
 from utilities.db import engine
 from utilities.model import Reconstruction, Reflex, Source, SourceEntries, Variety
@@ -153,7 +154,7 @@ COGSETS_COL_WIDTHS = [
 # ---------------------------------------------------------------------------
 
 
-def _lg_code(variety: Optional[Variety]) -> Optional[str]:
+def _lg_code(variety: Variety | None) -> str | None:
     """
     Geeft de beste beschikbare korte taalcode.
     Voorkeur: guthrie_index > bastin_index > None.
@@ -187,10 +188,10 @@ def _style_header_row(ws, row_num: int) -> None:
 
 def build_cogsets_sheet(
     ws,
-    entries: List[Reflex],
-    source_by_entry: Dict[int, Optional[Source]],
-    pages_by_entry: Dict[int, Optional[str]],
-    reconstructions_map: Dict[int, Reconstruction],
+    entries: list[Reflex],
+    source_by_entry: dict[int, Source | None],
+    pages_by_entry: dict[int, str | None],
+    reconstructions_map: dict[int, Reconstruction],
 ) -> None:
     """
     CogSets: één headerrij + cogset-gegroepeerde datarijen (conform EvoLex template).
@@ -206,14 +207,14 @@ def build_cogsets_sheet(
     ws.append(COGSETS_HEADERS)
     _style_header_row(ws, 1)
 
-    grouped: Dict[Optional[int], List[Reflex]] = defaultdict(list)
+    grouped: dict[int | None, list[Reflex]] = defaultdict(list)
     for entry in entries:
         grouped[entry.blr_entry_id].append(entry)
 
     def _write_cogset(
         cog_id: str,
-        recon: Optional[Reconstruction],
-        group: List[Reflex],
+        recon: Reconstruction | None,
+        group: list[Reflex],
     ) -> None:
         first_row = True
         for entry in group:
@@ -222,7 +223,7 @@ def build_cogsets_sheet(
 
             # Kolommen 0-7: alleen in de eerste rij van de cogset
             if first_row:
-                proto_cols: List[Any] = [
+                proto_cols: list[Any] = [
                     cog_id,  # CogId
                     None,  # pr-language (niet in model)
                     recon.word if recon else None,  # root
@@ -237,7 +238,7 @@ def build_cogsets_sheet(
                 proto_cols = [None] * 8  # Col 0-7 leeg voor volgende rijen
 
             # Kolommen 8-19: per reflex
-            reflex_cols: List[Any] = [
+            reflex_cols: list[Any] = [
                 _lg_code(variety),  # lg_code
                 variety.name_english if variety else None,  # lg_name
                 entry.ipa,  # form_IPA
@@ -285,9 +286,9 @@ def build_cogsets_sheet(
 
 def build_lg_metadata_sheet(
     ws,
-    varieties: List[Variety],
-    coord_by_location: Dict[int, Tuple[Optional[float], Optional[float]]],
-    location_by_variety: Dict[int, Optional[int]],
+    varieties: list[Variety],
+    coord_by_location: dict[int, tuple[float | None, float | None]],
+    location_by_variety: dict[int, int | None],
 ) -> None:
     """
     Lg-metadata: één headerrij + een rij per unieke variety.
@@ -367,7 +368,7 @@ def push_to_google_sheets(wb: Workbook, mode: str) -> None:
 
     for sheet_name in [sheet.title for sheet in wb.worksheets]:
         ws_xls = wb[sheet_name]
-        all_rows: List[List[Any]] = [
+        all_rows: list[list[Any]] = [
             [v if v is not None else "" for v in row]
             for row in ws_xls.iter_rows(values_only=True)
         ]
@@ -422,7 +423,7 @@ def main(mode: str = "local") -> None:
     EXPORT_EVOLEX_EXCEL.parent.mkdir(parents=True, exist_ok=True)
 
     with Session(engine, expire_on_commit=False) as session:
-        entries: List[Reflex] = list(
+        entries: list[Reflex] = list(
             session.exec(
                 select(Reflex)
                 .where(Reflex.blr_entry_id.is_not(None))
@@ -431,9 +432,9 @@ def main(mode: str = "local") -> None:
         )
         logger.info(f"Reflexes geladen (enkel met BLR-link): {len(entries)}")
 
-        source_by_entry: Dict[int, Optional[str]] = {}
-        pages_by_entry: Dict[int, Optional[str]] = {}
-        sources_map: Dict[int, Source] = {
+        source_by_entry: dict[int, str | None] = {}
+        pages_by_entry: dict[int, str | None] = {}
+        sources_map: dict[int, Source] = {
             s.id: s for s in session.exec(select(Source)).all()
         }
         # Collect all primary sources per entry, sorted by order
@@ -452,14 +453,14 @@ def main(mode: str = "local") -> None:
             source_by_entry[entry_id] = "; ".join(filter(None, [it[0] for it in items]))
             pages_by_entry[entry_id] = "; ".join(filter(None, [it[1] for it in items]))
 
-        reconstructions_map: Dict[int, Reconstruction] = {
+        reconstructions_map: dict[int, Reconstruction] = {
             r.id: r for r in session.exec(select(Reconstruction)).all()
         }
         logger.info(f"Reconstructions geladen: {len(reconstructions_map)}")
 
         coord_by_location = load_default_coords(session)
         location_by_variety = load_location_by_variety(entries)
-        varieties: List[Variety] = list(session.exec(select(Variety)).all())
+        varieties: list[Variety] = list(session.exec(select(Variety)).all())
 
         wb = Workbook()
         build_cogsets_sheet(
@@ -513,4 +514,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(mode=args.mode)
-

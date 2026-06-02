@@ -1,13 +1,14 @@
-from typing import Dict, List, Optional, Tuple
 
 from sqlmodel import Session, select
 
 from .model import Coordinate, Reflex
 
 
-def load_default_coords(session: Session) -> Dict[int, Tuple[Optional[float], Optional[float]]]:
+def load_default_coords(
+    session: Session,
+) -> dict[int, tuple[float | None, float | None]]:
     """Load coordinates with description='default', keyed by location_id."""
-    result: Dict[int, Tuple[Optional[float], Optional[float]]] = {}
+    result: dict[int, tuple[float | None, float | None]] = {}
     for coord in session.exec(
         select(Coordinate).where(Coordinate.description == "default")
     ).all():
@@ -16,9 +17,9 @@ def load_default_coords(session: Session) -> Dict[int, Tuple[Optional[float], Op
     return result
 
 
-def load_location_by_variety(entries: List[Reflex]) -> Dict[int, Optional[int]]:
+def load_location_by_variety(entries: list[Reflex]) -> dict[int, int | None]:
     """Build a variety_id → location_id mapping from a list of Reflex objects."""
-    result: Dict[int, Optional[int]] = {}
+    result: dict[int, int | None] = {}
     for e in entries:
         if e.variety_id and e.variety_id not in result:
             result[e.variety_id] = e.location_id

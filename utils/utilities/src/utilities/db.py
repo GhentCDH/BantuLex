@@ -1,8 +1,10 @@
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import sqlmodel
 from sqlalchemy import event
 from sqlalchemy.pool import StaticPool
+
 from .config import DB_STRING
 
 engine = sqlmodel.create_engine(
@@ -10,6 +12,7 @@ engine = sqlmodel.create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+
 
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -41,7 +44,8 @@ def create_updated_at_trigger(engine):
     with engine.begin() as conn:
         for table_name, table in sqlmodel.SQLModel.metadata.tables.items():
             if "updated_at" in table.columns:
-                conn.execute(sqlmodel.text(f"""
+                conn.execute(
+                    sqlmodel.text(f"""
                     CREATE TRIGGER IF NOT EXISTS update_{table_name}_modtime
                     AFTER UPDATE ON {table_name}
                     FOR EACH ROW
@@ -50,4 +54,5 @@ def create_updated_at_trigger(engine):
                         SET updated_at = CURRENT_TIMESTAMP
                         WHERE id = NEW.id;
                     END
-                """))
+                """)
+                )

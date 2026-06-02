@@ -22,4 +22,4 @@ build-backend = "uv_build"
 document = "documenter.generate_diagram:main"
 
 [tool.uv.sources]
-utilities = { path = "../utilities", editable = true }
+utilities = { workspace = true }

@@ -16,7 +16,7 @@ print(f"DATA_ROOT: {os.getenv('DATA_ROOT')}")
 required_env_vars = ["DB_PATH", "DATA_ROOT"]
 for var in required_env_vars:
     if var not in os.environ:
-        raise EnvironmentError(f"Required environment variable '{var}' is not set.")
+        raise OSError(f"Required environment variable '{var}' is not set.")
 
 DB_PATH = Path(os.getenv("DB_PATH"))
 DB_STRING = f"sqlite:///{DB_PATH}"

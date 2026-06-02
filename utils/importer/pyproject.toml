@@ -18,4 +18,4 @@ build-backend = "uv_build"
 importer = "importer.cli:main"
 
 [tool.uv.sources]
-utilities = { path = "../utilities", editable = true }
+utilities = { workspace = true }

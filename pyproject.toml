@@ -5,6 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "utilities",
+    "importer",
+    "exporter",
+    "documenter",
     "fastapi>=0.115.0",
     "uvicorn>=0.30.0",
     "sqlmodel>=0.0.21",
@@ -12,5 +16,60 @@ dependencies = [
     "dotenv>=0.9.9",
 ]
 
+[tool.uv.sources]
+utilities = { workspace = true }
+importer = { workspace = true }
+exporter = { workspace = true }
+documenter = { workspace = true }
+
 [tool.uv.workspace]
-members = ["import", "export"]
+members = [
+  "utils/utilities",
+  "utils/importer",
+  "utils/exporter",
+  "utils/documenter",
+]
+
+[tool.ty.environment]
+root = [
+  "utils/utilities/src",
+  "utils/importer/src",
+  "utils/exporter/src",
+  "utils/documenter/src",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # Pyflakes
+  "I",   # isort
+  "N",   # pep8-naming
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "RUF", # ruff-specific rules
+]
+ignore = [
+  "E501", # line too long (ruff format handles this)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  "bantulex",
+  "utilities",
+  "importer",
+  "exporter",
+  "documenter",
+]
+
+[dependency-groups]
+dev = ["ruff>=0.15.1"]

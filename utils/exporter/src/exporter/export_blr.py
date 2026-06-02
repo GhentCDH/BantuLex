@@ -24,11 +24,12 @@ Gebruik:
 import json
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from rich.logging import RichHandler
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
+
 from utilities.config import EXPORT_BLR_JSON, EXPORT_GEOJSON
 from utilities.db import engine
 from utilities.model import (
@@ -55,7 +56,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _sorted_unique(values) -> List[str]:
+def _sorted_unique(values) -> list[str]:
     return sorted(v for v in set(values) if v is not None)
 
 
@@ -68,10 +69,10 @@ def _build_feature(
     variety: Variety,
     lat: float,
     lon: float,
-    entries: List[Reflex],
-    blr_by_id: Dict[int, Reconstruction],
-    location_name: Optional[str],
-) -> Dict[str, Any]:
+    entries: list[Reflex],
+    blr_by_id: dict[int, Reconstruction],
+    location_name: str | None,
+) -> dict[str, Any]:
     entry_list = []
     for e in entries:
         blr = blr_by_id.get(e.blr_entry_id) if e.blr_entry_id else None
@@ -133,15 +134,15 @@ def _build_feature(
 # ---------------------------------------------------------------------------
 
 
-def _build_catalog(blr_entries: List[Reconstruction]) -> Dict[str, Any]:
-    c1s: Set[str] = set()
-    c2s: Set[str] = set()
-    c3s: Set[str] = set()
-    c4s: Set[str] = set()
-    v11s: Set[str] = set()
-    v12s: Set[str] = set()
-    v21s: Set[str] = set()
-    v22s: Set[str] = set()
+def _build_catalog(blr_entries: list[Reconstruction]) -> dict[str, Any]:
+    c1s: set[str] = set()
+    c2s: set[str] = set()
+    c3s: set[str] = set()
+    c4s: set[str] = set()
+    v11s: set[str] = set()
+    v12s: set[str] = set()
+    v21s: set[str] = set()
+    v22s: set[str] = set()
 
     entries_out = []
     for b in blr_entries:
@@ -247,7 +248,7 @@ def main() -> None:
         places = {p.id: p for p in session.exec(select(Place)).all()}
         regions = {r.id: r for r in session.exec(select(Region)).all()}
 
-        def location_name(loc_id: Optional[int]) -> Optional[str]:
+        def location_name(loc_id: int | None) -> str | None:
             if loc_id is None:
                 return None
             loc = locations.get(loc_id)
@@ -260,7 +261,7 @@ def main() -> None:
             return r.name if r else None
 
     # Groepeer entries per variëteit, bewaar ook de locatie-id
-    entries_by_variety: Dict[int, List[Reflex]] = defaultdict(list)
+    entries_by_variety: dict[int, list[Reflex]] = defaultdict(list)
     for e in entries:
         if e.variety_id:
             entries_by_variety[e.variety_id].append(e)
