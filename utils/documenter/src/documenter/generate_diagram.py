@@ -3,7 +3,28 @@ from sqlalchemy_data_model_visualizer import (
 )
 
 from utilities.config import DATA_ROOT
-from utilities.model import *
+from utilities.model import (
+    BLRConsonantStructure,
+    BLRContributor,
+    BLRReliability,
+    BLRToneStructure,
+    BLRVowelStructure,
+    CollectionYear,
+    Coordinate,
+    Country,
+    DataCollector,
+    Fieldwork,
+    FieldworkDataCollector,
+    Location,
+    Place,
+    Project,
+    Reconstruction,
+    Reflex,
+    Region,
+    Source,
+    SourceEntries,
+    Variety,
+)
 
 
 def main() -> None:

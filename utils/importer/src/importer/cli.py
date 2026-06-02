@@ -1,7 +1,7 @@
 import logging
 import re
 import time
-from typing import Any
+from typing import Any, ClassVar
 
 from openpyxl import load_workbook
 from rich.logging import RichHandler
@@ -140,7 +140,7 @@ def _check_case_variant(
 
 
 class ImportReport:
-    CATEGORIES = [
+    CATEGORIES: ClassVar[list[str]] = [
         "uncertainty",
         "fallback_used",
         "coordinate_conflict",
@@ -329,7 +329,7 @@ def import_blr(import_report: ImportReport | None = None) -> None:
     ]
 
     def row_to_dict(rc) -> dict:
-        return {h: c.value for h, c in zip(headers, rc) if h is not None}
+        return {h: c.value for h, c in zip(headers, rc, strict=False) if h is not None}
 
     blr_index_map: dict[int, int] = {}
 
@@ -572,7 +572,7 @@ def main() -> None:
             logger.warning(f"Missing expected column: '{col}'")
 
     def row_to_dict(rc) -> dict:
-        return {h: c.value for h, c in zip(headers, rc) if h is not None}
+        return {h: c.value for h, c in zip(headers, rc, strict=False) if h is not None}
 
     # -----------------------------------------------------------------------
     # In-memory caches (key -> ORM object)
@@ -841,38 +841,46 @@ def main() -> None:
                                 },
                             )
 
-                        def _add_coord(lat: float, lon: float, desc: str) -> None:
-                            if location is None:
+                        def _add_coord(
+                            lat: float,
+                            lon: float,
+                            desc: str,
+                            *,
+                            _loc=location,
+                            _xrow=excel_row,
+                            _row=row,
+                        ) -> None:
+                            if _loc is None:
                                 return
-                            tk = (location.id, desc)
+                            tk = (_loc.id, desc)
                             if tk not in coord_seen:
                                 session.add(
                                     Coordinate(
-                                        location_id=location.id,
+                                        location_id=_loc.id,
                                         latitude=lat,
                                         longitude=lon,
                                         description=desc,
                                     )
                                 )
-                                coord_seen[tk] = (lat, lon, excel_row)
+                                coord_seen[tk] = (lat, lon, _xrow)
                             else:
                                 ex_lat, ex_lon, ex_row = coord_seen[tk]
                                 if lat != ex_lat or lon != ex_lon:
                                     import_report.add(
                                         "coordinate_conflict",
                                         {
-                                            "Row": excel_row,
+                                            "Row": _xrow,
                                             "Type": desc,
                                             "Existing Lat": ex_lat,
                                             "Existing Lon": ex_lon,
                                             "New Lat": lat,
                                             "New Lon": lon,
-                                            "Term": clean_value(row.get("Term")),
+                                            "Term": clean_value(_row.get("Term")),
                                             "Variety (English)": clean_value(
-                                                row.get("Variety (English)")
+                                                _row.get("Variety (English)")
                                             ),
-                                            "Country": clean_value(row.get("Country")),
-                                            "Place": clean_value(row.get("Place")),
+                                            "Country": clean_value(_row.get("Country")),
+                                            "Place": clean_value(_row.get("Place")),
                                             "Conflicting Row": ex_row,
                                         },
                                     )
@@ -934,15 +942,13 @@ def main() -> None:
 
                         # 4c. Data collectors (dynamic detection)
                         dc_names = sorted(
-                            list(
-                                filter(
-                                    None,
-                                    [
-                                        clean_value(row.get(h))
-                                        for h in headers
-                                        if h and _COLLECTOR_PATTERN.match(h)
-                                    ],
-                                )
+                            filter(
+                                None,
+                                [
+                                    clean_value(row.get(h))
+                                    for h in headers
+                                    if h and _COLLECTOR_PATTERN.match(h)
+                                ],
                             )
                         )
                         dc_objects = []
@@ -965,15 +971,13 @@ def main() -> None:
 
                         # 4d. Consultants (dynamic detection)
                         con_names = sorted(
-                            list(
-                                filter(
-                                    None,
-                                    [
-                                        clean_value(row.get(h))
-                                        for h in headers
-                                        if h and _CONSULTANT_PATTERN.match(h)
-                                    ],
-                                )
+                            filter(
+                                None,
+                                [
+                                    clean_value(row.get(h))
+                                    for h in headers
+                                    if h and _CONSULTANT_PATTERN.match(h)
+                                ],
                             )
                         )
                         con_objects = []

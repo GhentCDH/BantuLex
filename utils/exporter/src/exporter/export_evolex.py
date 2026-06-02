@@ -1,5 +1,5 @@
 """
-export_evolex.py – BantuLex DB -> EvoLex Excel export  (GECORRIGEERDE VERSIE)
+export_evolex.py - BantuLex DB -> EvoLex Excel export  (GECORRIGEERDE VERSIE)
 
 Output: evolex_export.xlsx
   Sheet "CogSets"    : cogset-gegroepeerde data conform EvoLex template (20 kolommen)
@@ -64,6 +64,7 @@ from pathlib import Path
 from typing import Any
 
 from openpyxl import Workbook
+from rich.logging import RichHandler
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
 
@@ -73,7 +74,7 @@ from utilities.model import Reconstruction, Reflex, Source, SourceEntries, Varie
 from utilities.utils import load_default_coords, load_location_by_variety
 
 # ---------------------------------------------------------------------------
-# ⚙️  CONFIGURATIE  –  pas hier aan
+# ⚙️  CONFIGURATIE  -  pas hier aan
 # ---------------------------------------------------------------------------
 
 GOOGLE_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1O1kyVfKhCDWFA1c-XJocI3jiBqnaAjwf7QAk_1K2644/edit?usp=sharing"
@@ -90,8 +91,6 @@ GOOGLE_SERVICE_ACCOUNT_FILE = Path(__file__).parent / "service_account.json"
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
-
-from rich.logging import RichHandler
 
 handler = RichHandler(rich_tracebacks=True, show_time=True, show_path=False)
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
@@ -323,7 +322,7 @@ def build_lg_metadata_sheet(
             ]
         )
 
-    for col, width in zip("ABCDE", [15, 32, 15, 12, 12]):
+    for col, width in zip("ABCDE", [15, 32, 15, 12, 12], strict=True):
         ws.column_dimensions[col].width = width
 
 

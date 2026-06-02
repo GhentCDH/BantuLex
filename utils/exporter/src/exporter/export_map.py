@@ -1,5 +1,5 @@
 """
-export_map.py  –  BantuLex DB → GeoJSON export voor kaartweergave
+export_map.py  -  BantuLex DB → GeoJSON export voor kaartweergave
 
 Elke taalvariëteit met gekende coördinaten wordt een GeoJSON Feature:
   geometry   : Point [lon, lat]

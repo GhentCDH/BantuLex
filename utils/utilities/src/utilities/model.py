@@ -227,9 +227,7 @@ class Fieldwork(Table, table=True):
     data_entered_by: str | None = _text(default=None)
 
     project: Project | None = Relationship(back_populates="fieldworks")
-    collection_year: CollectionYear | None = Relationship(
-        back_populates="fieldworks"
-    )
+    collection_year: CollectionYear | None = Relationship(back_populates="fieldworks")
     data_collector_links: list[FieldworkDataCollector] = Relationship(
         back_populates="fieldwork"
     )
@@ -363,9 +361,7 @@ class Reconstruction(Table, table=True):
     vowel_structure: BLRVowelStructure | None = Relationship(
         back_populates="blr_entries"
     )
-    tone_structure: BLRToneStructure | None = Relationship(
-        back_populates="blr_entries"
-    )
+    tone_structure: BLRToneStructure | None = Relationship(back_populates="blr_entries")
 
     linked_entries: list["Reflex"] = Relationship(back_populates="blr_entry")
 

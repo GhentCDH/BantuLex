@@ -1,21 +1,21 @@
 """
-export_blr.py  –  BantuLex DB → kaartdata voor de lokale Klankzoeker
+export_blr.py  -  BantuLex DB → kaartdata voor de lokale Klankzoeker
 
 Genereert twee bestanden in local-map/data/:
 
   bantulex_entries.geojson
-      GeoJSON FeatureCollection – één feature per taalvariëteit met gekende
+      GeoJSON FeatureCollection - één feature per taalvariëteit met gekende
       coördinaten. Elk feature bevat een 'entries'-array met per entry:
         term, translation, meaning, semantic_field,
         blr_index, blr_word, blr_word_tone,
-        blr_c1–c4, blr_v11, blr_v12, blr_v21, blr_v22
+        blr_c1-c4, blr_v11, blr_v12, blr_v21, blr_v22
 
   blr_catalog.json
       Fonologische index voor de filter-dropdowns in de kaartinterface:
         { consonants: {c1, c2, c3, c4},
           vowels:     {v11, v12, v21, v22},
           entries:    [{blr_index, word, word_tone, english, french,
-                        c1–c4, v11–v22, noun_class, distribution, note}] }
+                        c1-c4, v11-v22, noun_class, distribution, note}] }
 
 Gebruik:
   uv run export-blr
