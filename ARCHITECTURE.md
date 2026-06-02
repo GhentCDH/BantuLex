@@ -71,6 +71,8 @@ graph TB
     end
 
     build_tool -. "red dashed = target build pipeline" .-> data_mgmt
+end
+```
 
 ## Legend
 
@@ -80,25 +82,29 @@ graph TB
 - <span style="color:#f59e0b">■</span> **Persistent data**
 - <span style="color:#8b5cf6">■</span> **Secrets (Vault)**
 - <span style="color:#ef4444">---</span> **The one required build pipeline**
- 
+
 ## Data Model & Normalization
 
 The BantuLex data model follows specific normalization rules to handle complexities in linguistic data while maintaining a clean relationship structure.
 
 ### 1. Fieldwork & Consultants
+
 Previously stored as comma-separated strings, data collectors and consultants are now fully normalized:
+
 - **`DataCollector`**: Unique persons who collected the data.
 - **`Consultant`**: Unique persons who provided the linguistic information.
 - **Link Tables**: `FieldworkDataCollector` and `FieldworkConsultant` handle the Many-to-Many relationship, allowing multiple collectors and consultants to be linked to a single fieldwork session without duplication or string-parsing issues.
 
 ### 2. Source Tracking & Ordering
+
 To avoid the anti-pattern of slot-based roles (e.g., `role="second_source"`), the system uses a unified role system combined with explicit ordering:
+
 - **Roles**:
-    - `primary`: A direct source for the lexical entry.
-    - `cited`: A source cited within a primary source.
+  - `primary`: A direct source for the lexical entry.
+  - `cited`: A source cited within a primary source.
 - **Ordering**: The `order` column in `SourceEntries` preserves the sequence of sources from the spreadsheet (1, 2, 3...).
 - **Exporting**: Exporters (like EvoLex) aggregate all `primary` sources for an entry into a single field, ensuring no bibliographic data is lost.
 
 ### 3. BLR Phonological Structures
-Phonological positions (C1, V11, T11, etc.) for Bantu Lexical Reconstructions are kept as fixed columns. This is a deliberate choice to support the "Sound Search" (Klankzoeker) functionality in the Map UI, which requires predictable structural slots.
 
+Phonological positions (C1, V11, T11, etc.) for Bantu Lexical Reconstructions are kept as fixed columns. This is a deliberate choice to support the "Sound Search" (Klankzoeker) functionality in the Map UI, which requires predictable structural slots.
