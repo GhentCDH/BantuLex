@@ -29,12 +29,15 @@ from typing import Any, Dict, List, Optional, Set
 from rich.logging import RichHandler
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
-
-from utilities.config import EXPORT_BLR_JSON
+from utilities.config import EXPORT_BLR_JSON, EXPORT_GEOJSON
 from utilities.db import engine
 from utilities.model import (
-    BLRConsonantStructure, Reconstruction, BLRVowelStructure,
-    Reflex, Location, Place, Region, Variety,
+    Location,
+    Place,
+    Reconstruction,
+    Reflex,
+    Region,
+    Variety,
 )
 from utilities.utils import load_default_coords, load_location_by_variety
 
@@ -47,10 +50,10 @@ logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler]
 logger = logging.getLogger(__name__)
 
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _sorted_unique(values) -> List[str]:
     return sorted(v for v in set(values) if v is not None)
@@ -59,6 +62,7 @@ def _sorted_unique(values) -> List[str]:
 # ---------------------------------------------------------------------------
 # GeoJSON builder
 # ---------------------------------------------------------------------------
+
 
 def _build_feature(
     variety: Variety,
@@ -74,47 +78,52 @@ def _build_feature(
         vs = blr.vowel_structure if blr else None
         cs = blr.consonant_structure if blr else None
 
-        entry_list.append({
-            "term":           e.term,
-            "translation":    e.translation,
-            "meaning":        e.meaning,
-            "semantic_field": e.semantic_field,
-            "pos":            e.part_of_speech,
-            # BLR fields (None als geen koppeling)
-            "blr_index":      blr.blr_index  if blr else None,
-            "blr_word":       blr.word       if blr else None,
-            "blr_word_tone":  blr.word_tone  if blr else None,
-            "blr_english":    blr.english    if blr else None,
-            "blr_french":     blr.french     if blr else None,
-            "blr_c1":  cs.c1 if cs else None,
-            "blr_c2":  cs.c2 if cs else None,
-            "blr_c3":  cs.c3 if cs else None,
-            "blr_c4":  cs.c4 if cs else None,
-            "blr_cs":  cs.cs if cs else None,
-            "blr_v11": vs.v11 if vs else None,
-            "blr_v12": vs.v12 if vs else None,
-            "blr_v21": vs.v21 if vs else None,
-            "blr_v22": vs.v22 if vs else None,
-        })
+        entry_list.append(
+            {
+                "term": e.term,
+                "translation": e.translation,
+                "meaning": e.meaning,
+                "semantic_field": e.semantic_field,
+                "pos": e.part_of_speech,
+                # BLR fields (None als geen koppeling)
+                "blr_index": blr.blr_index if blr else None,
+                "blr_word": blr.word if blr else None,
+                "blr_word_tone": blr.word_tone if blr else None,
+                "blr_english": blr.english if blr else None,
+                "blr_french": blr.french if blr else None,
+                "blr_c1": cs.c1 if cs else None,
+                "blr_c2": cs.c2 if cs else None,
+                "blr_c3": cs.c3 if cs else None,
+                "blr_c4": cs.c4 if cs else None,
+                "blr_cs": cs.cs if cs else None,
+                "blr_v11": vs.v11 if vs else None,
+                "blr_v12": vs.v12 if vs else None,
+                "blr_v21": vs.v21 if vs else None,
+                "blr_v22": vs.v22 if vs else None,
+            }
+        )
 
     return {
         "type": "Feature",
         "geometry": {
             "type": "Point",
-            "coordinates": [lon, lat],   # GeoJSON: [lng, lat]
+            "coordinates": [lon, lat],  # GeoJSON: [lng, lat]
         },
         "properties": {
-            "variety_id":   variety.id,
-            "name":         variety.name_english or variety.name_bantu or variety.name_french or "?",
-            "name_bantu":   variety.name_bantu,
-            "name_french":  variety.name_french,
-            "branch":       variety.branch,
-            "guthrie":      variety.guthrie_index,
-            "bastin":       variety.bastin_index,
-            "substrate":    bool(variety.substrate_suspect),
-            "location":     location_name,
-            "entry_count":  len(entries),
-            "entries":      entry_list,  # Let json.dumps handle the serialization at the end
+            "variety_id": variety.id,
+            "name": variety.name_english
+            or variety.name_bantu
+            or variety.name_french
+            or "?",
+            "name_bantu": variety.name_bantu,
+            "name_french": variety.name_french,
+            "branch": variety.branch,
+            "guthrie": variety.guthrie_index,
+            "bastin": variety.bastin_index,
+            "substrate": bool(variety.substrate_suspect),
+            "location": location_name,
+            "entry_count": len(entries),
+            "entries": entry_list,  # Let json.dumps handle the serialization at the end
         },
     }
 
@@ -122,6 +131,7 @@ def _build_feature(
 # ---------------------------------------------------------------------------
 # BLR catalog builder
 # ---------------------------------------------------------------------------
+
 
 def _build_catalog(blr_entries: List[Reconstruction]) -> Dict[str, Any]:
     c1s: Set[str] = set()
@@ -138,51 +148,67 @@ def _build_catalog(blr_entries: List[Reconstruction]) -> Dict[str, Any]:
         cs = b.consonant_structure
         vs = b.vowel_structure
 
-        c1  = cs.c1  if cs else None
-        c2  = cs.c2  if cs else None
-        c3  = cs.c3  if cs else None
-        c4  = cs.c4  if cs else None
+        c1 = cs.c1 if cs else None
+        c2 = cs.c2 if cs else None
+        c3 = cs.c3 if cs else None
+        c4 = cs.c4 if cs else None
         v11 = vs.v11 if vs else None
         v12 = vs.v12 if vs else None
         v21 = vs.v21 if vs else None
         v22 = vs.v22 if vs else None
 
-        if c1:  c1s.add(c1)
-        if c2:  c2s.add(c2)
-        if c3:  c3s.add(c3)
-        if c4:  c4s.add(c4)
-        if v11: v11s.add(v11)
-        if v12: v12s.add(v12)
-        if v21: v21s.add(v21)
-        if v22: v22s.add(v22)
+        if c1:
+            c1s.add(c1)
+        if c2:
+            c2s.add(c2)
+        if c3:
+            c3s.add(c3)
+        if c4:
+            c4s.add(c4)
+        if v11:
+            v11s.add(v11)
+        if v12:
+            v12s.add(v12)
+        if v21:
+            v21s.add(v21)
+        if v22:
+            v22s.add(v22)
 
-        entries_out.append({
-            "blr_index":   b.blr_index,
-            "word":        b.word,
-            "word_tone":   b.word_tone,
-            "english":     b.english,
-            "french":      b.french,
-            "c1": c1, "c2": c2, "c3": c3, "c4": c4,
-            "cs": cs.cs if cs else None,
-            "v11": v11, "v12": v12, "v21": v21, "v22": v22,
-            "v3":  vs.v3  if vs else None,
-            "v4":  vs.v4  if vs else None,
-            "t11": b.tone_structure.t11 if b.tone_structure else None,
-            "t12": b.tone_structure.t12 if b.tone_structure else None,
-            "t21": b.tone_structure.t21 if b.tone_structure else None,
-            "t22": b.tone_structure.t22 if b.tone_structure else None,
-            "noun_class":  b.noun_class,
-            "distribution": b.distribution,
-            "note":        b.note,
-            "proto_kk":    b.proto_kk,
-        })
+        entries_out.append(
+            {
+                "blr_index": b.blr_index,
+                "word": b.word,
+                "word_tone": b.word_tone,
+                "english": b.english,
+                "french": b.french,
+                "c1": c1,
+                "c2": c2,
+                "c3": c3,
+                "c4": c4,
+                "cs": cs.cs if cs else None,
+                "v11": v11,
+                "v12": v12,
+                "v21": v21,
+                "v22": v22,
+                "v3": vs.v3 if vs else None,
+                "v4": vs.v4 if vs else None,
+                "t11": b.tone_structure.t11 if b.tone_structure else None,
+                "t12": b.tone_structure.t12 if b.tone_structure else None,
+                "t21": b.tone_structure.t21 if b.tone_structure else None,
+                "t22": b.tone_structure.t22 if b.tone_structure else None,
+                "noun_class": b.noun_class,
+                "distribution": b.distribution,
+                "note": b.note,
+                "proto_kk": b.proto_kk,
+            }
+        )
 
     return {
         "consonants": {
-            "c1":  _sorted_unique(c1s),
-            "c2":  _sorted_unique(c2s),
-            "c3":  _sorted_unique(c3s),
-            "c4":  _sorted_unique(c4s),
+            "c1": _sorted_unique(c1s),
+            "c2": _sorted_unique(c2s),
+            "c3": _sorted_unique(c3s),
+            "c4": _sorted_unique(c4s),
         },
         "vowels": {
             "v11": _sorted_unique(v11s),
@@ -198,27 +224,28 @@ def _build_catalog(blr_entries: List[Reconstruction]) -> Dict[str, Any]:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     logger.info("BantuLex → Klankzoeker kaartdata export gestart…")
 
     with Session(engine, expire_on_commit=False) as session:
-        entries     = session.exec(select(Reflex)).all()
-        varieties   = {v.id: v for v in session.exec(select(Variety)).all()}
+        entries = session.exec(select(Reflex)).all()
+        varieties = {v.id: v for v in session.exec(select(Variety)).all()}
         blr_entries = session.exec(
             select(Reconstruction).options(
                 joinedload(Reconstruction.vowel_structure),
                 joinedload(Reconstruction.consonant_structure),
-                joinedload(Reconstruction.tone_structure)
+                joinedload(Reconstruction.tone_structure),
             )
         ).all()
-        blr_by_id   = {b.id: b for b in blr_entries}
+        blr_by_id = {b.id: b for b in blr_entries}
 
         coord_by_location = load_default_coords(session)
 
         # Locatienaam (place of region) per location_id
         locations = {loc.id: loc for loc in session.exec(select(Location)).all()}
-        places    = {p.id: p for p in session.exec(select(Place)).all()}
-        regions   = {r.id: r for r in session.exec(select(Region)).all()}
+        places = {p.id: p for p in session.exec(select(Place)).all()}
+        regions = {r.id: r for r in session.exec(select(Region)).all()}
 
         def location_name(loc_id: Optional[int]) -> Optional[str]:
             if loc_id is None:
@@ -241,7 +268,7 @@ def main() -> None:
 
     # Bouw GeoJSON features
     features = []
-    skipped  = 0
+    skipped = 0
     for variety_id, variety in varieties.items():
         loc_id = location_by_variety.get(variety_id)
         if loc_id is None:
@@ -252,19 +279,23 @@ def main() -> None:
             skipped += 1
             continue
         lat, lon = coords
-        features.append(_build_feature(
-            variety, lat, lon,
-            entries_by_variety.get(variety_id, []),
-            blr_by_id,
-            location_name(loc_id),
-        ))
+        features.append(
+            _build_feature(
+                variety,
+                lat,
+                lon,
+                entries_by_variety.get(variety_id, []),
+                blr_by_id,
+                location_name(loc_id),
+            )
+        )
 
     geojson = {"type": "FeatureCollection", "features": features}
-    EXPORT_BLR_JSON.write_text(
+    EXPORT_GEOJSON.write_text(
         json.dumps(geojson, ensure_ascii=False),
         encoding="utf-8",
     )
-    logger.info(f"GeoJSON opgeslagen: {EXPORT_BLR_JSON}  ({len(features)} variëteiten)")
+    logger.info(f"GeoJSON opgeslagen: {EXPORT_GEOJSON}  ({len(features)} variëteiten)")
     logger.info(f"  Overgeslagen: {skipped} variëteiten zonder coördinaten")
 
     # Bouw BLR-catalogus
@@ -274,5 +305,7 @@ def main() -> None:
         encoding="utf-8",
     )
     linked = sum(1 for e in entries if e.blr_entry_id is not None)
-    logger.info(f"Catalogus opgeslagen: {EXPORT_BLR_JSON}  ({len(catalog['entries'])} BLR-entries)")
+    logger.info(
+        f"Catalogus opgeslagen: {EXPORT_BLR_JSON}  ({len(catalog['entries'])} BLR-entries)"
+    )
     logger.info(f"  BantuLex-entries met BLR-koppeling: {linked} / {len(entries)}")

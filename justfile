@@ -15,17 +15,14 @@ down:
 # ── Modelgeneratie ───────────────────────────────────────────────────────────
 
 generate-diagram:
-    docker compose run  -w /app/documenter --rm utils  uv run document
+    docker compose run -w /app/documenter --rm utils uv run document
 
 # ── Import ───────────────────────────────────────────────────────────────────
 
 import:
-    docker compose run  -w /app/importer --rm utils  uv run importer
+    docker compose run -w /app/importer --rm utils uv run importer
 
 # ── Export (één script per "ding") ───────────────────────────────────────────
-
-# All exports in one command
-export: export-evolex export-map export-blr
 
 # Volledig EvoLex Excel-export
 export-evolex:
@@ -45,6 +42,7 @@ export-map:
 export-blr:
     docker compose run  -w /app/exporter --rm utils  uv run export-blr
     cp data/blr_catalog.json local-map/data/
+    cp data/bantulex_entries.geojson local-map/data/
 
 # Alle exports in één keer
 export-all: export-evolex export-map export-blr
