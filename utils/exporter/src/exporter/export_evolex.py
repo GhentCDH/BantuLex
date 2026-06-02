@@ -60,13 +60,12 @@ import argparse
 import logging
 import time
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from pathlib import Path
 from openpyxl import Workbook
-from sqlmodel import Session, select
 from sqlalchemy.orm import joinedload
-
+from sqlmodel import Session, select
 from utilities.config import EXPORT_EVOLEX_EXCEL
 from utilities.db import engine
 from utilities.model import Reconstruction, Reflex, Source, SourceEntries, Variety
@@ -76,9 +75,7 @@ from utilities.utils import load_default_coords, load_location_by_variety
 # ⚙️  CONFIGURATIE  –  pas hier aan
 # ---------------------------------------------------------------------------
 
-GOOGLE_SPREADSHEET_URL = (
-    "https://docs.google.com/spreadsheets/d/1O1kyVfKhCDWFA1c-XJocI3jiBqnaAjwf7QAk_1K2644/edit?usp=sharing"
-)
+GOOGLE_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1O1kyVfKhCDWFA1c-XJocI3jiBqnaAjwf7QAk_1K2644/edit?usp=sharing"
 
 GOOGLE_SERVICE_ACCOUNT_FILE = Path(__file__).parent / "service_account.json"
 #
@@ -94,6 +91,7 @@ GOOGLE_SERVICE_ACCOUNT_FILE = Path(__file__).parent / "service_account.json"
 # ---------------------------------------------------------------------------
 
 from rich.logging import RichHandler
+
 handler = RichHandler(rich_tracebacks=True, show_time=True, show_path=False)
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
 logger = logging.getLogger(__name__)
@@ -103,23 +101,57 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 COGSETS_HEADERS = [
-    "CogId", "pr-language", "root", "etymon", "pr-gloss",
-    "picture-URL", "pic-caption", "cogset-note",
-    "lg_code", "lg_name", "form_IPA", "form-orthog",
-    "pos", "definition-evolex", "glosses-evosem", "orig_gloss",
-    "source", "page", "public_note_reflex", "comment",
+    "CogId",
+    "pr-language",
+    "root",
+    "etymon",
+    "pr-gloss",
+    "picture-URL",
+    "pic-caption",
+    "cogset-note",
+    "lg_code",
+    "lg_name",
+    "form_IPA",
+    "form-orthog",
+    "pos",
+    "definition-evolex",
+    "glosses-evosem",
+    "orig_gloss",
+    "source",
+    "page",
+    "public_note_reflex",
+    "comment",
 ]
 
 LG_METADATA_HEADERS = ["Our_code", "Lg-name", "glottocode", "latitude", "longitude"]
 
 COGSETS_COL_WIDTHS = [
-    12, 12, 12, 12, 28, 30, 25, 30,
-    12, 28, 15, 22, 8, 38, 22, 28, 15, 8, 32, 20,
+    12,
+    12,
+    12,
+    12,
+    28,
+    30,
+    25,
+    30,
+    12,
+    28,
+    15,
+    22,
+    8,
+    38,
+    22,
+    28,
+    15,
+    8,
+    32,
+    20,
 ]
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _lg_code(variety: Optional[Variety]) -> Optional[str]:
     """
@@ -136,9 +168,12 @@ def _lg_code(variety: Optional[Variety]) -> Optional[str]:
 
 
 def _style_header_row(ws, row_num: int) -> None:
-    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.styles import Alignment, Font, PatternFill
+
     header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="4F81BD", end_color="4F81BD", fill_type="solid"
+    )
     for cell in ws[row_num]:
         cell.font = header_font
         cell.fill = header_fill
@@ -148,6 +183,7 @@ def _style_header_row(ws, row_num: int) -> None:
 # ---------------------------------------------------------------------------
 # Sheet: CogSets
 # ---------------------------------------------------------------------------
+
 
 def build_cogsets_sheet(
     ws,
@@ -187,14 +223,14 @@ def build_cogsets_sheet(
             # Kolommen 0-7: alleen in de eerste rij van de cogset
             if first_row:
                 proto_cols: List[Any] = [
-                    cog_id,                               # CogId
-                    None,                                 # pr-language (niet in model)
-                    recon.word if recon else None,        # root
-                    recon.word_tone if recon else None,   # etymon
-                    recon.english if recon else None,     # pr-gloss
-                    None,                                 # picture-URL
-                    None,                                 # pic-caption
-                    recon.note if recon else None,        # cogset-note
+                    cog_id,  # CogId
+                    None,  # pr-language (niet in model)
+                    recon.word if recon else None,  # root
+                    recon.word_tone if recon else None,  # etymon
+                    recon.english if recon else None,  # pr-gloss
+                    None,  # picture-URL
+                    None,  # pic-caption
+                    recon.note if recon else None,  # cogset-note
                 ]
                 first_row = False
             else:
@@ -202,31 +238,30 @@ def build_cogsets_sheet(
 
             # Kolommen 8-19: per reflex
             reflex_cols: List[Any] = [
-                _lg_code(variety),                         # lg_code
-                variety.name_english if variety else None, # lg_name
-                entry.ipa,                                 # form_IPA
-                entry.term,                                # form-orthog
-                entry.part_of_speech,                      # pos
-                entry.meaning,                             # definition-evolex
-                None,                                      # glosses-evosem (niet in model)
-                entry.translation,                         # orig_gloss
-                source.author_year if source else None,    # source
-                pages_by_entry.get(entry.id),              # page
-                entry.notes,                               # public_note_reflex
-                None,                                      # comment (niet in model)
+                _lg_code(variety),  # lg_code
+                variety.name_english if variety else None,  # lg_name
+                entry.ipa,  # form_IPA
+                entry.term,  # form-orthog
+                entry.part_of_speech,  # pos
+                entry.meaning,  # definition-evolex
+                None,  # glosses-evosem (niet in model)
+                entry.translation,  # orig_gloss
+                source if source else None,  # source
+                pages_by_entry.get(entry.id),  # page
+                entry.notes,  # public_note_reflex
+                None,  # comment (niet in model)
             ]
             ws.append(proto_cols + reflex_cols)
 
     # 1. Gelinkte cogsets -- gesorteerd op blr_index
     linked_groups = [
-        (blr_id, group)
-        for blr_id, group in grouped.items()
-        if blr_id is not None
+        (blr_id, group) for blr_id, group in grouped.items() if blr_id is not None
     ]
     linked_groups.sort(
         key=lambda kv: (
             reconstructions_map[kv[0]].blr_index or 0
-            if kv[0] in reconstructions_map else 0
+            if kv[0] in reconstructions_map
+            else 0
         )
     )
     for blr_id, group in linked_groups:
@@ -246,6 +281,7 @@ def build_cogsets_sheet(
 # ---------------------------------------------------------------------------
 # Sheet: Lg-metadata
 # ---------------------------------------------------------------------------
+
 
 def build_lg_metadata_sheet(
     ws,
@@ -273,15 +309,18 @@ def build_lg_metadata_sheet(
         loc_id = location_by_variety.get(v.id)
         lat, lon = (
             coord_by_location.get(loc_id, (None, None))
-            if loc_id is not None else (None, None)
+            if loc_id is not None
+            else (None, None)
         )
-        ws.append([
-            _lg_code(v),    # Our_code
-            v.name_english, # Lg-name
-            None,           # glottocode (niet in model)
-            lat,            # latitude (raw float)
-            lon,            # longitude (raw float)
-        ])
+        ws.append(
+            [
+                _lg_code(v),  # Our_code
+                v.name_english,  # Lg-name
+                None,  # glottocode (niet in model)
+                lat,  # latitude (raw float)
+                lon,  # longitude (raw float)
+            ]
+        )
 
     for col, width in zip("ABCDE", [15, 32, 15, 12, 12]):
         ws.column_dimensions[col].width = width
@@ -290,6 +329,7 @@ def build_lg_metadata_sheet(
 # ---------------------------------------------------------------------------
 # Google Sheets integratie
 # ---------------------------------------------------------------------------
+
 
 def push_to_google_sheets(wb: Workbook, mode: str) -> None:
     """
@@ -349,12 +389,14 @@ def push_to_google_sheets(wb: Workbook, mode: str) -> None:
                 total_batches = (len(all_rows) + batch_size - 1) // batch_size
                 for i in range(0, len(all_rows), batch_size):
                     batch = all_rows[i : i + batch_size]
-                    range_name = f"A{i+1}"
+                    range_name = f"A{i + 1}"
                     gws.update(values=batch, range_name=range_name)
-                    
-                    logger.info(f"[Sheets] '{sheet_name}' batch {i//batch_size + 1}/{total_batches} verzonden.")
+
+                    logger.info(
+                        f"[Sheets] '{sheet_name}' batch {i // batch_size + 1}/{total_batches} verzonden."
+                    )
                     # Voorkom "Quota exceeded" errors
-                    time.sleep(1) 
+                    time.sleep(1)
             logger.info(f"[Sheets] OVERWRITE '{sheet_name}' voltooid.")
         elif mode == "append":
             data_rows = all_rows[1:]  # Sla headerrij over
@@ -369,6 +411,7 @@ def push_to_google_sheets(wb: Workbook, mode: str) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main(mode: str = "local") -> None:
     """
     mode='local'     : alleen lokale .xlsx aanmaken.
@@ -379,15 +422,16 @@ def main(mode: str = "local") -> None:
     EXPORT_EVOLEX_EXCEL.parent.mkdir(parents=True, exist_ok=True)
 
     with Session(engine, expire_on_commit=False) as session:
-
-        entries: List[Reflex] = list(session.exec(
-            select(Reflex)
-            .where(Reflex.blr_entry_id.is_not(None))
-            .options(joinedload(Reflex.variety))
-        ).all())
+        entries: List[Reflex] = list(
+            session.exec(
+                select(Reflex)
+                .where(Reflex.blr_entry_id.is_not(None))
+                .options(joinedload(Reflex.variety))
+            ).all()
+        )
         logger.info(f"Reflexes geladen (enkel met BLR-link): {len(entries)}")
 
-        source_by_entry: Dict[int, Optional[Source]] = {}
+        source_by_entry: Dict[int, Optional[str]] = {}
         pages_by_entry: Dict[int, Optional[str]] = {}
         sources_map: Dict[int, Source] = {
             s.id: s for s in session.exec(select(Source)).all()
@@ -402,11 +446,11 @@ def main(mode: str = "local") -> None:
             source = sources_map.get(link.source_id)
             if source:
                 entry_sources[link.entry_id].append((source.author_year, link.pages))
-        
+
         for entry_id, items in entry_sources.items():
             # Join multiple sources: "Author A 2000; Author B 2005"
             source_by_entry[entry_id] = "; ".join(filter(None, [it[0] for it in items]))
-            pages_by_entry[entry_id]  = "; ".join(filter(None, [it[1] for it in items]))
+            pages_by_entry[entry_id] = "; ".join(filter(None, [it[1] for it in items]))
 
         reconstructions_map: Dict[int, Reconstruction] = {
             r.id: r for r in session.exec(select(Reconstruction)).all()
@@ -422,7 +466,9 @@ def main(mode: str = "local") -> None:
             wb.active, entries, source_by_entry, pages_by_entry, reconstructions_map
         )
         ws_lg = wb.create_sheet()
-        build_lg_metadata_sheet(ws_lg, varieties, coord_by_location, location_by_variety)
+        build_lg_metadata_sheet(
+            ws_lg, varieties, coord_by_location, location_by_variety
+        )
 
     wb.save(EXPORT_EVOLEX_EXCEL)
     logger.info(f"Lokaal opgeslagen: {EXPORT_EVOLEX_EXCEL}")
@@ -430,7 +476,9 @@ def main(mode: str = "local") -> None:
     linked = sum(1 for e in entries if e.blr_entry_id is not None)
     unlinked = len(entries) - linked
     n_varieties = len({(_lg_code(v), v.name_english) for v in varieties})
-    logger.info(f"  CogSets    : {linked} gelinkte reflexes | {unlinked} ongelinkte reflexes")
+    logger.info(
+        f"  CogSets    : {linked} gelinkte reflexes | {unlinked} ongelinkte reflexes"
+    )
     logger.info(f"  Lg-metadata: {n_varieties} unieke varieties")
 
     if mode in ("overwrite", "append"):
@@ -442,6 +490,7 @@ def main(mode: str = "local") -> None:
 def main_google_overwrite():
     """Wrapper voor entry-point: overschrijf Google Sheets."""
     main(mode="overwrite")
+
 
 def main_google_append():
     """Wrapper voor entry-point: voeg toe aan Google Sheets."""
@@ -464,3 +513,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(mode=args.mode)
+
