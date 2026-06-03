@@ -32,6 +32,7 @@ services:
     volumes:
       - ./:/app/
       - ./data:/data
+      - venv:/opt/venv
     env_file:
       - dev.env
     depends_on:
@@ -71,3 +72,4 @@ volumes:
   caddy-data:
   caddy-config:
   pgdata:
+  venv:
