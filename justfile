@@ -80,10 +80,25 @@ reset-tables:
      conn = engine.connect(); conn.execute(text('DROP OWNED BY bantulex CASCADE')); conn.commit(); \
      print('dropped all objects owned by bantulex')"
 
+# (Re)grant Mathesar role access on importer-owned objects + set default privs for future tables.
+# Needed after every reset-tables/import since DROP OWNED BY clears default privileges too.
+grant-mathesar:
+    docker compose run --rm utils uv run python -c \
+    "from sqlalchemy import text; from utilities.db import engine; \
+     stmts = [ \
+       'GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public TO mathesar_bantulex', \
+       'GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO mathesar_bantulex', \
+       'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES TO mathesar_bantulex', \
+       'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO mathesar_bantulex', \
+     ]; \
+     conn = engine.connect(); \
+     [conn.execute(text(s)) for s in stmts]; conn.commit(); \
+     print('granted mathesar_bantulex on bantulex objects')"
+
 reinit: rebuild reset-db import map-data
 
 # Remote-safe reinit: keep DB + Mathesar objects, recreate only importer-owned objects
-reinit-remote: reset-tables import
+reinit-remote: reset-tables import grant-mathesar
 
 # ── Dev helpers ──────────────────────────────────────────────────────────────
 
