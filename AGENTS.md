@@ -20,12 +20,12 @@ just export-all   # Run all three exporters
 just export-evolex  # Export to EvoLex Excel format
 just export-map     # Export linguistic data as GeoJSON
 just export-blr     # Export BLR phonological data + catalog
-just kottster     # Start Kottster admin dev server (hot reload)
 just map-data     # Download Protomaps Africa basemap (pmtiles)
 just reset-db     # Delete SQLite database
 ```
 
 Python tools can also be run directly via Docker:
+
 ```bash
 docker compose run --rm utils uv run importer
 docker compose run --rm utils uv run export-blr
@@ -57,11 +57,11 @@ Excel/CSV files
 
 ### Services (Docker Compose)
 
-| Service | Port | Description |
-|---------|------|-------------|
-| `data-management` | 5480 | Kottster admin panel (Node.js) |
-| `gateway` | 9160 | Caddy reverse proxy; serves `local-map/` static files |
-| `utils` | — | Python build context for import/export tools |
+| Service           | Port | Description                                           |
+| ----------------- | ---- | ----------------------------------------------------- |
+| `data-management` | 5480 | Kottster admin panel (Node.js)                        |
+| `gateway`         | 9160 | Caddy reverse proxy; serves `local-map/` static files |
+| `utils`           | —    | Python build context for import/export tools          |
 
 ### Python Workspace (`utils/`)
 
@@ -74,10 +74,6 @@ Managed as a `uv` workspace with three packages:
 
 The canonical data model is in [utils/utilities/src/utilities/model.py](utils/utilities/src/utilities/model.py). Key tables: `Variety`, `Entry`, `Location`, `Fieldwork`, `Source`, `SourceEntries`, `BLREntry`.
 
-### Kottster Admin (`kottster/`)
-
-Node.js app using the Kottster v3 framework (React 19 + React Router 7 + Vite). The server config and page/table definitions live in [kottster/app/_server/app.js](kottster/app/_server/app.js) and [kottster/kottster-app.json](kottster/kottster-app.json). Uses `better-sqlite3` + Knex.js for queries.
-
 ### Map UI (`local-map/`)
 
 Static HTML/JS using MapLibre GL JS. Displays GeoJSON exports with clustering. Includes a "Klankzoeker" (sound search) for BLR phonological data. Served by Caddy from the `local-map/dist/` directory.
@@ -85,7 +81,7 @@ Static HTML/JS using MapLibre GL JS. Displays GeoJSON exports with clustering. I
 ## Configuration
 
 Development environment variables are in `dev.env` (loaded by Docker Compose):
-- `DB_PATH=/data/bantulex.db`
+
 - `PORT=5480`
 - Kottster identity DB: `/data/app.db`, default credentials: `admin/admin`
 
