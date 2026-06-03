@@ -72,7 +72,18 @@ reset-db:
     docker compose exec -T postgres psql -U bantulex -d postgres -c "DROP DATABASE IF EXISTS bantulex WITH (FORCE);"
     docker compose exec -T postgres psql -U bantulex -d postgres -c "CREATE DATABASE bantulex OWNER bantulex;"
 
+# Drop everything owned by the bantulex role (importer tables, removed-from-model tables, sequences, etc.)
+# Safe on remote DB: Mathesar's objects are owned by mathesar_bantulex, untouched.
+reset-tables:
+    docker compose run --rm utils uv run python -c \
+    "from sqlalchemy import text; from utilities.db import engine; \
+     conn = engine.connect(); conn.execute(text('DROP OWNED BY bantulex CASCADE')); conn.commit(); \
+     print('dropped all objects owned by bantulex')"
+
 reinit: rebuild reset-db import map-data
+
+# Remote-safe reinit: keep DB + Mathesar objects, recreate only importer-owned objects
+reinit-remote: reset-tables import
 
 # ── Dev helpers ──────────────────────────────────────────────────────────────
 
