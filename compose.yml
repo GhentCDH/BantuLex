@@ -30,10 +30,30 @@ services:
       context: .
       dockerfile: utils/Dockerfile
     volumes:
-      - ./utils:/app/
+      - ./:/app/
       - ./data:/data
     env_file:
       - dev.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Postgres ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: bantulex
+      POSTGRES_USER: bantulex
+      POSTGRES_PASSWORD: bantulex
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bantulex -d bantulex"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   # ── Gateway & Data Publishing (Caddy) ──────────────────────────────────────
   gateway:
@@ -50,3 +70,4 @@ services:
 volumes:
   caddy-data:
   caddy-config:
+  pgdata:

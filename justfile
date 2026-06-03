@@ -15,32 +15,32 @@ down:
 # ── Modelgeneratie ───────────────────────────────────────────────────────────
 
 generate-diagram:
-    docker compose run -w /app/documenter --rm utils uv run document
+    docker compose run -w /app/utils/documenter --rm utils uv run document
 
 # ── Import ───────────────────────────────────────────────────────────────────
 
 import:
-    docker compose run -w /app/importer --rm utils uv run importer
+    docker compose run -w /app/utils/importer --rm utils uv run importer
 
 # ── Export (één script per "ding") ───────────────────────────────────────────
 
 # Volledig EvoLex Excel-export
 export-evolex:
-    docker compose run  -w /app/exporter --rm utils  uv run export-evolex
+    docker compose run  -w /app/utils/exporter --rm utils  uv run export-evolex
     
 
 # Volledig EvoLex Excel+Google Sheets export
 export-evolex-google:
-    docker compose run  -w /app/exporter --rm utils  uv run export-evolex-google
+    docker compose run  -w /app/utils/exporter --rm utils  uv run export-evolex-google
 
 # GeoJSON-export van alle taalvariëteiten met coördinaten (voor de kaart)
 export-map:
-    docker compose run  -w /app/exporter --rm utils  uv run export-map
+    docker compose run  -w /app/utils/exporter --rm utils  uv run export-map
     cp data/bantulex_entries.geojson local-map/data/
 
 # BLR kaartdata: genereert local-map/data/bantulex_entries.geojson + blr_catalog.json
 export-blr:
-    docker compose run  -w /app/exporter --rm utils  uv run export-blr
+    docker compose run  -w /app/utils/exporter --rm utils  uv run export-blr
     cp data/blr_catalog.json local-map/data/
     cp data/bantulex_entries.geojson local-map/data/
 
@@ -68,7 +68,9 @@ kottster:
 # ── Database ─────────────────────────────────────────────────────────────────
 
 reset-db:
-    rm -f data/bantulex.db*
+    docker compose up -d postgres
+    docker compose exec -T postgres psql -U bantulex -d postgres -c "DROP DATABASE IF EXISTS bantulex WITH (FORCE);"
+    docker compose exec -T postgres psql -U bantulex -d postgres -c "CREATE DATABASE bantulex OWNER bantulex;"
 
 reinit: rebuild reset-db import map-data
 

@@ -10,16 +10,15 @@ env_path = Path(__file__).parent.parent.parent.parent
 load_dotenv(env_path / "utils.env")
 
 print(f"Loading environment variables from: {env_path / 'utils.env'}")
-print(f"DB_PATH: {os.getenv('DB_PATH')}")
+print(f"DATABASE_URL: {os.getenv('DATABASE_URL')}")
 print(f"DATA_ROOT: {os.getenv('DATA_ROOT')}")
 
-required_env_vars = ["DB_PATH", "DATA_ROOT"]
+required_env_vars = ["DATABASE_URL", "DATA_ROOT"]
 for var in required_env_vars:
     if var not in os.environ:
         raise OSError(f"Required environment variable '{var}' is not set.")
 
-DB_PATH = Path(os.getenv("DB_PATH"))
-DB_STRING = f"sqlite:///{DB_PATH}"
+DB_STRING = os.environ["DATABASE_URL"]
 
 DATA_ROOT = Path(os.getenv("DATA_ROOT"))
 

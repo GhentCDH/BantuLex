@@ -7,8 +7,8 @@ from openpyxl import load_workbook
 from rich.logging import RichHandler
 from sqlmodel import Session, SQLModel, select
 
-from utilities.config import BLR_EXCEL, DATA_ROOT, DB_PATH, EXCEL
-from utilities.db import create_updated_at_trigger, engine, get_or_create
+from utilities.config import BLR_EXCEL, DATA_ROOT, DB_STRING, EXCEL
+from utilities.db import engine, get_or_create
 from utilities.model import (
     BLRConsonantStructure,
     BLRContributor,
@@ -529,10 +529,9 @@ def import_blr(import_report: ImportReport | None = None) -> None:
 
 def main() -> None:
     start_time = time.monotonic()
-    logger.info(f"Using database at {DB_PATH}")
+    logger.info(f"Using database at {DB_STRING}")
 
     SQLModel.metadata.create_all(engine)
-    create_updated_at_trigger(engine)
 
     if not EXCEL.exists():
         logger.warning(f"Excel file not found at {EXCEL}")

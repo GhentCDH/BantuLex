@@ -1,42 +1,45 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import REAL, Integer, Text, func
+from sqlalchemy import Boolean, DateTime, Float, Integer, Text, func
 from sqlmodel import Field, Relationship, SQLModel
-
-_STRICT = {"sqlite_strict": True}
 
 
 def _text(**kwargs):
-    """TEXT column — VARCHAR is not STRICT-compatible."""
+    """TEXT column (unbounded varchar in Postgres)."""
     return Field(sa_type=Text(), **kwargs)
 
 
-def _real(**kwargs):
-    """REAL column — FLOAT is not STRICT-compatible."""
-    return Field(sa_type=REAL(), **kwargs)
+def _float(**kwargs):
+    """Double-precision float column."""
+    return Field(sa_type=Float(), **kwargs)
+
+
+def _ts(**kwargs):
+    """Timezone-aware timestamp column."""
+    return Field(sa_type=DateTime(timezone=True), **kwargs)
 
 
 class Table(SQLModel):
     """Base class with common fields for all tables."""
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = Field(
+    created_at: datetime = _ts(
         default=None,
-        sa_type=Text(),
         sa_column_kwargs={"server_default": func.now(), "nullable": False},
     )
-    updated_at: datetime = Field(
+    updated_at: datetime = _ts(
         default=None,
-        sa_type=Text(),
-        sa_column_kwargs={"server_default": func.now(), "nullable": False},
+        sa_column_kwargs={
+            "server_default": func.now(),
+            "onupdate": func.now(),
+            "nullable": False,
+        },
     )
 
 
 class Variety(Table, table=True):
     """A Bantu language variety."""
-
-    __table_args__ = _STRICT
 
     name_english: str | None = _text(default=None)
     name_french: str | None = _text(default=None)
@@ -46,8 +49,7 @@ class Variety(Table, table=True):
     bastin_index: str | None = _text(default=None)
     guthrie_index: str | None = _text(default=None)
     guthrie_plus: str | None = _text(default=None)
-    # BOOLEAN is not STRICT-compatible; store as INTEGER (0/1)
-    substrate_suspect: int | None = Field(default=None, sa_type=Integer())
+    substrate_suspect: bool | None = Field(default=None, sa_type=Boolean())
 
     entries: list["Reflex"] = Relationship(back_populates="variety")
 
@@ -59,11 +61,8 @@ class Coordinate(Table, table=True):
     description='original' -> columns BM/BN (as found in original source)
     """
 
-    __table_args__ = _STRICT
-
-    # FLOAT is not STRICT-compatible; use REAL
-    latitude: float | None = _real(default=None)
-    longitude: float | None = _real(default=None)
+    latitude: float | None = _float(default=None)
+    longitude: float | None = _float(default=None)
     description: str | None = _text(default=None)  # 'default' or 'original'
 
     location_id: int | None = Field(default=None, foreign_key="location.id")
@@ -73,8 +72,6 @@ class Coordinate(Table, table=True):
 class Country(Table, table=True):
     """Country."""
 
-    __table_args__ = _STRICT
-
     name: str | None = _text(default=None)
 
     regions: list["Region"] = Relationship(back_populates="country")
@@ -83,8 +80,6 @@ class Country(Table, table=True):
 
 class Region(Table, table=True):
     """Fieldwork region within a country."""
-
-    __table_args__ = _STRICT
 
     name: str | None = _text(default=None)
     country_id: int | None = Field(default=None, foreign_key="country.id")
@@ -97,8 +92,6 @@ class Region(Table, table=True):
 class Place(Table, table=True):
     """Specific place within a region."""
 
-    __table_args__ = _STRICT
-
     name: str | None = _text(default=None)
     region_id: int | None = Field(default=None, foreign_key="region.id")
 
@@ -110,8 +103,6 @@ class Location(Table, table=True):
     """Composite location (place + region + country).
     Clan is intentionally excluded per project decision.
     """
-
-    __table_args__ = _STRICT
 
     place_id: int | None = Field(default=None, foreign_key="place.id")
     region_id: int | None = Field(default=None, foreign_key="region.id")
@@ -128,18 +119,13 @@ class Location(Table, table=True):
 class Source(Table, table=True):
     """Bibliographic source (author + year + title)."""
 
-    __table_args__ = _STRICT
-
     author_year: str | None = _text(default=None)
-    # BOOLEAN is not STRICT-compatible; store as INTEGER (0/1)
-    year_uncertain: int = Field(default=0, sa_type=Integer())
+    year_uncertain: bool = Field(default=False, sa_type=Boolean())
     title: str | None = _text(default=None)
 
 
 class Project(Table, table=True):
     """A research project."""
-
-    __table_args__ = _STRICT
 
     name: str | None = _text(default=None)
 
@@ -155,8 +141,6 @@ class CollectionYear(Table, table=True):
     unknown   -> was '?????' or unresolvable
     """
 
-    __table_args__ = _STRICT
-
     value: str | None = _text(
         default=None
     )  # actual year string; None when status='unknown'
@@ -168,8 +152,6 @@ class CollectionYear(Table, table=True):
 class DataCollector(Table, table=True):
     """A person who collected field data."""
 
-    __table_args__ = _STRICT
-
     name: str | None = _text(default=None)
 
     fieldwork_links: list["FieldworkDataCollector"] = Relationship(
@@ -179,8 +161,6 @@ class DataCollector(Table, table=True):
 
 class FieldworkDataCollector(SQLModel, table=True):
     """Link table: Fieldwork <-> DataCollector. Composite PK, no auto-id."""
-
-    __table_args__ = _STRICT
 
     fieldwork_id: int = Field(foreign_key="fieldwork.id", primary_key=True)
     data_collector_id: int = Field(foreign_key="datacollector.id", primary_key=True)
@@ -192,8 +172,6 @@ class FieldworkDataCollector(SQLModel, table=True):
 class Consultant(Table, table=True):
     """A person who provided linguistic data (consultant/informant)."""
 
-    __table_args__ = _STRICT
-
     name: str | None = _text(default=None)
 
     fieldwork_links: list["FieldworkConsultant"] = Relationship(
@@ -203,8 +181,6 @@ class Consultant(Table, table=True):
 
 class FieldworkConsultant(SQLModel, table=True):
     """Link table: Fieldwork <-> Consultant. Composite PK, no auto-id."""
-
-    __table_args__ = _STRICT
 
     fieldwork_id: int = Field(foreign_key="fieldwork.id", primary_key=True)
     consultant_id: int = Field(foreign_key="consultant.id", primary_key=True)
@@ -216,8 +192,6 @@ class FieldworkConsultant(SQLModel, table=True):
 class Fieldwork(Table, table=True):
     """A fieldwork session. Project, year, collectors and consultants are normalised
     into their own tables."""
-
-    __table_args__ = _STRICT
 
     project_id: int | None = Field(default=None, foreign_key="project.id")
     collection_year_id: int | None = Field(
@@ -241,8 +215,6 @@ class Fieldwork(Table, table=True):
 class SourceEntries(Table, table=True):
     """Link table between Reflex and Source (citation with a role and order)."""
 
-    __table_args__ = _STRICT
-
     role: str = _text(index=True)  # primary | secondary | cited | ...
     order: int = Field(default=1, sa_type=Integer())
     pages: str | None = _text(default=None)  # page number as printed, per Reflex
@@ -262,8 +234,6 @@ class SourceEntries(Table, table=True):
 class BLRContributor(Table, table=True):
     """Person who added a BLR entry (Added by)."""
 
-    __table_args__ = _STRICT
-
     name: str | None = _text(default=None)
 
     blr_entries: list["Reconstruction"] = Relationship(back_populates="contributor")
@@ -272,8 +242,6 @@ class BLRContributor(Table, table=True):
 class BLRReliability(Table, table=True):
     """Reliability score of a BLR reconstruction (Fiab:)."""
 
-    __table_args__ = _STRICT
-
     value: str | None = _text(default=None)
 
     blr_entries: list["Reconstruction"] = Relationship(back_populates="reliability")
@@ -281,8 +249,6 @@ class BLRReliability(Table, table=True):
 
 class BLRConsonantStructure(Table, table=True):
     """Consonant profile shared across BLR entries."""
-
-    __table_args__ = _STRICT
 
     c1: str | None = _text(default=None)
     c2: str | None = _text(default=None)
@@ -298,8 +264,6 @@ class BLRConsonantStructure(Table, table=True):
 class BLRVowelStructure(Table, table=True):
     """Vowel profile shared across BLR entries."""
 
-    __table_args__ = _STRICT
-
     v11: str | None = _text(default=None)
     v12: str | None = _text(default=None)
     v21: str | None = _text(default=None)
@@ -313,8 +277,6 @@ class BLRVowelStructure(Table, table=True):
 class BLRToneStructure(Table, table=True):
     """Tone profile shared across BLR entries."""
 
-    __table_args__ = _STRICT
-
     t11: str | None = _text(default=None)
     t12: str | None = _text(default=None)
     t21: str | None = _text(default=None)
@@ -327,8 +289,6 @@ class BLRToneStructure(Table, table=True):
 
 class Reconstruction(Table, table=True):
     """A single BLR (Bantu Lexical Reconstructions) entry."""
-
-    __table_args__ = _STRICT
 
     blr_index: int | None = Field(default=None, index=True)
     word_tone: str | None = _text(default=None)
@@ -371,8 +331,6 @@ class Reconstruction(Table, table=True):
 
 class Reflex(Table, table=True):
     """A single lexical Reflex."""
-
-    __table_args__ = _STRICT
 
     # Original spreadsheet IDs
     original_id: int | None = None
