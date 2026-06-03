@@ -657,27 +657,16 @@ def main() -> None:
             if c.name:
                 consultants_cache[(c.name,)] = c
                 consultants_norm.setdefault(_normalize_key((c.name,)), (c.name,))
+        # Bulk-load link tables once instead of N+1 queries per fieldwork.
+        fw_dc_map: dict[int, list[int]] = {}
+        for lnk in session.exec(select(FieldworkDataCollector)).all():
+            fw_dc_map.setdefault(lnk.fieldwork_id, []).append(lnk.data_collector_id)
+        fw_con_map: dict[int, list[int]] = {}
+        for lnk in session.exec(select(FieldworkConsultant)).all():
+            fw_con_map.setdefault(lnk.fieldwork_id, []).append(lnk.consultant_id)
         for fw in session.exec(select(Fieldwork)).all():
-            dc_ids = tuple(
-                sorted(
-                    lnk.data_collector_id
-                    for lnk in session.exec(
-                        select(FieldworkDataCollector).where(
-                            FieldworkDataCollector.fieldwork_id == fw.id
-                        )
-                    ).all()
-                )
-            )
-            con_ids = tuple(
-                sorted(
-                    lnk.consultant_id
-                    for lnk in session.exec(
-                        select(FieldworkConsultant).where(
-                            FieldworkConsultant.fieldwork_id == fw.id
-                        )
-                    ).all()
-                )
-            )
+            dc_ids = tuple(sorted(fw_dc_map.get(fw.id, [])))
+            con_ids = tuple(sorted(fw_con_map.get(fw.id, [])))
             k = (
                 fw.project_id,
                 fw.collection_year_id,
