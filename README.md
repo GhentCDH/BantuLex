@@ -18,26 +18,22 @@ This will build the containers, run the import, and set up the database.
 ## Services
 
 - **import** — Python/uv container for importing CSV data into SQLite
-- **kottster** — Node.js admin panel for browsing the database (ports 5480/5481)
 - **bantulex-map** — MapLibre-based static vector map (port 80 via proxy)
 - **caddy** — Reverse proxy for all services
 
 ## Recipes
 
-| Command | Description |
-|---------|-------------|
-| `just rebuild` | Rebuild and restart all containers |
-| `just up` | Start all containers |
-| `just import` | Run the data import |
-| `just kottster` | Start the Kottster dev server |
-| `just map-up` | Build and start the map service |
-| `just map-rebuild` | Force rebuild of the map service |
-| `just reinit` | Rebuild + import |
-| `just reset-db` | Delete the SQLite database |
-
+| Command            | Description                        |
+| ------------------ | ---------------------------------- |
+| `just rebuild`     | Rebuild and restart all containers |
+| `just up`          | Start all containers               |
+| `just import`      | Run the data import                |
+| `just map-up`      | Build and start the map service    |
+| `just map-rebuild` | Force rebuild of the map service   |
+| `just reinit`      | Rebuild + import                   |
+| `just reset-db`    | Delete the SQLite database         |
 
 ## Credits
-
 
 Development by [Ghent Centre for Digital Humanities - Ghent University](https://www.ghentcdh.ugent.be/). Funded by the [GhentCDH research projects](https://www.ghentcdh.ugent.be/projects).
 
