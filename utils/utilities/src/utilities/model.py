@@ -1,40 +1,40 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, Text, func
+from sqlalchemy import DateTime, Float, Text, func
 from sqlmodel import Field, Relationship, SQLModel
+
+_TIMESTAMPTZ = DateTime(timezone=True)
 
 
 def _text(**kwargs):
     """TEXT column (unbounded varchar in Postgres)."""
-    return Field(sa_type=Text(), **kwargs)
+    return Field(sa_type=Text, **kwargs)
 
 
 def _float(**kwargs):
     """Double-precision float column."""
-    return Field(sa_type=Float(), **kwargs)
+    return Field(sa_type=Float, **kwargs)
 
 
-def _ts(**kwargs):
-    """Timezone-aware timestamp column."""
-    return Field(sa_type=DateTime(timezone=True), **kwargs)
+def _ts(**col_kwargs):
+    """TIMESTAMPTZ column. col_kwargs forwarded as sa_column_kwargs."""
+    return Field(
+        default=None,
+        sa_type=_TIMESTAMPTZ,  # ty: ignore[invalid-argument-type]
+        sa_column_kwargs=col_kwargs,
+    )
 
 
 class Table(SQLModel):
     """Base class with common fields for all tables."""
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = _ts(
-        default=None,
-        sa_column_kwargs={"server_default": func.now(), "nullable": False},
-    )
+    created_at: datetime = _ts(server_default=func.now(), nullable=False)
     updated_at: datetime = _ts(
-        default=None,
-        sa_column_kwargs={
-            "server_default": func.now(),
-            "onupdate": func.now(),
-            "nullable": False,
-        },
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
 
@@ -49,7 +49,7 @@ class Variety(Table, table=True):
     bastin_index: str | None = _text(default=None)
     guthrie_index: str | None = _text(default=None)
     guthrie_plus: str | None = _text(default=None)
-    substrate_suspect: bool | None = Field(default=None, sa_type=Boolean())
+    substrate_suspect: bool | None = Field(default=None)
 
     entries: list["Reflex"] = Relationship(back_populates="variety")
 
@@ -120,7 +120,7 @@ class Source(Table, table=True):
     """Bibliographic source (author + year + title)."""
 
     author_year: str | None = _text(default=None)
-    year_uncertain: bool = Field(default=False, sa_type=Boolean())
+    year_uncertain: bool = Field(default=False)
     title: str | None = _text(default=None)
 
 
@@ -216,7 +216,7 @@ class SourceEntries(Table, table=True):
     """Link table between Reflex and Source (citation with a role and order)."""
 
     role: str = _text(index=True)  # primary | secondary | cited | ...
-    order: int = Field(default=1, sa_type=Integer())
+    order: int = Field(default=1)
     pages: str | None = _text(default=None)  # page number as printed, per Reflex
 
     entry_id: int | None = Field(default=None, foreign_key="reflex.id")
