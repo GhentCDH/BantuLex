@@ -682,7 +682,10 @@ def main() -> None:
         # -------------------------------------------------------------------
         # Row processing
         # -------------------------------------------------------------------
-        for batch in _chunked(rows, 1000):
+        for batch in _chunked(rows, 5000):
+            # Deferred per-batch buffers: avoid one flush-with-RETURNING per row.
+            batch_reflexes: list[Reflex] = []
+            batch_source_links: list[tuple[Reflex, list[dict]]] = []
             try:
                 for i, row_cells in enumerate(batch):
                     excel_row = total_processed + i + 2
@@ -1199,20 +1202,9 @@ def main() -> None:
                             location_id=location.id if location else None,
                             fieldwork_id=fieldwork.id if fieldwork else None,
                         )
-                        session.add(reflex)
-                        session.flush()
-
-                        # 7. Source links
-                        for s_data in source_objects:
-                            session.add(
-                                SourceEntries(
-                                    entry_id=reflex.id,
-                                    source_id=s_data["source_id"],
-                                    role=s_data["role"],
-                                    order=s_data["order"],
-                                    pages=s_data["pages"],
-                                )
-                            )
+                        # Defer add/flush — done once per batch below.
+                        batch_reflexes.append(reflex)
+                        batch_source_links.append((reflex, source_objects))
 
                     except Exception as e:
                         logger.error(f"Error on row {excel_row}: {e}")
@@ -1224,6 +1216,23 @@ def main() -> None:
                             },
                         )
                         continue
+
+                # Bulk-insert all reflexes for this batch → one round trip for IDs,
+                # then bulk-insert their SourceEntries with resolved entry_ids.
+                if batch_reflexes:
+                    session.add_all(batch_reflexes)
+                    session.flush()
+                    for reflex, source_objects in batch_source_links:
+                        for s_data in source_objects:
+                            session.add(
+                                SourceEntries(
+                                    entry_id=reflex.id,
+                                    source_id=s_data["source_id"],
+                                    role=s_data["role"],
+                                    order=s_data["order"],
+                                    pages=s_data["pages"],
+                                )
+                            )
 
                 session.commit()
                 total_processed += len(batch)
