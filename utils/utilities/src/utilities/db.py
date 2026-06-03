@@ -5,7 +5,10 @@ import sqlmodel
 
 from .config import DB_STRING
 
-engine = sqlmodel.create_engine(DB_STRING, pool_pre_ping=True)
+engine = sqlmodel.create_engine(
+    DB_STRING,
+    connect_args={"options": "-c synchronous_commit=off"},
+)
 
 
 def get_or_create(cache: dict, key: tuple, factory: Callable, session) -> Any:
