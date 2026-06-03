@@ -1,30 +1,4 @@
 services:
-  # ── Data Management (Kottster) ─────────────────────────────────────────────
-  data-management:
-    build:
-      context: .
-      dockerfile: kottster/Dockerfile
-    volumes:
-      - ./kottster/app:/app/app
-      - ./data:/data
-    env_file:
-      - dev.env
-    ports:
-      - "5480:5480"
-      - "5481:5481"
-      
-  data-management-prd:
-    build:
-      context: .
-      dockerfile: kottster/prd.Dockerfile
-    volumes:
-      - ./data:/data
-    env_file:
-      - dev.env
-    ports:
-      - "5490:5480"
-      - "5491:5481"
-
   utils:
     build:
       context: .

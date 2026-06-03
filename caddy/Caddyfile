@@ -4,13 +4,6 @@
 }
 
 :80 {
-	# reverse proxy websockets to the data management service
-	@websockets {
-		header Connection *Upgrade*
-		header Upgrade websocket
-	}
-	reverse_proxy @websockets data-management:5480
-
 	# serve index.html for the root path
 	handle / {
 		file_server {
@@ -27,10 +20,5 @@
 	@file file
 	handle @file {
 		file_server
-	}
-
-	# forward other requests to the data management service
-	handle /* {
-		reverse_proxy data-management:5480
 	}
 }
