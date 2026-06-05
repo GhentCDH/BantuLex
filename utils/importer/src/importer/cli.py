@@ -35,15 +35,25 @@ from .columns import (
     SOURCE_GROUPS,
     WHITESPACE_CHECK_FIELDS,
 )
-from .parsing import (
+from .entries import (
+    CATEGORY_CLASSES,
+    LEVEL_ORDER,
+    CoordinateConflictEntry,
+    CriticalErrorEntry,
+    DuplicateBeginningIdEntry,
+    FallbackUsedEntry,
+    MissingColumnEntry,
+    RowContext,
+    SkippedNoTermEntry,
+    SourceIncompleteEntry,
+    SourceLocation,
+    SuspiciousDuplicateEntry,
+    UncertaintyEntry,
+    WhitespaceVariantEntry,
+    build_col_index,
     check_case_variant,
-    chunked,
-    clean_value,
-    normalize_key,
-    parse_float,
-    parse_id_with_report,
-    parse_uncertainty,
 )
+from .parsing import chunked, normalize_key, parse_uncertainty
 from .report import ImportReport
 
 handler = RichHandler(
@@ -88,16 +98,19 @@ def main() -> None:
 
     import_report = ImportReport()
 
+    file_name = EXCEL.name
+    sheet_name = ws.title
+    col_index = build_col_index(headers)
+
     # Check for missing expected columns
     header_set = {h for h in headers if h}
     for col in EXPECTED_COLUMNS:
         if col not in header_set:
             import_report.add(
-                "missing_column",
-                {
-                    "Column": col,
-                    "Note": "Verwachte kolom niet aanwezig in het Excel-bestand.",
-                },
+                MissingColumnEntry(
+                    loc=SourceLocation(file_name, sheet_name, None, col, None),
+                    note="Verwachte kolom niet aanwezig in het Excel-bestand.",
+                )
             )
             logger.warning(f"Missing expected column: '{col}'")
 
@@ -214,6 +227,15 @@ def main() -> None:
                 for i, row_cells in enumerate(batch):
                     excel_row = total_processed + i + 2
                     row = row_to_dict(row_cells)
+                    # Fully empty row (trailing Excel padding): skip silently,
+                    # this is not a data problem worth reporting.
+                    if not any(
+                        v is not None and str(v).strip() for v in row.values()
+                    ):
+                        continue
+                    ctx = RowContext(
+                        file_name, sheet_name, excel_row, col_index, import_report, row
+                    )
                     try:
                         # -- Whitespace variant detection --
                         for _col in WHITESPACE_CHECK_FIELDS:
@@ -224,34 +246,32 @@ def main() -> None:
                                 and _raw != _raw.strip()
                             ):
                                 import_report.add(
-                                    "whitespace_variant",
-                                    {
-                                        "Row": excel_row,
-                                        "Column": _col,
-                                        "Raw Value": repr(_raw),
-                                        "Stripped Value": _raw.strip(),
-                                        "Note": "Waarde bevat overbodige spaties — automatisch gestript.",
-                                    },
+                                    WhitespaceVariantEntry(
+                                        loc=ctx.loc(_col),
+                                        note="Waarde bevat overbodige spaties — automatisch gestript.",
+                                        raw_value=repr(_raw),
+                                        stripped_value=_raw.strip(),
+                                    )
                                 )
 
                         # 1. Variety
                         v_key = (
-                            clean_value(row.get("Variety (English)")),
-                            clean_value(row.get("variety (French)")),
-                            clean_value(row.get("Variety (Bantu)")),
-                            clean_value(row.get("Variety as named in Bastin")),
-                            clean_value(row.get("Branch")),
-                            clean_value(row.get("Bastin Index")),
-                            clean_value(row.get("Guthrie Index")),
-                            clean_value(row.get("Guthrie PLUS")),
+                            ctx.val("Variety (English)"),
+                            ctx.val("variety (French)"),
+                            ctx.val("Variety (Bantu)"),
+                            ctx.val("Variety as named in Bastin"),
+                            ctx.val("Branch"),
+                            ctx.val("Bastin Index"),
+                            ctx.val("Guthrie Index"),
+                            ctx.val("Guthrie PLUS"),
                         )
                         check_case_variant(
                             varieties_norm,
                             v_key,
                             "Variety",
-                            excel_row,
-                            import_report,
-                            extra={"Term": clean_value(row.get("Term"))},
+                            ctx,
+                            column="Variety (English)",
+                            term=ctx.val("Term"),
                         )
                         variety = get_or_create(
                             varieties_cache,
@@ -270,14 +290,14 @@ def main() -> None:
                         )
 
                         # 2. Location hierarchy (clan excluded per project decision)
-                        country_val = clean_value(row.get("Country"))
+                        country_val = ctx.val("Country")
                         if country_val:
                             check_case_variant(
                                 countries_norm,
                                 (country_val,),
                                 "Country",
-                                excel_row,
-                                import_report,
+                                ctx,
+                                column="Country",
                             )
                         country = (
                             get_or_create(
@@ -290,11 +310,15 @@ def main() -> None:
                             else None
                         )
 
-                        region_val = clean_value(row.get("Region (fieldwork)"))
+                        region_val = ctx.val("Region (fieldwork)")
                         r_key = (region_val, country.id if country else None)
                         if region_val:
                             check_case_variant(
-                                regions_norm, r_key, "Region", excel_row, import_report
+                                regions_norm,
+                                r_key,
+                                "Region",
+                                ctx,
+                                column="Region (fieldwork)",
                             )
                         region = (
                             get_or_create(
@@ -307,7 +331,7 @@ def main() -> None:
                             else None
                         )
 
-                        place_val = clean_value(row.get("Place"))
+                        place_val = ctx.val("Place")
                         p_key = (place_val, region.id if region else None)
                         place = (
                             get_or_create(
@@ -335,10 +359,10 @@ def main() -> None:
                         )
 
                         # 3. Coordinates (BK/BL primary; BM/BN as fallback)
-                        lat_def = parse_float(row.get("Latitude"))
-                        lon_def = parse_float(row.get("Longitude"))
-                        lat_src = parse_float(row.get("Latitude OR source"))
-                        lon_src = parse_float(row.get("Longitude OR source"))
+                        lat_def = ctx.float("Latitude")
+                        lon_def = ctx.float("Longitude")
+                        lat_src = ctx.float("Latitude OR source")
+                        lon_src = ctx.float("Longitude OR source")
 
                         if (
                             (lat_def is None or lon_def is None)
@@ -347,13 +371,12 @@ def main() -> None:
                         ):
                             lat_def, lon_def = lat_src, lon_src
                             import_report.add(
-                                "fallback_used",
-                                {
-                                    "Row": excel_row,
-                                    "Note": "BK/BL leeg; gekopieerd van BM/BN (OR source)",
-                                    "Lat used": lat_def,
-                                    "Lon used": lon_def,
-                                },
+                                FallbackUsedEntry(
+                                    loc=ctx.loc("Latitude"),
+                                    note="BK/BL leeg; gekopieerd van BM/BN (OR source)",
+                                    lat_used=lat_def,
+                                    lon_used=lon_def,
+                                )
                             )
 
                         def _add_coord(
@@ -362,8 +385,7 @@ def main() -> None:
                             desc: str,
                             *,
                             _loc=location,
-                            _xrow=excel_row,
-                            _row=row,
+                            _ctx=ctx,
                         ) -> None:
                             if _loc is None:
                                 return
@@ -377,27 +399,27 @@ def main() -> None:
                                         description=desc,
                                     )
                                 )
-                                coord_seen[tk] = (lat, lon, _xrow)
+                                coord_seen[tk] = (lat, lon, _ctx.row)
                             else:
                                 ex_lat, ex_lon, ex_row = coord_seen[tk]
                                 if lat != ex_lat or lon != ex_lon:
                                     import_report.add(
-                                        "coordinate_conflict",
-                                        {
-                                            "Row": _xrow,
-                                            "Type": desc,
-                                            "Existing Lat": ex_lat,
-                                            "Existing Lon": ex_lon,
-                                            "New Lat": lat,
-                                            "New Lon": lon,
-                                            "Term": clean_value(_row.get("Term")),
-                                            "Variety (English)": clean_value(
-                                                _row.get("Variety (English)")
+                                        CoordinateConflictEntry(
+                                            loc=_ctx.loc("Latitude"),
+                                            note="Zelfde locatie met afwijkende coördinaten.",
+                                            coord_type=desc,
+                                            existing_lat=ex_lat,
+                                            existing_lon=ex_lon,
+                                            new_lat=lat,
+                                            new_lon=lon,
+                                            term=_ctx.val("Term"),
+                                            variety_english=_ctx.val(
+                                                "Variety (English)"
                                             ),
-                                            "Country": clean_value(_row.get("Country")),
-                                            "Place": clean_value(_row.get("Place")),
-                                            "Conflicting Row": ex_row,
-                                        },
+                                            country=_ctx.val("Country"),
+                                            place=_ctx.val("Place"),
+                                            conflicting_row=ex_row,
+                                        )
                                     )
 
                         if lat_def is not None and lon_def is not None:
@@ -408,7 +430,7 @@ def main() -> None:
                         # 4. Fieldwork
 
                         # 4a. Project
-                        project_val = clean_value(row.get("Project"))
+                        project_val = ctx.val("Project")
                         project = (
                             get_or_create(
                                 projects_cache,
@@ -421,7 +443,7 @@ def main() -> None:
                         )
 
                         # 4b. Collection year
-                        f_year_raw = clean_value(row.get("Year of collection"))
+                        f_year_raw = ctx.val("Year of collection")
                         collection_year = None
                         if f_year_raw is not None:
                             f_year_val, f_unc = parse_uncertainty(f_year_raw)
@@ -434,15 +456,13 @@ def main() -> None:
 
                             if f_unc:
                                 import_report.add(
-                                    "uncertainty",
-                                    {
-                                        "Row": excel_row,
-                                        "Column": "Year of collection",
-                                        "Original Value": f_year_raw,
-                                        "Cleaned Value": f_year_val,
-                                        "Status": year_status,
-                                        "Note": "Jaar onzeker; controleer op alternatief jaar indien aanwezig.",
-                                    },
+                                    UncertaintyEntry(
+                                        loc=ctx.loc("Year of collection"),
+                                        note="Jaar onzeker; controleer op alternatief jaar indien aanwezig.",
+                                        original_value=f_year_raw,
+                                        cleaned_value=f_year_val,
+                                        status=year_status,
+                                    )
                                 )
 
                             year_key = (f_year_val, year_status)
@@ -460,7 +480,7 @@ def main() -> None:
                             filter(
                                 None,
                                 [
-                                    clean_value(row.get(h))
+                                    ctx.val(h)
                                     for h in headers
                                     if h and COLLECTOR_PATTERN.match(h)
                                 ],
@@ -472,8 +492,7 @@ def main() -> None:
                                 data_collectors_norm,
                                 (name,),
                                 "DataCollector",
-                                excel_row,
-                                import_report,
+                                ctx,
                             )
                             dc_objects.append(
                                 get_or_create(
@@ -489,7 +508,7 @@ def main() -> None:
                             filter(
                                 None,
                                 [
-                                    clean_value(row.get(h))
+                                    ctx.val(h)
                                     for h in headers
                                     if h and CONSULTANT_PATTERN.match(h)
                                 ],
@@ -501,8 +520,7 @@ def main() -> None:
                                 consultants_norm,
                                 (name,),
                                 "Consultant",
-                                excel_row,
-                                import_report,
+                                ctx,
                             )
                             con_objects.append(
                                 get_or_create(
@@ -514,8 +532,8 @@ def main() -> None:
                             )
 
                         # 4e. Fieldwork
-                        archive_val = clean_value(row.get("Archive"))
-                        entered_by = clean_value(row.get("Data entered by"))
+                        archive_val = ctx.val("Archive")
+                        entered_by = ctx.val("Data entered by")
                         dc_id_tuple = tuple(sorted(dc.id for dc in dc_objects))
                         con_id_tuple = tuple(sorted(c.id for c in con_objects))
 
@@ -561,42 +579,35 @@ def main() -> None:
                         # 5. Sources
                         source_objects = []
                         for auth_col, title_col, page_col, role in SOURCE_GROUPS:
-                            auth_raw = clean_value(row.get(auth_col))
+                            auth_raw = ctx.val(auth_col)
                             if not auth_raw:
                                 continue
 
-                            title_val = (
-                                clean_value(row.get(title_col)) if title_col else None
-                            )
-                            page_val = (
-                                clean_value(row.get(page_col)) if page_col else None
-                            )
+                            title_val = ctx.val(title_col) if title_col else None
+                            page_val = ctx.val(page_col) if page_col else None
 
                             # Basic validation: if title column exists, both should be present
                             if title_col and bool(auth_raw) != bool(title_val):
                                 import_report.add(
-                                    "source_incomplete",
-                                    {
-                                        "Row": excel_row,
-                                        "Author/Year Column": auth_col,
-                                        "Author/Year Value": auth_raw or "(leeg)",
-                                        "Title Column": title_col,
-                                        "Title Value": title_val or "(leeg)",
-                                        "Note": "Bron heeft wel auteur/jaar maar geen titel, of omgekeerd.",
-                                    },
+                                    SourceIncompleteEntry(
+                                        loc=ctx.loc(auth_col),
+                                        note="Bron heeft wel auteur/jaar maar geen titel, of omgekeerd.",
+                                        author_year_column=auth_col,
+                                        author_year_value=auth_raw or "(leeg)",
+                                        title_column=title_col,
+                                        title_value=title_val or "(leeg)",
+                                    )
                                 )
 
                             auth_val, unc = parse_uncertainty(auth_raw)
                             if unc:
                                 import_report.add(
-                                    "uncertainty",
-                                    {
-                                        "Row": excel_row,
-                                        "Column": auth_col,
-                                        "Original Value": auth_raw,
-                                        "Cleaned Value": auth_val,
-                                        "Note": "Onzeker jaar; controleer op alternatief indien aanwezig.",
-                                    },
+                                    UncertaintyEntry(
+                                        loc=ctx.loc(auth_col),
+                                        note="Onzeker jaar; controleer op alternatief indien aanwezig.",
+                                        original_value=auth_raw,
+                                        cleaned_value=auth_val,
+                                    )
                                 )
 
                             s_key = (auth_val, title_val)
@@ -604,9 +615,8 @@ def main() -> None:
                                 sources_norm,
                                 s_key,
                                 "Source",
-                                excel_row,
-                                import_report,
-                                extra={"Column": auth_col},
+                                ctx,
+                                column=auth_col,
                             )
                             source = get_or_create(
                                 sources_cache,
@@ -631,44 +641,36 @@ def main() -> None:
                             )
 
                         # 6. Reflex
-                        original_id = parse_id_with_report(
-                            row.get("ID 20250825"), "ID 20250825", excel_row, import_report
-                        )
-                        beginning_id = parse_id_with_report(
-                            row.get("ID beginning"), "ID beginning", excel_row, import_report
-                        )
+                        original_id = ctx.int("ID 20250825")
+                        beginning_id = ctx.int("ID beginning")
 
                         if beginning_id is not None:
                             if beginning_id in seen_beginning_ids:
                                 import_report.add(
-                                    "duplicate_beginning_id",
-                                    {
-                                        "Row": excel_row,
-                                        "beginning_id": beginning_id,
-                                        "First seen at Row": seen_beginning_ids[
+                                    DuplicateBeginningIdEntry(
+                                        loc=ctx.loc("ID beginning"),
+                                        note="Dubbel ID beginning — rij geskipt.",
+                                        beginning_id=beginning_id,
+                                        first_seen_row=seen_beginning_ids[
                                             beginning_id
                                         ],
-                                        "Term": clean_value(row.get("Term")),
-                                        "Variety (English)": clean_value(
-                                            row.get("Variety (English)")
-                                        ),
-                                        "Note": "Dubbel ID beginning — rij geskipt.",
-                                    },
+                                        term=ctx.val("Term"),
+                                        variety_english=ctx.val("Variety (English)"),
+                                    )
                                 )
                                 continue
                             seen_beginning_ids[beginning_id] = excel_row
 
-                        term = clean_value(row.get("Term"))
+                        term = ctx.val("Term")
                         if not term:
                             import_report.add(
-                                "skipped_no_term",
-                                {
-                                    "Row": excel_row,
-                                    "Variety (English)": v_key[0],
-                                    "Guthrie Index": v_key[6],
-                                    "Country": clean_value(row.get("Country")),
-                                    "Note": "Rij geskipt: geen waarde in kolom 'Term'.",
-                                },
+                                SkippedNoTermEntry(
+                                    loc=ctx.loc("Term"),
+                                    note="Rij geskipt: geen waarde in kolom 'Term'.",
+                                    variety_english=v_key[0],
+                                    guthrie_index=v_key[6],
+                                    country=ctx.val("Country"),
+                                )
                             )
                             continue
 
@@ -676,15 +678,14 @@ def main() -> None:
                         tv_key = (term, variety.id if variety else None)
                         if tv_key in seen_term_variety:
                             import_report.add(
-                                "suspicious_duplicate",
-                                {
-                                    "Row": excel_row,
-                                    "First seen at Row": seen_term_variety[tv_key],
-                                    "Term": term,
-                                    "Variety (English)": v_key[0],
-                                    "Guthrie Index": v_key[6],
-                                    "Note": "Zelfde term + variëteit al eerder gezien — mogelijke duplicaat.",
-                                },
+                                SuspiciousDuplicateEntry(
+                                    loc=ctx.loc("Term"),
+                                    note="Zelfde term + variëteit al eerder gezien — mogelijke duplicaat.",
+                                    first_seen_row=seen_term_variety[tv_key],
+                                    term=term,
+                                    variety_english=v_key[0],
+                                    guthrie_index=v_key[6],
+                                )
                             )
                         else:
                             seen_term_variety[tv_key] = excel_row
@@ -693,18 +694,17 @@ def main() -> None:
                             original_id=original_id,
                             beginning_id=beginning_id,
                             term=term,
-                            term_morph_analysis=clean_value(
-                                row.get("Term with Morphological Analysis")
+                            term_morph_analysis=ctx.val(
+                                "Term with Morphological Analysis"
                             ),
-                            translation=clean_value(row.get("Translation")),
-                            meaning=clean_value(row.get("Meaning")),
-                            scientific_name=clean_value(row.get("Scientific name")),
-                            semantic_field=clean_value(row.get("Semantic field")),
-                            part_of_speech=clean_value(row.get("Part of Speech")),
-                            blr_index=clean_value(row.get("BLR Index")),
-                            ipa=clean_value(row.get("IPA")),
-                            notes=clean_value(row.get("Opmerking"))
-                            or clean_value(row.get("Notes")),
+                            translation=ctx.val("Translation"),
+                            meaning=ctx.val("Meaning"),
+                            scientific_name=ctx.val("Scientific name"),
+                            semantic_field=ctx.val("Semantic field"),
+                            part_of_speech=ctx.val("Part of Speech"),
+                            blr_index=ctx.val("BLR Index"),
+                            ipa=ctx.val("IPA"),
+                            notes=ctx.val("Opmerking") or ctx.val("Notes"),
                             variety_id=variety.id if variety else None,
                             location_id=location.id if location else None,
                             fieldwork_id=fieldwork.id if fieldwork else None,
@@ -716,11 +716,11 @@ def main() -> None:
                     except Exception as e:
                         logger.error(f"Error on row {excel_row}: {e}")
                         import_report.add(
-                            "critical_error",
-                            {
-                                "Row": excel_row,
-                                "Error Message": str(e),
-                            },
+                            CriticalErrorEntry(
+                                loc=ctx.loc(),
+                                note="Onverwachte fout tijdens verwerking van rij.",
+                                error_message=str(e),
+                            )
                         )
                         continue
 
@@ -757,17 +757,31 @@ def main() -> None:
     elapsed = time.monotonic() - start_time
     logger.info(f"Import complete in {elapsed:.1f}s.")
 
-    # Validation summary in terminal
+    # Validation summary in terminal, coloured per severity level
+    _level_style = {"error": "bold red", "warning": "yellow", "note": "dim"}
     summary = import_report.summary()
     if summary:
         logger.warning("Validation summary:")
-        for category, count in sorted(summary.items(), key=lambda x: -x[1]):
-            logger.warning(f"  {category}: {count} issue(s)")
+        for category, count in sorted(
+            summary.items(),
+            key=lambda x: (LEVEL_ORDER[CATEGORY_CLASSES[x[0]].level], -x[1]),
+        ):
+            level = CATEGORY_CLASSES[category].level
+            style = _level_style[level]
+            logger.warning(
+                f"  [{style}]{level:<7}[/] {category}: {count} issue(s)"
+            )
     else:
         logger.info("Validation: geen problemen gevonden.")
 
-    import_report.save(str(DATA_ROOT / "import_validation.xlsx"))
-    logger.info(f"Validation report saved to {DATA_ROOT / 'import_validation.xlsx'}")
+    import_report.save(
+        str(DATA_ROOT / "import_validation.xlsx"),
+        str(DATA_ROOT / "import_validation.json"),
+    )
+    logger.info(
+        f"Validation report saved to {DATA_ROOT / 'import_validation.xlsx'} "
+        f"and {DATA_ROOT / 'import_validation.json'}"
+    )
 
 
 if __name__ == "__main__":

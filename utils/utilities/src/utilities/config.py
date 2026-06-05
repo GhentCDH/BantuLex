@@ -10,7 +10,7 @@ env_path = Path(__file__).parent.parent.parent.parent
 load_dotenv(env_path / "utils.env")
 
 print(f"Loading environment variables from: {env_path / 'utils.env'}")
-print(f"DATABASE_URL: {os.getenv('DATABASE_URL')}")
+print(f"DATABASE_URL: {'\u2219' * len(os.getenv('DATABASE_URL') or '')}")
 print(f"DATA_ROOT: {os.getenv('DATA_ROOT')}")
 
 required_env_vars = ["DATABASE_URL", "DATA_ROOT"]
@@ -20,7 +20,7 @@ for var in required_env_vars:
 
 DB_STRING = os.environ["DATABASE_URL"]
 
-DATA_ROOT = Path(os.getenv("DATA_ROOT"))
+DATA_ROOT = Path(os.getenv("DATA_ROOT") or exit(1))
 
 CSV = DATA_ROOT / "bantulex.csv"
 EXCEL = DATA_ROOT / "bantulex.xlsx"

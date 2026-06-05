@@ -15,7 +15,12 @@ from utilities.model import (
     Reflex,
 )
 
-from .parsing import clean_value, parse_int
+from .entries import (
+    BlrUnresolvedLinkEntry,
+    RowContext,
+    SourceLocation,
+    build_col_index,
+)
 from .report import ImportReport
 
 logger = logging.getLogger(__name__)
@@ -47,6 +52,12 @@ def import_blr(import_report: ImportReport | None = None) -> None:
     def row_to_dict(rc) -> dict:
         return {h: c.value for h, c in zip(headers, rc, strict=False) if h is not None}
 
+    # Discarded when running standalone without a shared report.
+    report = import_report if import_report is not None else ImportReport()
+    file_name = BLR_EXCEL.name
+    sheet_name = ws.title
+    col_index = build_col_index(headers)
+
     blr_index_map: dict[int, int] = {}
 
     contributors_cache: dict[tuple, BLRContributor] = {}
@@ -73,16 +84,17 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             tone_cache[(x.t11, x.t12, x.t21, x.t22, x.t3, x.t4)] = x
 
         inserted = 0
-        for row_cells in rows:
+        for excel_row, row_cells in enumerate(rows, start=2):
             row = row_to_dict(row_cells)
+            ctx = RowContext(file_name, sheet_name, excel_row, col_index, report, row)
 
-            idx_raw = parse_int(row.get("Index"))
+            idx_raw = ctx.int("Index")
             if idx_raw is None:
                 continue
             if idx_raw in blr_index_map:
                 continue
 
-            contributor_name = clean_value(row.get("Added by"))
+            contributor_name = ctx.val("Added by")
             contributor = (
                 get_or_create(
                     contributors_cache,
@@ -94,7 +106,7 @@ def import_blr(import_report: ImportReport | None = None) -> None:
                 else None
             )
 
-            reliability_val = clean_value(row.get("Fiab:"))
+            reliability_val = ctx.val("Fiab:")
             reliability = (
                 get_or_create(
                     reliability_cache,
@@ -107,11 +119,11 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             )
 
             c_key = (
-                clean_value(row.get("C1")),
-                clean_value(row.get("C2")),
-                clean_value(row.get("C3")),
-                clean_value(row.get("C4")),
-                clean_value(row.get("CS")),
+                ctx.val("C1"),
+                ctx.val("C2"),
+                ctx.val("C3"),
+                ctx.val("C4"),
+                ctx.val("CS"),
             )
             consonant_structure = (
                 get_or_create(
@@ -127,12 +139,12 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             )
 
             v_key = (
-                clean_value(row.get("V11")),
-                clean_value(row.get("V12")),
-                clean_value(row.get("V21")),
-                clean_value(row.get("V22")),
-                clean_value(row.get("V3")),
-                clean_value(row.get("V4")),
+                ctx.val("V11"),
+                ctx.val("V12"),
+                ctx.val("V21"),
+                ctx.val("V22"),
+                ctx.val("V3"),
+                ctx.val("V4"),
             )
             vowel_structure = (
                 get_or_create(
@@ -148,12 +160,12 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             )
 
             t_key = (
-                clean_value(row.get("T11")),
-                clean_value(row.get("T12")),
-                clean_value(row.get("T21")),
-                clean_value(row.get("T22")),
-                clean_value(row.get("T3")),
-                clean_value(row.get("T4")),
+                ctx.val("T11"),
+                ctx.val("T12"),
+                ctx.val("T21"),
+                ctx.val("T22"),
+                ctx.val("T3"),
+                ctx.val("T4"),
             )
             tone_structure = (
                 get_or_create(
@@ -170,15 +182,15 @@ def import_blr(import_report: ImportReport | None = None) -> None:
 
             blr = Reconstruction(
                 blr_index=idx_raw,
-                word_tone=clean_value(row.get("Word\\Tone")),
-                word=clean_value(row.get("Word")),
-                english=clean_value(row.get("English")),
-                french=clean_value(row.get("Français:")),
-                noun_class=clean_value(row.get("N class")),
-                distribution=clean_value(row.get("Distr:")),
-                note=clean_value(row.get("Note")),
-                proto_kk=clean_value(row.get("Proto KK")),
-                date_of_entry=clean_value(row.get("Date of entry")),
+                word_tone=ctx.val("Word\\Tone"),
+                word=ctx.val("Word"),
+                english=ctx.val("English"),
+                french=ctx.val("Français:"),
+                noun_class=ctx.val("N class"),
+                distribution=ctx.val("Distr:"),
+                note=ctx.val("Note"),
+                proto_kk=ctx.val("Proto KK"),
+                date_of_entry=ctx.val("Date of entry"),
                 contributor_id=contributor.id if contributor else None,
                 reliability_id=reliability.id if reliability else None,
                 consonant_structure_id=consonant_structure.id
@@ -204,19 +216,20 @@ def import_blr(import_report: ImportReport | None = None) -> None:
                 Reflex.blr_entry_id.is_(None),
             )
         ).all():
+            # No spreadsheet row here: this phase iterates DB Reflex rows.
+            link_loc = SourceLocation(file_name, sheet_name, None, "BLR Index", None)
             try:
                 idx = int(reflex.blr_index)
             except (ValueError, TypeError):
                 unresolved += 1
-                if import_report:
-                    import_report.add(
-                        "blr_unresolved_link",
-                        {
-                            "Reflex ID": reflex.id,
-                            "BLR Index (raw)": reflex.blr_index,
-                            "Note": "BLR index kon niet als integer worden geparsed.",
-                        },
+                report.add(
+                    BlrUnresolvedLinkEntry(
+                        loc=link_loc,
+                        note="BLR index kon niet als integer worden geparsed.",
+                        reflex_id=reflex.id,
+                        blr_index_raw=reflex.blr_index,
                     )
+                )
                 continue
             blr_id = blr_index_map.get(idx)
             if blr_id:
@@ -224,15 +237,14 @@ def import_blr(import_report: ImportReport | None = None) -> None:
                 linked += 1
             else:
                 unresolved += 1
-                if import_report:
-                    import_report.add(
-                        "blr_unresolved_link",
-                        {
-                            "Reflex ID": reflex.id,
-                            "BLR Index": idx,
-                            "Note": "Geen overeenkomende BLR Reconstruction gevonden voor dit index.",
-                        },
+                report.add(
+                    BlrUnresolvedLinkEntry(
+                        loc=link_loc,
+                        note="Geen overeenkomende BLR Reconstruction gevonden voor dit index.",
+                        reflex_id=reflex.id,
+                        blr_index_raw=idx,
                     )
+                )
 
         session.commit()
         logger.info(f"Linked {linked} entries to BLR — {unresolved} unresolved.")
