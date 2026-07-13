@@ -102,10 +102,14 @@ def main() -> None:
     sheet_name = ws.title
     col_index = build_col_index(headers)
 
-    # Check for missing expected columns
-    header_set = {h for h in headers if h}
+    # Check for missing expected columns. Collapse internal whitespace so that
+    # e.g. the "Consultant  2" (double space) header still matches "Consultant 2".
+    def _collapse_ws(s: str) -> str:
+        return " ".join(s.split())
+
+    header_set = {_collapse_ws(h) for h in headers if h}
     for col in EXPECTED_COLUMNS:
-        if col not in header_set:
+        if _collapse_ws(col) not in header_set:
             import_report.add(
                 MissingColumnEntry(
                     loc=SourceLocation(file_name, sheet_name, None, col, None),
@@ -264,6 +268,7 @@ def main() -> None:
                             ctx.val("Bastin Index"),
                             ctx.val("Guthrie Index"),
                             ctx.val("Guthrie PLUS"),
+                            ctx.val("Branch (detailed)"),
                         )
                         check_case_variant(
                             varieties_norm,
@@ -285,6 +290,7 @@ def main() -> None:
                                 bastin_index=k[5],
                                 guthrie_index=k[6],
                                 guthrie_plus=k[7],
+                                branch_detailed=k[8],
                             ),
                             session,
                         )
@@ -363,6 +369,7 @@ def main() -> None:
                         lon_def = ctx.float("Longitude")
                         lat_src = ctx.float("Latitude OR source")
                         lon_src = ctx.float("Longitude OR source")
+                        coord_source = ctx.val("Source of coordinates")
 
                         if (
                             (lat_def is None or lon_def is None)
@@ -386,6 +393,7 @@ def main() -> None:
                             *,
                             _loc=location,
                             _ctx=ctx,
+                            _src=coord_source,
                         ) -> None:
                             if _loc is None:
                                 return
@@ -397,6 +405,7 @@ def main() -> None:
                                         latitude=lat,
                                         longitude=lon,
                                         description=desc,
+                                        coordinate_source=_src,
                                     )
                                 )
                                 coord_seen[tk] = (lat, lon, _ctx.row)
@@ -704,7 +713,8 @@ def main() -> None:
                             part_of_speech=ctx.val("Part of Speech"),
                             blr_index=ctx.val("BLR Index"),
                             ipa=ctx.val("IPA"),
-                            notes=ctx.val("Opmerking") or ctx.val("Notes"),
+                            notes_on_ipa=ctx.val("Notes on IPA"),
+                            notes=ctx.val("Opmerking"),
                             variety_id=variety.id if variety else None,
                             location_id=location.id if location else None,
                             fieldwork_id=fieldwork.id if fieldwork else None,

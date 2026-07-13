@@ -6,6 +6,7 @@ EXPECTED_COLUMNS = [
     "Variety (Bantu)",
     "Variety as named in Bastin",
     "Branch",
+    "Branch (detailed)",
     "Bastin Index",
     "Guthrie Index",
     "Guthrie PLUS",
@@ -35,9 +36,6 @@ EXPECTED_COLUMNS = [
     "Cited source",
     "Title cited source",
     "Pages cited source",
-    "Second cited source",
-    "Title second cited source",
-    "Pages second cited source",
     "ID 20250825",
     "ID beginning",
     "Term",
@@ -50,12 +48,14 @@ EXPECTED_COLUMNS = [
     "BLR Index",
     "IPA",
     "Opmerking",
-    "Notes",
+    "Notes on IPA",
+    "Source of coordinates",
 ]
 
-# Field names for dynamic grouping
-COLLECTOR_PATTERN = re.compile(r"Data collector \d+")
-CONSULTANT_PATTERN = re.compile(r"Consultant \d+")
+# Field names for dynamic grouping.
+# \s+ tolerates irregular spacing in headers (e.g. "Consultant  2" with a double space).
+COLLECTOR_PATTERN = re.compile(r"Data collector\s+\d+")
+CONSULTANT_PATTERN = re.compile(r"Consultant\s+\d+")
 
 # Source groups (Author/Year, Title, Page, Role)
 # Unified role system: everyone is 'primary' or 'cited', 'order' handles slots.
@@ -69,12 +69,6 @@ SOURCE_GROUPS = [
     ),
     ("Source Fieldwork (data collector YEAR)", None, None, "primary"),
     ("Cited source", "Title cited source", "Pages cited source", "cited"),
-    (
-        "Second cited source",
-        "Title second cited source",
-        "Pages second cited source",
-        "cited",
-    ),
 ]
 
 # Fields to check for leading/trailing whitespace before clean_value strips them

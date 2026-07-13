@@ -46,6 +46,7 @@ class Variety(Table, table=True):
     name_bantu: str | None = _text(default=None)
     name_bastin: str | None = _text(default=None)
     branch: str | None = _text(default=None)
+    branch_detailed: str | None = _text(default=None)
     bastin_index: str | None = _text(default=None)
     guthrie_index: str | None = _text(default=None)
     guthrie_plus: str | None = _text(default=None)
@@ -64,6 +65,7 @@ class Coordinate(Table, table=True):
     latitude: float | None = _float(default=None)
     longitude: float | None = _float(default=None)
     description: str | None = _text(default=None)  # 'default' or 'original'
+    coordinate_source: str | None = _text(default=None)  # 'Source of coordinates'
 
     location_id: int | None = Field(default=None, foreign_key="location.id")
     location: Optional["Location"] = Relationship(back_populates="coordinates")
@@ -346,6 +348,7 @@ class Reflex(Table, table=True):
     part_of_speech: str | None = _text(default=None)
     blr_index: str | None = _text(default=None)
     ipa: str | None = _text(default=None)
+    notes_on_ipa: str | None = _text(default=None)
     notes: str | None = _text(default=None)
 
     # Foreign Keys
