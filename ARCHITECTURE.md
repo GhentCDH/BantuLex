@@ -6,47 +6,37 @@ This document describes the structure and deployment architecture of the BantuLe
 
 ```mermaid
 graph TB
-    subgraph "Docker Compose (local dev)"
-        style "Docker Compose (local dev)" fill:#f8fafc,stroke:#cbd5e1,stroke-width:2px,color:#475569
-
-        caddy_dev["caddy<br/><small>caddy:2-alpine :80</small>"]
-        style caddy_dev fill:#ffffff,stroke:#64748b,stroke-width:1.5px
-
+    subgraph dev["Docker Compose (local dev)"]
         admin_dev["admin (Crouton)<br/><small>local build of ./admin :4444<br/>UI /admin/, API /api<br/>compose profile admin</small>"]
         style admin_dev fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
 
-        map_dev["bantulex-map<br/><small>local build :80<br/>Caddy + static files</small>"]
-        style map_dev fill:#ffffff,stroke:#64748b,stroke-width:1.5px
-
-        import_dev["import<br/><small>CLI tool - not deployed</small>"]
-        style import_dev fill:none,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5,color:#64748b
-
-        export_dev["export<br/><small>CLI tool - not deployed</small>"]
-        style export_dev fill:none,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5,color:#64748b
-
-        db_dev[("./data/bantulex.db<br/><small>SQLite</small>")]
-        style db_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
+        utils_dev["utils<br/><small>importer + exporters (CLI)<br/>not deployed</small>"]
+        style utils_dev fill:none,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5,color:#64748b
 
         pg_dev[("postgres<br/><small>postgres:17-alpine :5432</small>")]
         style pg_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
-        caddy_dev --> map_dev
-        import_dev -.-> pg_dev
-        export_dev -.-> pg_dev
+        db_dev[("./data/bantulex.db<br/><small>SQLite</small>")]
+        style db_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
+
+        exports_dev[("./data exports<br/><small>EvoLex xlsx, GeoJSON, BLR catalog</small>")]
+        style exports_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
+
+        utils_dev -. "import" .-> pg_dev
+        pg_dev -. "export" .-> utils_dev
+        utils_dev -.-> exports_dev
         admin_dev -.-> db_dev
-        map_dev -.-> db_dev
     end
+    style dev fill:#f8fafc,stroke:#cbd5e1,stroke-width:2px,color:#475569
 
-    subgraph "Nomad Job: bantulex (target)"
-        style "Nomad Job: bantulex (target)" fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#065f46
-
+    subgraph nomad["Nomad Job: bantulex (target)"]
         gateway["gateway<br/><small>caddy:latest :80</small>"]
         style gateway fill:#ffffff,stroke:#64748b,stroke-width:1.5px
 
         data_mgmt["data_management<br/><small>ghcr.io/ghentcdh/bantulex<br/>Crouton admin: UI /admin/, API /api<br/>pre-built container, :4444</small>"]
         style data_mgmt fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
 
-        data_pub["data_publishing<br/><small>caddy + static<br/>no back-end<br/>data view on :3000</small>"]
+        data_pub["data_publishing<br/><small>map frontend<br/>separate project</small>"]
         style data_pub fill:#ffffff,stroke:#64748b,stroke-width:1.5px
 
         db_nomad[("CSI/SMB Volume: bantulex.db")]
@@ -55,26 +45,24 @@ graph TB
         gateway -- "/admin/*, /api/*" --> data_mgmt
         gateway -- "/*" --> data_pub
         data_mgmt -.-> db_nomad
-        data_pub -.-> db_nomad
     end
+    style nomad fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#065f46
 
-    subgraph "Container Build Required"
-        style "Container Build Required" fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#991b1b
-
-        build_tool["ghcr.io/ghentcdh/bantulex<br/><small>Crouton admin - built from admin/Dockerfile<br/>published by CI on release tags</small>"]
+    subgraph build["Container Build Required"]
+        build_tool["ghcr.io/ghentcdh/bantulex<br/><small>Crouton admin - built from admin/Dockerfile<br/>published by CI on v* tags</small>"]
         style build_tool fill:#ffffff,stroke:#ef4444,stroke-width:2px,color:#991b1b
 
-        no_build["No custom build needed<br/><small>gateway -> stock caddy:latest<br/>data_publishing -> stock caddy + static files from volume</small>"]
+        no_build["No custom build needed<br/><small>gateway -> stock caddy:latest</small>"]
         style no_build fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#065f46
     end
+    style build fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#991b1b
 
     build_tool -. "red dashed = target build pipeline" .-> data_mgmt
-end
 ```
 
 Notes:
 
-- In local dev the `caddy`/`gateway` service only serves the map; the admin is reached directly on `127.0.0.1:4444`.
+- Local dev has no gateway: the admin is reached directly on `127.0.0.1:4444`, and the exporters write their files to `data/`. The map that uses those exports lives in a separate project.
 - The admin has no login: in production it must sit behind an authenticating reverse proxy. Its UI base path is `/admin/` and its API `/api` (see `admin/README.md`); serving it under another sub-path requires changing that configuration.
 - Known gap: the importer writes to Postgres (`DATABASE_URL` in `utils/utils.env`), while the admin edits the SQLite file `bantulex.db`. Nothing currently syncs the two; a Postgres datasource for the admin is future work.
 
@@ -110,4 +98,4 @@ To avoid the anti-pattern of slot-based roles (e.g., `role="second_source"`), th
 
 ### 3. BLR Phonological Structures
 
-Phonological positions (C1, V11, T11, etc.) for Bantu Lexical Reconstructions are kept as fixed columns. This is a deliberate choice to support the "Sound Search" (Klankzoeker) functionality in the Map UI, which requires predictable structural slots.
+Phonological positions (C1, V11, T11, etc.) for Bantu Lexical Reconstructions are kept as fixed columns. This is a deliberate choice to support the "Sound Search" (Klankzoeker) in the map (a separate project, fed by `just export-blr`), which requires predictable structural slots.
