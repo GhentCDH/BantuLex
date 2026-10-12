@@ -20,9 +20,20 @@ function key(id: string | number) {
 function identify<T extends {fieldwork_id:number;data_collector_id:number}>(row:T | null) {
   return row && {...row,id:`${row.fieldwork_id}:${row.data_collector_id}`};
 }
+/** Crouton runs calculated columns by `id`, which the junction lacks; evaluate them per compound key instead. */
+async function withCalculated<T extends {fieldwork_id:number;data_collector_id:number}>(rows:T[],ctx:AdapterCrudContext) {
+  const cols:{id:string;alias?:string;sqlExpression:string}[] = ctx.config?.calculatedColumns ?? [];
+  if(!cols.length) return rows;
+  const select = cols.map(c=>`(${c.sqlExpression}) AS "${c.alias ?? c.id}"`).join(', ');
+  return Promise.all(rows.map(async row=>{
+    const [values] = await prisma.$queryRawUnsafe<Record<string,unknown>[]>(`SELECT ${select} FROM "${junction}" main WHERE main.fieldwork_id = ? AND main.data_collector_id = ?`,row.fieldwork_id,row.data_collector_id);
+    return {...row,...values};
+  }));
+}
 function cleanContext(ctx:AdapterCrudContext) {
   const clean = (select:Record<string,unknown>|undefined) => select && Object.fromEntries(Object.entries(select).filter(([k])=>k!=='id'));
-  return {...ctx,listSelect:clean(ctx.listSelect),oneSelect:clean(ctx.oneSelect)};
+  // Calculated columns are evaluated by withCalculated, not by Crouton's id-based query.
+  return {...ctx,config:{...ctx.config,calculatedColumns:[]},listSelect:clean(ctx.listSelect),oneSelect:clean(ctx.oneSelect)};
 }
 /** The sole data-access extension: adapt a compound primary key to Crouton's scalar route ID. */
 class BantuLexAdapter extends PrismaDataSourceAdapter {
@@ -30,10 +41,12 @@ class BantuLexAdapter extends PrismaDataSourceAdapter {
     const bounded = {...params,pageSize:Math.min(Math.max(params.pageSize || 25,1),100),sort:params.sort || (model===junction?'fieldwork_id':'id')};
     if(model!==junction) return super.findAll(model,bounded,ctx);
     const result=await super.findAll(model,{...bounded,sort:bounded.sort==='id'?'fieldwork_id':bounded.sort},cleanContext(ctx));
-    return {...result,data:result.data.map(identify)};
+    return {...result,data:await withCalculated(result.data.map(identify),ctx)};
   }
   override async findOne(model:string,id:string|number,ctx:AdapterCrudContext) {
-    return model===junction ? identify(await prisma.fieldworkdatacollector.findUnique({where:key(id)})) : super.findOne(model,id,ctx);
+    if(model!==junction) return super.findOne(model,id,ctx);
+    const row = identify(await prisma.fieldworkdatacollector.findUnique({where:key(id)}));
+    return row && (await withCalculated([row],ctx))[0];
   }
   override async create(model:string,data:unknown,ctx:AdapterCrudContext) {
     if(model!==junction) return super.create(model,data,ctx);
