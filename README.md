@@ -1,6 +1,8 @@
 # BantuLex
 
-Linguistic data management system for Bantu languages. Imports data from Excel (via CSV export) into an SQLite database, with a Kottster admin panel for browsing.
+Linguistic data management system for Bantu languages. Imports data from Excel into Postgres, exports it for an interactive map and EvoLex, and publishes it as a static [Pihka](https://github.com/GhentCDH/Pihka) website.
+
+See [docs/](docs/README.md) for the data model, known data issues and the publishing workflow.
 
 ## Prerequisites
 
@@ -20,6 +22,7 @@ This will build the containers, run the import, and set up the database.
 - **import** — Python/uv container for importing CSV data into SQLite
 - **bantulex-map** — MapLibre-based static vector map (port 80 via proxy)
 - **caddy** — Reverse proxy for all services
+- **pihka**: local preview of the Pihka website on port 9161 (see [publishing](docs/publishing.md))
 
 ## Recipes
 
@@ -31,7 +34,11 @@ This will build the containers, run the import, and set up the database.
 | `just map-up`      | Build and start the map service    |
 | `just map-rebuild` | Force rebuild of the map service   |
 | `just reinit`      | Rebuild + import                   |
-| `just reset-db`    | Delete the SQLite database         |
+| `just reset-db`    | Recreate the Postgres database     |
+| `just pihka-init`  | Fetch the pinned Pihka submodule   |
+| `just site-db`     | Prepare the SQLite export for Pihka |
+| `just pihka-up`    | Preview the website locally        |
+| `just publish`     | Build the website and rsync it     |
 
 ## Credits
 
