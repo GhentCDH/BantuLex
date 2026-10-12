@@ -31,10 +31,6 @@ export-evolex:
     docker compose run  -w /app/utils/exporter --rm utils  uv run export-evolex
     
 
-# Volledig EvoLex Excel+Google Sheets export
-export-evolex-google:
-    docker compose run  -w /app/utils/exporter --rm utils  uv run export-evolex-google
-
 # GeoJSON-export van alle taalvariëteiten met coördinaten (voor de kaart)
 export-map:
     docker compose run  -w /app/utils/exporter --rm utils  uv run export-map
@@ -89,33 +85,7 @@ reset-db:
     docker compose exec -T postgres psql -U bantulex -d postgres -c "DROP DATABASE IF EXISTS bantulex WITH (FORCE);"
     docker compose exec -T postgres psql -U bantulex -d postgres -c "CREATE DATABASE bantulex OWNER bantulex;"
 
-# Drop everything owned by the bantulex role (importer tables, removed-from-model tables, sequences, etc.)
-# Safe on remote DB: Mathesar's objects are owned by mathesar_bantulex, untouched.
-reset-tables:
-    docker compose run --rm utils uv run python -c \
-    "from sqlalchemy import text; from utilities.db import engine; \
-     conn = engine.connect(); conn.execute(text('DROP OWNED BY bantulex CASCADE')); conn.commit(); \
-     print('dropped all objects owned by bantulex')"
-
-# (Re)grant Mathesar role access on importer-owned objects + set default privs for future tables.
-# Needed after every reset-tables/import since DROP OWNED BY clears default privileges too.
-grant-mathesar:
-    docker compose run --rm utils uv run python -c \
-    "from sqlalchemy import text; from utilities.db import engine; \
-     stmts = [ \
-       'GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public TO mathesar_bantulex', \
-       'GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO mathesar_bantulex', \
-       'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES TO mathesar_bantulex', \
-       'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO mathesar_bantulex', \
-     ]; \
-     conn = engine.connect(); \
-     [conn.execute(text(s)) for s in stmts]; conn.commit(); \
-     print('granted mathesar_bantulex on bantulex objects')"
-
 reinit: rebuild reset-db import map-data
-
-# Remote-safe reinit: keep DB + Mathesar objects, recreate only importer-owned objects
-reinit-remote: reset-tables import grant-mathesar
 
 # ── Dev helpers ──────────────────────────────────────────────────────────────
 

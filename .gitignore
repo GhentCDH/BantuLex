@@ -39,7 +39,7 @@ Desktop.ini
 service_account.json
 
 # BantuLex model
-bantulex_model
+bantulex_model*
 
 # Admin (Crouton): SQLite backups contain data and must never be committed
 backups/
