@@ -12,7 +12,6 @@ import/erd.mermaid
 *-journal
 
 .claude
-.DS_Store
 .venv
 __pycache__
 *.pyc
