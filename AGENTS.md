@@ -79,11 +79,11 @@ Managed as a `uv` workspace with three packages:
 - **`utilities/`** — shared code: SQLModel ORM definitions (`model.py`), DB connection, config
 - **`documenter/`** — schema visualization tool
 
-The canonical data model is in [utils/utilities/src/utilities/model.py](utils/utilities/src/utilities/model.py). Key tables: `Variety`, `Entry`, `Location`, `Fieldwork`, `Source`, `SourceEntries`, `BLREntry`.
+The canonical data model is in [utils/utilities/src/utilities/model.py](utils/utilities/src/utilities/model.py). Key tables: `Variety`, `Reflex`, `Reconstruction`, `Location`, `Fieldwork`, `Source`, `SourceEntries`.
 
 ### Map UI (`local-map/`)
 
-Static HTML/JS using MapLibre GL JS. Displays GeoJSON exports with clustering. Includes a "Klankzoeker" (sound search) for BLR phonological data. Served by Caddy from the `local-map/dist/` directory.
+Static HTML/JS using MapLibre GL JS. Displays GeoJSON exports with clustering. Includes a "Klankzoeker" (sound search) for BLR phonological data. Served by Caddy from the `local-map/` directory.
 
 ## Configuration
 
