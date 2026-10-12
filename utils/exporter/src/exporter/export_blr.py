@@ -1,7 +1,7 @@
 """
-export_blr.py  -  BantuLex DB → kaartdata voor de lokale Klankzoeker
+export_blr.py  -  BantuLex DB → kaartdata voor de Klankzoeker
 
-Genereert twee bestanden in local-map/data/:
+Genereert twee bestanden in DATA_ROOT (data/):
 
   bantulex_entries.geojson
       GeoJSON FeatureCollection - één feature per taalvariëteit met gekende

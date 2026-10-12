@@ -30,18 +30,6 @@ services:
       timeout: 3s
       retries: 10
 
-  # ── Gateway & Data Publishing (Caddy) ──────────────────────────────────────
-  gateway:
-    image: caddy:2-alpine
-    ports:
-      - "9160:80"
-    volumes:
-      - ./caddy/:/etc/caddy/:ro
-      - ./local-map:/srv/local-map:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    restart: always
-
   # ── Data Management (Crouton admin) ────────────────────────────────────────
   # UI on /admin/, API on /api. Edits the SQLite file data/bantulex.db (see admin/README.md).
   # Behind the "admin" profile so a plain `docker compose up` works without that file:
@@ -59,7 +47,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  caddy-data:
-  caddy-config:
   pgdata:
   venv:
