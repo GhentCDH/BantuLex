@@ -3,7 +3,6 @@
 *.xlsx
 .python-version
 __pycache__
-kottster/dist
 *.db
 data/bantulex.csv
 data/import*
@@ -41,3 +40,16 @@ service_account.json
 
 # BantuLex model
 bantulex_model
+
+# Admin (Crouton): SQLite backups contain data and must never be committed
+backups/
+# Build/test artifacts of admin/ (also in admin/.gitignore)
+admin/dist/
+admin/generated/
+admin/.nx/
+admin/.pnpm-store/
+admin/test-results/
+admin/playwright-report/
+
+# Local task notes
+TASKS.md

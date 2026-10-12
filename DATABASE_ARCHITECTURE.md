@@ -10,9 +10,7 @@ The project is organized into modular directories, separating the Python import/
 .
 ├── caddy/                  # Reverse proxy configuration (Caddyfile)
 ├── data/                   # Gitignored: SQLite database and Excel sources
-├── kottster/               # Administrative interface (Node.js/React)
-│   ├── app/                # Main app logic and UI definitions
-│   └── kottster-app.json   # Kottster v3 framework configuration
+├── admin/                  # Crouton admin app (NestJS API + Vue UI) editing data/bantulex.db; see admin/README.md
 ├── local-map/              # Static MapLibre GL JS frontend (phonological map)
 ├── utils/                  # Python backend utilities (UV-managed)
 │   ├── importer/           # Excel-to-SQLite pipeline
@@ -23,6 +21,8 @@ The project is organized into modular directories, separating the Python import/
 ```
 
 ## 2 Database Engine: SQLite STRICT
+
+> **Note:** the importer (`utils/`) currently writes to **Postgres** (`DATABASE_URL` in `utils/utils.env`), so the SQLite-specific helpers below no longer match `model.py`. The Crouton admin edits the SQLite file `data/bantulex.db`, whose 22 tables are STRICT. Nothing currently syncs Postgres and that file; a Postgres datasource for the admin is future work.
 
 The project uses **SQLite in STRICT mode** to ensure maximum data integrity at the database level. Because SQLite STRICT mode is more restrictive than standard SQLite, the models in `utilities/model.py` use custom helpers to ensure compatibility:
 
@@ -36,7 +36,7 @@ Models are organized by their role in the BantuLex linguistics management workfl
 
 ### 3.1 Primary Entities (Linguistic Data)
 
-These models contain the core research data and are the primary focus of the Kottster Admin UI. All primary and procedural models inherit `id`, `created_at`, and `updated_at` from a common base class.
+These models contain the core research data and are the primary focus of the admin app. All primary and procedural models inherit `id`, `created_at`, and `updated_at` from a common base class.
 
 #### Reflex (Entry)
 A single linguistic record for a specific term in a specific variety.

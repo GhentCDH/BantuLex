@@ -12,8 +12,8 @@ graph TB
         caddy_dev["caddy<br/><small>caddy:2-alpine :80</small>"]
         style caddy_dev fill:#ffffff,stroke:#64748b,stroke-width:1.5px
 
-        kottster_dev["kottster<br/><small>local build :5480<br/>source-mounted, dev.sh</small>"]
-        style kottster_dev fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
+        admin_dev["admin (Crouton)<br/><small>local build of ./admin :4444<br/>UI /admin/, API /api<br/>compose profile admin</small>"]
+        style admin_dev fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
 
         map_dev["bantulex-map<br/><small>local build :80<br/>Caddy + static files</small>"]
         style map_dev fill:#ffffff,stroke:#64748b,stroke-width:1.5px
@@ -24,14 +24,16 @@ graph TB
         export_dev["export<br/><small>CLI tool - not deployed</small>"]
         style export_dev fill:none,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5,color:#64748b
 
-        db_dev[("./data/bantulex.db")]
+        db_dev[("./data/bantulex.db<br/><small>SQLite</small>")]
         style db_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
-        caddy_dev --> kottster_dev
+        pg_dev[("postgres<br/><small>postgres:17-alpine :5432</small>")]
+        style pg_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
+
         caddy_dev --> map_dev
-        import_dev -.-> db_dev
-        export_dev -.-> db_dev
-        kottster_dev -.-> db_dev
+        import_dev -.-> pg_dev
+        export_dev -.-> pg_dev
+        admin_dev -.-> db_dev
         map_dev -.-> db_dev
     end
 
@@ -41,21 +43,17 @@ graph TB
         gateway["gateway<br/><small>caddy:latest :80</small>"]
         style gateway fill:#ffffff,stroke:#64748b,stroke-width:1.5px
 
-        data_mgmt["data_management<br/><small>ghcr.io/ghentcdh/bantulex:main<br/>Kottster on /data/admin<br/>pre-built container, :8000</small>"]
+        data_mgmt["data_management<br/><small>ghcr.io/ghentcdh/bantulex<br/>Crouton admin: UI /admin/, API /api<br/>pre-built container, :4444</small>"]
         style data_mgmt fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
 
         data_pub["data_publishing<br/><small>caddy + static<br/>no back-end<br/>data view on :3000</small>"]
         style data_pub fill:#ffffff,stroke:#64748b,stroke-width:1.5px
 
-        vault["Vault: nomad/kv/ghentcdh/bantulex"]
-        style vault fill:#f5f3ff,stroke:#8b5cf6,stroke-width:1.5px,color:#5b21b6
-
         db_nomad[("CSI/SMB Volume: bantulex.db")]
         style db_nomad fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
-        gateway -- "/data/admin*" --> data_mgmt
+        gateway -- "/admin/*, /api/*" --> data_mgmt
         gateway -- "/*" --> data_pub
-        data_mgmt -.-> vault
         data_mgmt -.-> db_nomad
         data_pub -.-> db_nomad
     end
@@ -63,7 +61,7 @@ graph TB
     subgraph "Container Build Required"
         style "Container Build Required" fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#991b1b
 
-        build_tool["ghcr.io/ghentcdh/bantulex:main<br/><small>Kottster app - pre-built - no source mounts<br/>configured for sub-path /data/admin</small>"]
+        build_tool["ghcr.io/ghentcdh/bantulex<br/><small>Crouton admin - built from admin/Dockerfile<br/>published by CI on release tags</small>"]
         style build_tool fill:#ffffff,stroke:#ef4444,stroke-width:2px,color:#991b1b
 
         no_build["No custom build needed<br/><small>gateway -> stock caddy:latest<br/>data_publishing -> stock caddy + static files from volume</small>"]
@@ -74,13 +72,18 @@ graph TB
 end
 ```
 
+Notes:
+
+- In local dev the `caddy`/`gateway` service only serves the map; the admin is reached directly on `127.0.0.1:4444`.
+- The admin has no login: in production it must sit behind an authenticating reverse proxy. Its UI base path is `/admin/` and its API `/api` (see `admin/README.md`); serving it under another sub-path requires changing that configuration.
+- Known gap: the importer writes to Postgres (`DATABASE_URL` in `utils/utils.env`), while the admin edits the SQLite file `bantulex.db`. Nothing currently syncs the two; a Postgres datasource for the admin is future work.
+
 ## Legend
 
 - <span style="color:#3b82f6">■</span> **Custom container (needs CI/CD build)**
 - <span style="color:#64748b">■</span> **Stock / config-only container**
 - <span style="color:#94a3b8">◌</span> **Dev-only (not deployed)**
 - <span style="color:#f59e0b">■</span> **Persistent data**
-- <span style="color:#8b5cf6">■</span> **Secrets (Vault)**
 - <span style="color:#ef4444">---</span> **The one required build pipeline**
 
 ## Data Model & Normalization

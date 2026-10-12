@@ -1,16 +1,18 @@
-KOTTSTER_URL  := "http://localhost:9160"
+MAP_URL   := "http://localhost:9160"
+ADMIN_URL := "http://localhost:4444/admin/"
 
 # ── Docker lifecycle ─────────────────────────────────────────────────────────
 
+# Het admin-profiel staat bewust niet in `up`/`rebuild`: de admin heeft data/bantulex.db nodig.
 rebuild:
-    docker compose down -t 1
+    docker compose --profile admin down -t 1
     docker compose up -d --build
 
 up:
     docker compose up -d
 
 down:
-    docker compose down
+    docker compose --profile admin down
 
 # ── Modelgeneratie ───────────────────────────────────────────────────────────
 
@@ -60,10 +62,25 @@ map-data:
         /out/world.pmtiles \
         --maxzoom=6
 
-# ── Data Management (Kottster) ───────────────────────────────────────────────
+# ── Data Management (Crouton admin, zie admin/README.md) ─────────────────────
 
-kottster:
-    docker compose exec data-management ./scripts/dev.sh
+# Productie-image bouwen en starten op :4444 (vereist data/bantulex.db, schrijfbaar voor uid 1000)
+admin:
+    mkdir -p backups
+    docker compose --profile admin up -d --build admin
+
+# Dev-server met hot reload (UI :5555/admin/, API :4444/api); stop eerst `admin` (zelfde poort 4444)
+admin-dev:
+    cd admin && docker compose --profile dev up dev
+
+# Typecheck, build en unit/integratietests in de dev-container
+admin-test:
+    cd admin && docker compose run --rm dev sh -c "pnpm typecheck && pnpm build && pnpm test"
+
+# Start eerst Chrome met --remote-debugging-port=9222, zie admin/README.md
+# Browsertests: Playwright in de container stuurt de Chrome op de host aan via CDP
+admin-e2e:
+    cd admin && docker compose --profile dev run --rm --service-ports e2e
 
 # ── Database ─────────────────────────────────────────────────────────────────
 
@@ -103,7 +120,8 @@ reinit-remote: reset-tables import grant-mathesar
 # ── Dev helpers ──────────────────────────────────────────────────────────────
 
 open-admin:
-    open "{{KOTTSTER_URL}}/admin"
+    open "{{ADMIN_URL}}"
 
 open:
-       open "{{KOTTSTER_URL}}"
+    open "{{MAP_URL}}"
+
