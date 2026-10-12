@@ -6,6 +6,7 @@ __pycache__
 kottster/dist
 *.db
 data/bantulex.csv
+data/import*
 import/erd.mermaid
 *.db-shm
 *.db-wal
