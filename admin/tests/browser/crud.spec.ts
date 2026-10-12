@@ -1,6 +1,8 @@
 import {test,expect} from './fixtures';
 // @ts-ignore JavaScript integration helpers
 import {copyDatabase,startServer,stopServer,inventory,sql} from '../helpers.mjs';
+import {readFileSync} from 'node:fs';
+const labelOf=(table:string,column:string)=>JSON.parse(readFileSync(`apps/backend/src/app/resources/${table}/resource.json`,'utf8')).columns[column].label;
 let server:any,db:string;
 test.beforeAll(async()=>{const copy=copyDatabase();db=copy.db;server=await startServer(db,copy.dir,14445);});
 test.afterAll(async()=>{await stopServer(server.child);});
@@ -11,8 +13,7 @@ for(const table of inventory) {
   await page.getByRole('button',{name:'Edit',exact:true}).first().click();
   await expect(page.locator('form')).toBeVisible();
   for(const col of table.columns.filter((c:any)=>!['id','created_at','updated_at'].includes(c.name))) {
-   const label=col.name.replaceAll('_',' '); const expected=label.charAt(0).toUpperCase()+label.slice(1);
-   await expect(page.locator('form').getByText(expected,{exact:true}).first()).toBeVisible();
+   await expect(page.locator('form').getByText(labelOf(table.table,col.name),{exact:true}).first()).toBeVisible();
   }
   const field=table.columns.find((c:any)=>c.type==='TEXT'&&!['created_at','updated_at'].includes(c.name));
   if(field) {
@@ -29,8 +30,8 @@ for(const table of inventory) {
   await page.getByRole('button',{name:'View',exact:true}).first().click();
   const detail=page.getByRole('dialog');await expect(detail).toBeVisible();
   for(const col of table.columns) {
-   const raw=col.name.replaceAll('_',' ');const label=raw.charAt(0).toUpperCase()+raw.slice(1);
-   await expect(detail.getByText(label,{exact:true}).first()).toBeVisible();
+   // Foreign-key ids are hidden in the view; their name column carries the same label.
+   await expect(detail.getByText(labelOf(table.table,col.name),{exact:true}).first()).toBeVisible();
   }
   expect(errors).toEqual([]);
  });

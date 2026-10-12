@@ -41,40 +41,6 @@
       "idField": true,
       "defaultSort": true
     },
-    "created_at": {
-      "label": "Created at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
-    "updated_at": {
-      "label": "Updated at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
     "author_year": {
       "label": "Author year",
       "type": {
@@ -139,6 +105,40 @@
       "fieldInput": {
         "type": "textarea"
       }
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
     }
   },
   "modalSize": "xl",
@@ -169,7 +169,7 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT '#' || main.id || ' \u00b7 ' || COALESCE(CAST(main.\"author_year\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"title\" AS TEXT),'')",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
     }

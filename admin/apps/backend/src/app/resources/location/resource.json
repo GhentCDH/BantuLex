@@ -41,6 +41,123 @@
       "idField": true,
       "defaultSort": true
     },
+    "place_id": {
+      "label": "Place",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": true,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../place/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/place/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "region_id": {
+      "label": "Region",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": true,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../region/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/region/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "country_id": {
+      "label": "Country",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": true,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../country/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/country/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
     "created_at": {
       "label": "Created at",
       "type": {
@@ -74,123 +191,6 @@
       "searchable": false,
       "hiddenInTable": true,
       "showInLookup": false
-    },
-    "place_id": {
-      "label": "Place id",
-      "type": {
-        "type": [
-          "integer",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "autocomplete",
-        "relationType": "manyToOne",
-        "resource": "../place/resource.json",
-        "options": {
-          "valueKey": "id",
-          "labelKey": "display_label",
-          "storeValue": true,
-          "resource": "/place/schemas",
-          "enableCreate": false
-        }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
-      }
-    },
-    "region_id": {
-      "label": "Region id",
-      "type": {
-        "type": [
-          "integer",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "autocomplete",
-        "relationType": "manyToOne",
-        "resource": "../region/resource.json",
-        "options": {
-          "valueKey": "id",
-          "labelKey": "display_label",
-          "storeValue": true,
-          "resource": "/region/schemas",
-          "enableCreate": false
-        }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
-      }
-    },
-    "country_id": {
-      "label": "Country id",
-      "type": {
-        "type": [
-          "integer",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "autocomplete",
-        "relationType": "manyToOne",
-        "resource": "../country/resource.json",
-        "options": {
-          "valueKey": "id",
-          "labelKey": "display_label",
-          "storeValue": true,
-          "resource": "/country/schemas",
-          "enableCreate": false
-        }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
-      }
     }
   },
   "modalSize": "xl",
@@ -221,9 +221,60 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT '#' || main.id || ' \u00b7 ' || COALESCE(CAST(main.\"place_id\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"region_id\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"country_id\" AS TEXT),'')",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "place_label",
+      "alias": "place_label",
+      "label": "Place",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"place\" x WHERE x.id = main.\"place_id\"",
+      "position": 1,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "region_label",
+      "alias": "region_label",
+      "label": "Region",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"region\" x WHERE x.id = main.\"region_id\"",
+      "position": 1,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "country_label",
+      "alias": "country_label",
+      "label": "Country",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"country\" x WHERE x.id = main.\"country_id\"",
+      "position": 1,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
     }
   ]
 }

@@ -41,40 +41,6 @@
       "idField": true,
       "defaultSort": true
     },
-    "created_at": {
-      "label": "Created at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
-    "updated_at": {
-      "label": "Updated at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
     "original_id": {
       "label": "Original id",
       "type": {
@@ -340,21 +306,21 @@
       }
     },
     "variety_id": {
-      "label": "Variety id",
+      "label": "Variety",
       "type": {
         "type": [
           "integer",
           "null"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
@@ -379,21 +345,21 @@
       }
     },
     "location_id": {
-      "label": "Location id",
+      "label": "Location",
       "type": {
         "type": [
           "integer",
           "null"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
@@ -418,21 +384,21 @@
       }
     },
     "fieldwork_id": {
-      "label": "Fieldwork id",
+      "label": "Fieldwork",
       "type": {
         "type": [
           "integer",
           "null"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
@@ -457,21 +423,21 @@
       }
     },
     "blr_entry_id": {
-      "label": "Blr entry id",
+      "label": "Blr entry",
       "type": {
         "type": [
           "integer",
           "null"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
@@ -494,6 +460,40 @@
         "type": "number",
         "format": "number"
       }
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
     }
   },
   "modalSize": "xl",
@@ -576,9 +576,77 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT '#' || main.id || ' \u00b7 ' || COALESCE(CAST(main.\"term\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"translation\" AS TEXT),'')",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.term, x.translation), ''), '#' || x.id) FROM \"reflex\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "variety_label",
+      "alias": "variety_label",
+      "label": "Variety",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(COALESCE(x.name_english, x.name_bantu, x.name_french, x.name_bastin) || COALESCE(' (' || x.guthrie_index || ')', ''), ''), '#' || x.id) FROM \"variety\" x WHERE x.id = main.\"variety_id\"",
+      "position": 10,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "location_label",
+      "alias": "location_label",
+      "label": "Location",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.\"location_id\"",
+      "position": 10,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "fieldwork_label",
+      "alias": "fieldwork_label",
+      "label": "Fieldwork",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT p.name FROM project p WHERE p.id = x.project_id), (SELECT y.value FROM collectionyear y WHERE y.id = x.collection_year_id), x.archive), ''), '#' || x.id) FROM \"fieldwork\" x WHERE x.id = main.\"fieldwork_id\"",
+      "position": 10,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "blr_entry_label",
+      "alias": "blr_entry_label",
+      "label": "Blr entry",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.blr_index, x.word, x.english), ''), '#' || x.id) FROM \"reconstruction\" x WHERE x.id = main.\"blr_entry_id\"",
+      "position": 10,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
     }
   ]
 }

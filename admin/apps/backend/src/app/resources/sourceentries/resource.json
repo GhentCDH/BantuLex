@@ -41,40 +41,6 @@
       "idField": true,
       "defaultSort": true
     },
-    "created_at": {
-      "label": "Created at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
-    "updated_at": {
-      "label": "Updated at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
     "role": {
       "label": "Role",
       "type": {
@@ -119,21 +85,21 @@
       }
     },
     "entry_id": {
-      "label": "Entry id",
+      "label": "Entry",
       "type": {
         "type": [
           "integer",
           "null"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
@@ -158,21 +124,21 @@
       }
     },
     "source_id": {
-      "label": "Source id",
+      "label": "Source",
       "type": {
         "type": [
           "integer",
           "null"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
@@ -195,6 +161,40 @@
         "type": "number",
         "format": "number"
       }
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
     }
   },
   "modalSize": "xl",
@@ -229,9 +229,43 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT '#' || main.id",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.role, (SELECT s.author_year FROM source s WHERE s.id = x.source_id)), ''), '#' || x.id) FROM \"sourceentries\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "entry_label",
+      "alias": "entry_label",
+      "label": "Entry",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.term, x.translation), ''), '#' || x.id) FROM \"entry\" x WHERE x.id = main.\"entry_id\"",
+      "position": 3,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "source_label",
+      "alias": "source_label",
+      "label": "Source",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.\"source_id\"",
+      "position": 3,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
     }
   ]
 }

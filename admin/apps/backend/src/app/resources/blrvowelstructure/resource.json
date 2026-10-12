@@ -41,40 +41,6 @@
       "idField": true,
       "defaultSort": true
     },
-    "created_at": {
-      "label": "Created at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
-    "updated_at": {
-      "label": "Updated at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
     "v11": {
       "label": "V11",
       "type": {
@@ -206,6 +172,40 @@
       "fieldInput": {
         "type": "string"
       }
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
     }
   },
   "modalSize": "xl",
@@ -248,7 +248,7 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT '#' || main.id || ' \u00b7 ' || COALESCE(CAST(main.\"v11\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"v12\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"v21\" AS TEXT),'')",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.v11, x.v12, x.v21, x.v22, x.v3, x.v4), ''), '#' || x.id) FROM \"blrvowelstructure\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
     }

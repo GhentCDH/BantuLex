@@ -41,40 +41,6 @@
       "idField": true,
       "defaultSort": true
     },
-    "created_at": {
-      "label": "Created at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
-    "updated_at": {
-      "label": "Updated at",
-      "type": {
-        "type": [
-          "string"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": true,
-      "createable": false,
-      "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    },
     "latitude": {
       "label": "Latitude",
       "type": {
@@ -142,21 +108,21 @@
       }
     },
     "location_id": {
-      "label": "Location id",
+      "label": "Location",
       "type": {
         "type": [
           "integer",
           "null"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
@@ -179,6 +145,40 @@
         "type": "number",
         "format": "number"
       }
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
     }
   },
   "modalSize": "xl",
@@ -213,7 +213,7 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT '#' || main.id",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', x.latitude, x.longitude), ''), '#' || x.id) FROM \"coordinate\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
     },
@@ -229,6 +229,23 @@
         "type": "string",
         "options": {
           "format": "coordinate-map",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "location_label",
+      "alias": "location_label",
+      "label": "Location",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.\"location_id\"",
+      "position": 3,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
           "colspan": 12
         }
       }

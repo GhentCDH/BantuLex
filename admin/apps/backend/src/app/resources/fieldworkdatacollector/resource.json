@@ -29,20 +29,20 @@
       "updateable": false
     },
     "fieldwork_id": {
-      "label": "Fieldwork id",
+      "label": "Fieldwork",
       "type": {
         "type": [
           "integer"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": true,
       "fieldInput": {
@@ -68,20 +68,20 @@
       "defaultSort": true
     },
     "data_collector_id": {
-      "label": "Data collector id",
+      "label": "Data collector",
       "type": {
         "type": [
           "integer"
         ]
       },
-      "hiddenInView": false,
+      "hiddenInView": true,
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": false,
+      "hiddenInTable": true,
       "showInLookup": false,
       "required": true,
       "fieldInput": {
@@ -126,5 +126,41 @@
         }
       ]
     }
-  }
+  },
+  "calculatedColumns": [
+    {
+      "id": "fieldwork_label",
+      "alias": "fieldwork_label",
+      "label": "Fieldwork",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT p.name FROM project p WHERE p.id = x.project_id), (SELECT y.value FROM collectionyear y WHERE y.id = x.collection_year_id), x.archive), ''), '#' || x.id) FROM \"fieldwork\" x WHERE x.id = main.\"fieldwork_id\"",
+      "position": 0,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "data_collector_label",
+      "alias": "data_collector_label",
+      "label": "Data collector",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"datacollector\" x WHERE x.id = main.\"data_collector_id\"",
+      "position": 0,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    }
+  ]
 }

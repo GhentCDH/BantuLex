@@ -41,6 +41,28 @@
       "idField": true,
       "defaultSort": true
     },
+    "value": {
+      "label": "Value",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": true,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
     "created_at": {
       "label": "Created at",
       "type": {
@@ -74,28 +96,6 @@
       "searchable": false,
       "hiddenInTable": true,
       "showInLookup": false
-    },
-    "value": {
-      "label": "Value",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": true,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
     }
   },
   "modalSize": "xl",
@@ -118,7 +118,7 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT '#' || main.id || ' \u00b7 ' || COALESCE(CAST(main.\"value\" AS TEXT),'')",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.value, ''), '#' || x.id) FROM \"blrreliability\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
     }
