@@ -1,0 +1,28 @@
+{
+  "title": "BantuLex",
+  "resourcesDir": "apps/backend/src/app/resources",
+  "dataSourcesDir": "apps/backend/src/app/data-sources",
+  "sidebarGroups": {
+    "lexical": {
+      "label": "Lexical data",
+      "position": 1
+    },
+    "sources": {
+      "label": "Sources",
+      "position": 2
+    },
+    "fieldwork": {
+      "label": "Fieldwork",
+      "position": 3
+    },
+    "geography": {
+      "label": "Geography",
+      "position": 4
+    },
+    "classifications": {
+      "label": "Classifications",
+      "position": 5
+    }
+  },
+  "autoSave": false
+}

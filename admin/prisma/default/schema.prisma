@@ -1,0 +1,329 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator crouton {
+  provider  = "crouton-prisma"
+  zodOutput = "../../generated/types"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model blrconsonantstructure {
+  id             Int              @id @default(autoincrement())
+  created_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  c1             String?
+  c2             String?
+  c3             String?
+  c4             String?
+  cs             String?
+  blrentry       blrentry[]
+  reconstruction reconstruction[]
+}
+
+model blrcontributor {
+  id             Int              @id @default(autoincrement())
+  created_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name           String?
+  blrentry       blrentry[]
+  reconstruction reconstruction[]
+}
+
+model blrentry {
+  id                     Int                    @id @default(autoincrement())
+  created_at             String                 @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at             String                 @default(dbgenerated("CURRENT_TIMESTAMP"))
+  blr_index              Int?
+  word_tone              String?
+  word                   String?
+  english                String?
+  french                 String?
+  noun_class             String?
+  distribution           String?
+  note                   String?
+  proto_kk               String?
+  date_of_entry          String?
+  contributor_id         Int?
+  reliability_id         Int?
+  consonant_structure_id Int?
+  vowel_structure_id     Int?
+  tone_structure_id      Int?
+  blrtonestructure       blrtonestructure?      @relation(fields: [tone_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrvowelstructure      blrvowelstructure?     @relation(fields: [vowel_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrconsonantstructure  blrconsonantstructure? @relation(fields: [consonant_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrreliability         blrreliability?        @relation(fields: [reliability_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrcontributor         blrcontributor?        @relation(fields: [contributor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  entry                  entry[]
+
+  @@index([blr_index], map: "ix_blrentry_blr_index")
+}
+
+model blrreliability {
+  id             Int              @id @default(autoincrement())
+  created_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  value          String?
+  blrentry       blrentry[]
+  reconstruction reconstruction[]
+}
+
+model blrtonestructure {
+  id             Int              @id @default(autoincrement())
+  created_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  t11            String?
+  t12            String?
+  t21            String?
+  t22            String?
+  t3             String?
+  t4             String?
+  blrentry       blrentry[]
+  reconstruction reconstruction[]
+}
+
+model blrvowelstructure {
+  id             Int              @id @default(autoincrement())
+  created_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
+  v11            String?
+  v12            String?
+  v21            String?
+  v22            String?
+  v3             String?
+  v4             String?
+  blrentry       blrentry[]
+  reconstruction reconstruction[]
+}
+
+model collectionyear {
+  id         Int         @id @default(autoincrement())
+  created_at String      @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at String      @default(dbgenerated("CURRENT_TIMESTAMP"))
+  value      String?
+  status     String
+  fieldwork  fieldwork[]
+}
+
+model coordinate {
+  id          Int       @id @default(autoincrement())
+  created_at  String    @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at  String    @default(dbgenerated("CURRENT_TIMESTAMP"))
+  latitude    Float?
+  longitude   Float?
+  description String?
+  location_id Int?
+  location    location? @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model country {
+  id         Int        @id @default(autoincrement())
+  created_at String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name       String?
+  location   location[]
+  region     region[]
+}
+
+model datacollector {
+  id                     Int                      @id @default(autoincrement())
+  created_at             String                   @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at             String                   @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name                   String?
+  fieldworkdatacollector fieldworkdatacollector[]
+}
+
+model entry {
+  id                  Int             @id @default(autoincrement())
+  created_at          String          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at          String          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  original_id         Int?
+  beginning_id        Int?            @unique(map: "ix_entry_beginning_id")
+  term                String?
+  term_morph_analysis String?
+  translation         String?
+  meaning             String?
+  scientific_name     String?
+  semantic_field      String?
+  part_of_speech      String?
+  blr_index           String?
+  ipa                 String?
+  notes               String?
+  variety_id          Int?
+  location_id         Int?
+  fieldwork_id        Int?
+  blr_entry_id        Int?
+  blrentry            blrentry?       @relation(fields: [blr_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fieldwork           fieldwork?      @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  location            location?       @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variety             variety?        @relation(fields: [variety_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sourceentries       sourceentries[]
+}
+
+model fieldwork {
+  id                     Int                      @id @default(autoincrement())
+  created_at             String                   @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at             String                   @default(dbgenerated("CURRENT_TIMESTAMP"))
+  project_id             Int?
+  collection_year_id     Int?
+  consultants            String?
+  archive                String?
+  data_entered_by        String?
+  entry                  entry[]
+  collectionyear         collectionyear?          @relation(fields: [collection_year_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  project                project?                 @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fieldworkdatacollector fieldworkdatacollector[]
+  reflex                 reflex[]
+}
+
+model fieldworkdatacollector {
+  fieldwork_id      Int
+  data_collector_id Int
+  datacollector     datacollector @relation(fields: [data_collector_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fieldwork         fieldwork     @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([fieldwork_id, data_collector_id])
+}
+
+model location {
+  id         Int          @id @default(autoincrement())
+  created_at String       @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at String       @default(dbgenerated("CURRENT_TIMESTAMP"))
+  place_id   Int?
+  region_id  Int?
+  country_id Int?
+  coordinate coordinate[]
+  entry      entry[]
+  country    country?     @relation(fields: [country_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  region     region?      @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  place      place?       @relation(fields: [place_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reflex     reflex[]
+}
+
+model place {
+  id         Int        @id @default(autoincrement())
+  created_at String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name       String?
+  region_id  Int?
+  location   location[]
+  region     region?    @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model project {
+  id         Int         @id @default(autoincrement())
+  created_at String      @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at String      @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name       String?
+  fieldwork  fieldwork[]
+}
+
+model reconstruction {
+  id                     Int                    @id @default(autoincrement())
+  created_at             String                 @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at             String                 @default(dbgenerated("CURRENT_TIMESTAMP"))
+  blr_index              Int?
+  word_tone              String?
+  word                   String?
+  english                String?
+  french                 String?
+  noun_class             String?
+  distribution           String?
+  note                   String?
+  proto_kk               String?
+  date_of_entry          String?
+  contributor_id         Int?
+  reliability_id         Int?
+  consonant_structure_id Int?
+  vowel_structure_id     Int?
+  tone_structure_id      Int?
+  blrtonestructure       blrtonestructure?      @relation(fields: [tone_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrvowelstructure      blrvowelstructure?     @relation(fields: [vowel_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrconsonantstructure  blrconsonantstructure? @relation(fields: [consonant_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrreliability         blrreliability?        @relation(fields: [reliability_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blrcontributor         blrcontributor?        @relation(fields: [contributor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reflex                 reflex[]
+
+  @@index([blr_index], map: "ix_reconstruction_blr_index")
+}
+
+model reflex {
+  id                  Int             @id @default(autoincrement())
+  created_at          String          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at          String          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  original_id         Int?
+  beginning_id        Int?            @unique(map: "ix_reflex_beginning_id")
+  term                String?
+  term_morph_analysis String?
+  translation         String?
+  meaning             String?
+  scientific_name     String?
+  semantic_field      String?
+  part_of_speech      String?
+  blr_index           String?
+  ipa                 String?
+  notes               String?
+  variety_id          Int?
+  location_id         Int?
+  fieldwork_id        Int?
+  blr_entry_id        Int?
+  reconstruction      reconstruction? @relation(fields: [blr_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fieldwork           fieldwork?      @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  location            location?       @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variety             variety?        @relation(fields: [variety_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model region {
+  id         Int        @id @default(autoincrement())
+  created_at String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name       String?
+  country_id Int?
+  location   location[]
+  place      place[]
+  country    country?   @relation(fields: [country_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model source {
+  id             Int             @id @default(autoincrement())
+  created_at     String          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at     String          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  author_year    String?
+  year_uncertain Int
+  title          String?
+  sourceentries  sourceentries[]
+}
+
+model sourceentries {
+  id         Int     @id @default(autoincrement())
+  created_at String  @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at String  @default(dbgenerated("CURRENT_TIMESTAMP"))
+  role       String
+  pages      String?
+  entry_id   Int?
+  source_id  Int?
+  source     source? @relation(fields: [source_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  entry      entry?  @relation(fields: [entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([role], map: "ix_sourceentries_role")
+}
+
+model variety {
+  id                Int      @id @default(autoincrement())
+  created_at        String   @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at        String   @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name_english      String?
+  name_french       String?
+  name_bantu        String?
+  name_bastin       String?
+  branch            String?
+  bastin_index      String?
+  guthrie_index     String?
+  guthrie_plus      String?
+  substrate_suspect Int?
+  entry             entry[]
+  reflex            reflex[]
+}

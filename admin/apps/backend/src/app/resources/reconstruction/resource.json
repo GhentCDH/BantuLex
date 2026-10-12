@@ -1,0 +1,575 @@
+{
+  "$schema": "https://ghentcdh.github.io/crouton/schema/v1/resource.schema.json",
+  "schemaVersion": 1,
+  "draft": false,
+  "name": "reconstruction",
+  "route": "reconstruction",
+  "model": "reconstruction",
+  "tag": "reconstruction",
+  "title": "Reconstructions",
+  "idType": "number",
+  "database": "default",
+  "sidebar": {
+    "group": "lexical",
+    "hide": false
+  },
+  "operations": {
+    "findAll": true,
+    "findOne": true,
+    "create": true,
+    "update": true,
+    "patch": true,
+    "delete": true
+  },
+  "columns": {
+    "id": {
+      "label": "Id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "idField": true,
+      "defaultSort": true
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "blr_index": {
+      "label": "Blr index",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "number"
+      }
+    },
+    "word_tone": {
+      "label": "Word tone",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "word": {
+      "label": "Word",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": true,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "english": {
+      "label": "English",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": true,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "french": {
+      "label": "French",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "noun_class": {
+      "label": "Noun class",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "distribution": {
+      "label": "Distribution",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "note": {
+      "label": "Note",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": false,
+      "searchable": true,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "textarea"
+      }
+    },
+    "proto_kk": {
+      "label": "Proto kk",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "date_of_entry": {
+      "label": "Date of entry",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "contributor_id": {
+      "label": "Contributor id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../blrcontributor/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/blrcontributor/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "reliability_id": {
+      "label": "Reliability id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../blrreliability/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/blrreliability/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "consonant_structure_id": {
+      "label": "Consonant structure id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../blrconsonantstructure/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/blrconsonantstructure/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "vowel_structure_id": {
+      "label": "Vowel structure id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../blrvowelstructure/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/blrvowelstructure/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "tone_structure_id": {
+      "label": "Tone structure id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../blrtonestructure/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/blrtonestructure/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    }
+  },
+  "modalSize": "xl",
+  "include": [],
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "controls": [
+        {
+          "id": "blr_index",
+          "colspan": 6
+        },
+        {
+          "id": "word_tone",
+          "colspan": 6
+        },
+        {
+          "id": "word",
+          "colspan": 6
+        },
+        {
+          "id": "english",
+          "colspan": 6
+        },
+        {
+          "id": "french",
+          "colspan": 6
+        },
+        {
+          "id": "noun_class",
+          "colspan": 6
+        },
+        {
+          "id": "distribution",
+          "colspan": 6
+        },
+        {
+          "id": "note",
+          "colspan": 12
+        },
+        {
+          "id": "proto_kk",
+          "colspan": 6
+        },
+        {
+          "id": "date_of_entry",
+          "colspan": 6
+        },
+        {
+          "id": "contributor_id",
+          "colspan": 6
+        },
+        {
+          "id": "reliability_id",
+          "colspan": 6
+        },
+        {
+          "id": "consonant_structure_id",
+          "colspan": 6
+        },
+        {
+          "id": "vowel_structure_id",
+          "colspan": 6
+        },
+        {
+          "id": "tone_structure_id",
+          "colspan": 6
+        }
+      ]
+    }
+  },
+  "calculatedColumns": [
+    {
+      "id": "display_label",
+      "alias": "display_label",
+      "label": "Reference",
+      "type": "string",
+      "sqlExpression": "SELECT '#' || main.id || ' \u00b7 ' || COALESCE(CAST(main.\"word\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"english\" AS TEXT),'')",
+      "hiddenInTable": true,
+      "hiddenInView": true
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "$schema": "https://ghentcdh.github.io/crouton/schema/v1/resource.schema.json",
+  "schemaVersion": 1,
+  "draft": false,
+  "name": "coordinate",
+  "route": "coordinate",
+  "model": "coordinate",
+  "tag": "coordinate",
+  "title": "Coordinates",
+  "idType": "number",
+  "database": "default",
+  "sidebar": {
+    "group": "geography",
+    "hide": false
+  },
+  "operations": {
+    "findAll": true,
+    "findOne": true,
+    "create": true,
+    "update": true,
+    "patch": true,
+    "delete": true
+  },
+  "columns": {
+    "id": {
+      "label": "Id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "idField": true,
+      "defaultSort": true
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "latitude": {
+      "label": "Latitude",
+      "type": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "number"
+      }
+    },
+    "longitude": {
+      "label": "Longitude",
+      "type": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "number"
+      }
+    },
+    "description": {
+      "label": "Description",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": false,
+      "searchable": true,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "textarea"
+      }
+    },
+    "location_id": {
+      "label": "Location id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../location/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/location/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    }
+  },
+  "modalSize": "xl",
+  "include": [],
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "controls": [
+        {
+          "id": "latitude",
+          "colspan": 6
+        },
+        {
+          "id": "longitude",
+          "colspan": 6
+        },
+        {
+          "id": "description",
+          "colspan": 12
+        },
+        {
+          "id": "location_id",
+          "colspan": 6
+        }
+      ]
+    }
+  },
+  "calculatedColumns": [
+    {
+      "id": "display_label",
+      "alias": "display_label",
+      "label": "Reference",
+      "type": "string",
+      "sqlExpression": "SELECT '#' || main.id",
+      "hiddenInTable": true,
+      "hiddenInView": true
+    },
+    {
+      "id": "coordinate_map",
+      "alias": "coordinate_map",
+      "label": "Map",
+      "type": "string",
+      "sqlExpression": "SELECT json_object('id', main.id, 'latitude', main.latitude, 'longitude', main.longitude, 'description', main.description)",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "coordinate-map",
+          "colspan": 12
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+# Run from admin/. The database lives in the repository's data/ folder and backups go to its backups/ folder.
+x-dev: &dev
+  build:
+    context: .
+    target: dev
+  image: bantulex-dev
+  profiles: ["dev"]
+  volumes:
+    - .:/app
+    - dev_node_modules:/app/node_modules
+    # Overlays admin/data: data/bantulex.db resolves to the repository's data/bantulex.db.
+    - ../data:/app/data
+    - ../backups:/app/backups
+  init: true
+
+services:
+  # Production: built app, UI on /admin/, API on /api.
+  bantulex:
+    build: .
+    image: bantulex
+    ports:
+      - "127.0.0.1:4444:4444"
+    volumes:
+      # Must contain bantulex.db; the directory must be writable by uid 1000 (SQLite journal files).
+      - ../data:/app/data
+      - ../backups:/app/backups
+    restart: unless-stopped
+
+  # Development toolchain (Node 24, pnpm, Python, go-pmtiles; no browser). Only started explicitly:
+  #   docker compose run --rm dev pnpm test          (one-off command)
+  #   docker compose --profile dev up dev            (pnpm dev with hot reload)
+  # The project is mounted; node_modules lives in a Linux-only volume (the host's macOS one is never used).
+  # `pnpm dev` edits the repository's data/bantulex.db; the tests only use disposable copies.
+  dev:
+    <<: *dev
+    environment:
+      HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:5555:5555"
+      - "127.0.0.1:4444:4444"
+
+  # Browser tests against a Chrome running on the host (remote debugging on port 9222; see README.md).
+  # The test server listens on 14445 in the container; the host Chrome reaches it on the published port.
+  #   docker compose --profile dev run --rm --service-ports e2e
+  e2e:
+    <<: *dev
+    environment:
+      HOST: 0.0.0.0
+      PW_CDP_URL: ${PW_CDP_URL:-http://host.docker.internal:9222}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # needed on Linux; Docker Desktop provides it already
+    ports:
+      - "127.0.0.1:14445:14445"
+    command: ["pnpm", "test:e2e"]
+
+volumes:
+  dev_node_modules:

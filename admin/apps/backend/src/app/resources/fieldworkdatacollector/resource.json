@@ -1,0 +1,130 @@
+{
+  "$schema": "https://ghentcdh.github.io/crouton/schema/v1/resource.schema.json",
+  "schemaVersion": 1,
+  "draft": false,
+  "name": "fieldworkdatacollector",
+  "route": "fieldworkdatacollector",
+  "tag": "fieldworkdatacollector",
+  "title": "Fieldwork data collectors",
+  "database": "default",
+  "sidebar": {
+    "group": "fieldwork",
+    "hide": false
+  },
+  "operations": {
+    "findAll": true,
+    "findOne": true,
+    "create": true,
+    "update": true,
+    "patch": true,
+    "delete": true
+  },
+  "columns": {
+    "id": {
+      "idField": true,
+      "type": "string",
+      "hiddenInForm": true,
+      "hiddenInTable": true,
+      "createable": false,
+      "updateable": false
+    },
+    "fieldwork_id": {
+      "label": "Fieldwork id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": true,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../fieldwork/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/fieldwork/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      },
+      "defaultSort": true
+    },
+    "data_collector_id": {
+      "label": "Data collector id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": true,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../datacollector/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/datacollector/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    }
+  },
+  "modalSize": "xl",
+  "include": [],
+  "kind": "prisma",
+  "idType": "string",
+  "model": "fieldworkdatacollector",
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "controls": [
+        {
+          "id": "fieldwork_id",
+          "colspan": 6
+        },
+        {
+          "id": "data_collector_id",
+          "colspan": 6
+        }
+      ]
+    }
+  }
+}

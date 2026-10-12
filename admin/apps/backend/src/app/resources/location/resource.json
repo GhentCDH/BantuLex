@@ -1,0 +1,229 @@
+{
+  "$schema": "https://ghentcdh.github.io/crouton/schema/v1/resource.schema.json",
+  "schemaVersion": 1,
+  "draft": false,
+  "name": "location",
+  "route": "location",
+  "model": "location",
+  "tag": "location",
+  "title": "Locations",
+  "idType": "number",
+  "database": "default",
+  "sidebar": {
+    "group": "geography",
+    "hide": false
+  },
+  "operations": {
+    "findAll": true,
+    "findOne": true,
+    "create": true,
+    "update": true,
+    "patch": true,
+    "delete": true
+  },
+  "columns": {
+    "id": {
+      "label": "Id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "idField": true,
+      "defaultSort": true
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "place_id": {
+      "label": "Place id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../place/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/place/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "region_id": {
+      "label": "Region id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../region/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/region/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "country_id": {
+      "label": "Country id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../country/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/country/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    }
+  },
+  "modalSize": "xl",
+  "include": [],
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "controls": [
+        {
+          "id": "place_id",
+          "colspan": 6
+        },
+        {
+          "id": "region_id",
+          "colspan": 6
+        },
+        {
+          "id": "country_id",
+          "colspan": 6
+        }
+      ]
+    }
+  },
+  "calculatedColumns": [
+    {
+      "id": "display_label",
+      "alias": "display_label",
+      "label": "Reference",
+      "type": "string",
+      "sqlExpression": "SELECT '#' || main.id || ' \u00b7 ' || COALESCE(CAST(main.\"place_id\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"region_id\" AS TEXT),'') || ' \u00b7 ' || COALESCE(CAST(main.\"country_id\" AS TEXT),'')",
+      "hiddenInTable": true,
+      "hiddenInView": true
+    }
+  ]
+}

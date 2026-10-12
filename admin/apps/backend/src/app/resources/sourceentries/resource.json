@@ -1,0 +1,237 @@
+{
+  "$schema": "https://ghentcdh.github.io/crouton/schema/v1/resource.schema.json",
+  "schemaVersion": 1,
+  "draft": false,
+  "name": "sourceentries",
+  "route": "sourceentries",
+  "model": "sourceentries",
+  "tag": "sourceentries",
+  "title": "Source entries",
+  "idType": "number",
+  "database": "default",
+  "sidebar": {
+    "group": "sources",
+    "hide": false
+  },
+  "operations": {
+    "findAll": true,
+    "findOne": true,
+    "create": true,
+    "update": true,
+    "patch": true,
+    "delete": true
+  },
+  "columns": {
+    "id": {
+      "label": "Id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "idField": true,
+      "defaultSort": true
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "role": {
+      "label": "Role",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": true,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "pages": {
+      "label": "Pages",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "entry_id": {
+      "label": "Entry id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../entry/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/entry/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "source_id": {
+      "label": "Source id",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../source/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/source/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    }
+  },
+  "modalSize": "xl",
+  "include": [],
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "controls": [
+        {
+          "id": "role",
+          "colspan": 6
+        },
+        {
+          "id": "pages",
+          "colspan": 6
+        },
+        {
+          "id": "entry_id",
+          "colspan": 6
+        },
+        {
+          "id": "source_id",
+          "colspan": 6
+        }
+      ]
+    }
+  },
+  "calculatedColumns": [
+    {
+      "id": "display_label",
+      "alias": "display_label",
+      "label": "Reference",
+      "type": "string",
+      "sqlExpression": "SELECT '#' || main.id",
+      "hiddenInTable": true,
+      "hiddenInView": true
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "default",
+  "type": "sqlite",
+  "adapter": "custom",
+  "default": true,
+  "urlEnv": "DATABASE_URL",
+  "prismaSchema": "prisma/default/schema.prisma",
+  "prismaConfig": "prisma/default/prisma.config.ts",
+  "zodOutput": "generated/types",
+  "generatedTypesImport": "../../../../../../generated/types/index.js"
+}
