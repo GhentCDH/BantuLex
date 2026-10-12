@@ -1,0 +1,47 @@
+{
+    "defaultLanguage": "en",
+    "languages": [
+        "en",
+        "nl"
+    ],
+    "database": "app/database/bantulex.sqlite",
+    "datasource": {
+        "type": "http-vfs"
+    },
+    "tables": {
+        "coordinates_map": {
+            "options": {
+                "point_map": {
+                    "clustering": true
+                }
+            }
+        }
+    },
+    "perspectives": [
+        {
+            "id": "reflex-coordinates",
+            "label": {
+                "en": "Reflex coordinates"
+            },
+            "table": "reflex_coordinates",
+            "query": "SELECT r.id AS id, r.term, r.translation, v.name_english AS variety, c.latitude, c.longitude FROM reflex r JOIN coordinate c ON c.location_id = r.location_id LEFT JOIN variety v ON v.id = r.variety_id WHERE c.latitude IS NOT NULL AND c.longitude IS NOT NULL",
+            "default_sort": "term"
+        },
+        {
+            "id": "coordinates-map",
+            "label": {
+                "en": "Coordinates map"
+            },
+            "table": "coordinates_map",
+            "query": "SELECT id, latitude, longitude FROM coordinate"
+        }
+    ],
+    "enginePlugins": [
+        "extensions/http-vfs/http-vfs-component.js",
+        "extensions/geo-filter/geo-filter-engine.js"
+    ],
+    "uiPlugins": [
+        "extensions/point_map/point-map-component.js",
+        "extensions/geo-filter/geo-filter-component.js"
+    ]
+}

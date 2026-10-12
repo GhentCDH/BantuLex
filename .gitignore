@@ -11,6 +11,10 @@ import/erd.mermaid
 *.db-wal
 *-journal
 
+# Pihka-publicatie
+dist/
+site/database/*.sqlite
+
 .claude
 .DS_Store
 .venv
