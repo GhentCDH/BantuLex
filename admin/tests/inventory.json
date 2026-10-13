@@ -1,0 +1,1273 @@
+[
+  {
+    "table": "blrconsonantstructure",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "c1",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "c2",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "c3",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "c4",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "cs",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "blrcontributor",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "blrentry",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "blr_index",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "word_tone",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "word",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "english",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "french",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "noun_class",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "distribution",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "note",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "proto_kk",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "date_of_entry",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "contributor_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "reliability_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "consonant_structure_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "vowel_structure_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "tone_structure_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "tone_structure_id": "blrtonestructure",
+      "vowel_structure_id": "blrvowelstructure",
+      "consonant_structure_id": "blrconsonantstructure",
+      "reliability_id": "blrreliability",
+      "contributor_id": "blrcontributor"
+    }
+  },
+  {
+    "table": "blrreliability",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "value",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "blrtonestructure",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "t11",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "t12",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "t21",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "t22",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "t3",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "t4",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "blrvowelstructure",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "v11",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "v12",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "v21",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "v22",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "v3",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "v4",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "collectionyear",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "value",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "status",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "coordinate",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "latitude",
+        "type": "REAL",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "longitude",
+        "type": "REAL",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "description",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "location_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "location_id": "location"
+    }
+  },
+  {
+    "table": "country",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "datacollector",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "entry",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "original_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "beginning_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "term",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "term_morph_analysis",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "translation",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "meaning",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "scientific_name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "semantic_field",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "part_of_speech",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "blr_index",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "ipa",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "notes",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "variety_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "location_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "fieldwork_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "blr_entry_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "blr_entry_id": "blrentry",
+      "fieldwork_id": "fieldwork",
+      "location_id": "location",
+      "variety_id": "variety"
+    }
+  },
+  {
+    "table": "fieldwork",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "project_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "collection_year_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "consultants",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "archive",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "data_entered_by",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "collection_year_id": "collectionyear",
+      "project_id": "project"
+    }
+  },
+  {
+    "table": "fieldworkdatacollector",
+    "columns": [
+      {
+        "name": "fieldwork_id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "data_collector_id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 2
+      }
+    ],
+    "foreignKeys": {
+      "data_collector_id": "datacollector",
+      "fieldwork_id": "fieldwork"
+    }
+  },
+  {
+    "table": "location",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "place_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "region_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "country_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "country_id": "country",
+      "region_id": "region",
+      "place_id": "place"
+    }
+  },
+  {
+    "table": "place",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "region_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "region_id": "region"
+    }
+  },
+  {
+    "table": "project",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "reconstruction",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "blr_index",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "word_tone",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "word",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "english",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "french",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "noun_class",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "distribution",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "note",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "proto_kk",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "date_of_entry",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "contributor_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "reliability_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "consonant_structure_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "vowel_structure_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "tone_structure_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "tone_structure_id": "blrtonestructure",
+      "vowel_structure_id": "blrvowelstructure",
+      "consonant_structure_id": "blrconsonantstructure",
+      "reliability_id": "blrreliability",
+      "contributor_id": "blrcontributor"
+    }
+  },
+  {
+    "table": "reflex",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "original_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "beginning_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "term",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "term_morph_analysis",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "translation",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "meaning",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "scientific_name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "semantic_field",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "part_of_speech",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "blr_index",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "ipa",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "notes",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "variety_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "location_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "fieldwork_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "blr_entry_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "blr_entry_id": "reconstruction",
+      "fieldwork_id": "fieldwork",
+      "location_id": "location",
+      "variety_id": "variety"
+    }
+  },
+  {
+    "table": "region",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "country_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "country_id": "country"
+    }
+  },
+  {
+    "table": "source",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "author_year",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "year_uncertain",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "title",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
+    "table": "sourceentries",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "role",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "pages",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "entry_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "source_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "source_id": "source",
+      "entry_id": "entry"
+    }
+  },
+  {
+    "table": "variety",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name_english",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "name_french",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "name_bantu",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "name_bastin",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "branch",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "bastin_index",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "guthrie_index",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "guthrie_plus",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "substrate_suspect",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  }
+]

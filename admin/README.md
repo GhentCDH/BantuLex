@@ -1,0 +1,91 @@
+# BantuLex admin
+
+The `admin/` folder of the BantuLex repository: a local SQLite editor built with Crouton, NestJS, Vue 3, TypeScript, Vite and Nx. All 22 database tables have a navigation entry; all 183 physical columns are available in detail views and all business fields are editable. IDs and timestamps are managed by SQLite.
+
+## Run
+
+All commands below run from `admin/`. The database is the repository's `data/bantulex.db` (the root `data/` folder, not in git) and startup backups go to the repository's `backups/` folder; both are mounted into the containers by `docker-compose.yml`.
+
+Everything runs in Docker; Node, pnpm and the tests are never run on the host. The only host requirement is Docker (with Compose). Two images are built from the `Dockerfile`:
+
+- **`bantulex`** (production, the default target): see [Docker](#docker).
+- **`bantulex-dev`** (`dev` target): Node 24.21.0, pnpm 11.9.0, Python 3 and the `pmtiles` CLI; no browser. It is used by the compose `dev` and `e2e` services, which mount `admin/` at `/app`, the root `data/` at `/app/data` and the root `backups/` at `/app/backups`, and keep a Linux-only `node_modules` in the `dev_node_modules` volume. On every start it runs `pnpm install --frozen-lockfile` and `pnpm run setup` (Crouton patches, Prisma client) and downloads the basemap if it is missing (see [Coordinate maps](#coordinate-maps)), so a lockfile change only needs a new run.
+
+Development with hot reload:
+
+```sh
+docker compose --profile dev up dev
+```
+
+Open http://127.0.0.1:5555/admin/. The API listens at http://127.0.0.1:4444/api; ports are published on localhost only. No login is needed. One-off commands run in the same toolchain, for example `docker compose run --rm dev pnpm crouton --help`.
+
+The production app is served at http://127.0.0.1:4444/admin/, including browser deep links; `/` redirects there. The UI base path is set by `base` in `apps/frontend/vite.config.ts` and `uiBase` in `apps/backend/src/main.ts`; the API stays at `/api`. `HOST` sets the listen address of both servers (default `127.0.0.1`; the containers use `0.0.0.0`).
+
+Normal operation edits the repository's **data/bantulex.db**. Use Create or Save to persist a form, Cancel to discard it, and the confirmation dialog to delete a record. Referenced records cannot be deleted until their links are removed.
+
+## Docker
+
+The `Dockerfile` builds one self-contained image on `node:24.21.0-trixie-slim`. It serves the UI on `/admin/` and the API on `/api`, and the runtime image includes `python3` for the startup backup. The database is **not** in the image. Mount a directory containing `bantulex.db` at `/app/data`; without it the container exits with "Database does not exist". Startup backups go to `/app/backups`.
+
+```sh
+docker build -t bantulex .
+docker run -d -p 127.0.0.1:4444:4444 -v "$PWD/../data:/app/data" -v "$PWD/../backups:/app/backups" bantulex
+# or: docker compose up -d   (same mounts)
+```
+
+The build downloads the basemap from the newest Protomaps daily build; `--build-arg PMTILES_BUILD=YYYYMMDD` pins one (old builds are deleted upstream).
+
+Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so both mounted directories must be writable by that uid; SQLite also writes journal files next to the database. `HOST`, `PORT`, `DATABASE_PATH` and `BACKUP_DIR` can be overridden with `-e`. There is no login, so publish the port only on localhost or behind an authenticating reverse proxy. The build stage needs about 2 GB of free Docker disk.
+
+## Database
+
+`DATABASE_PATH` (default `data/bantulex.db`) and `BACKUP_DIR` (default `backups`) resolve relative to `admin/` (the folder containing `crouton.json`), regardless of the launch directory; in the containers that is `/app`, where the root `data/` and `backups/` folders are mounted. Set `DATABASE_PATH` to use a different file and `PORT` to change the backend port. The server refuses to create a missing database. A consistent SQLite backup is saved in the backup folder on startup before any application writes; `BACKUP_DIR` overrides its location. Stop the app before restoring a backup. Backups are retained until you remove them.
+
+No migrations, seeds, resets, `db push`, or automatic schema synchronization run. Timestamp defaults and existing update triggers remain authoritative. `entry` and `reflex`, and `blrentry` and `reconstruction`, remain separate tables.
+
+## Configuration
+
+`crouton.json` configures the title, navigation groups, resource directories, and explicit saving. Each `apps/backend/src/app/resources/<table>/resource.json` configures endpoints, columns, controls, layout, lookup URLs, and visibility. Generated Prisma/Zod files are build artifacts; JSON resources are the maintained application definition.
+
+The sole data-access adaptation is in the default datasource adapter: `fieldworkdatacollector` has a compound primary key, represented by an API-only `fieldwork_id:data_collector_id` identifier. No synthetic column is added to SQLite. Ordinary CRUD, validation, search, pagination, forms, modals, and navigation are provided by Crouton.
+
+`pnpm run setup` (run automatically by the dev container) generates clients and types from the committed introspected schema without modifying the database. If the database schema changes intentionally, inspect it with Prisma and use `docker compose run --rm dev pnpm crouton update resources --help`. `pnpm crouton` runs the published `@ghentcdh/crouton-cli`. Resource regeneration is an explicit maintenance step; review its diff, keep the compound-key schema extension, and preserve the `dbgenerated("CURRENT_TIMESTAMP")` defaults.
+
+## Verification
+
+```sh
+docker compose run --rm dev sh -c "pnpm typecheck && pnpm build && pnpm test"
+```
+
+The API tests (`pnpm test`) copy `data/bantulex.db` (in the container: the mounted root database, opened read-only) to the system temporary directory and run local test servers on the copy; they never write to the real database. They check every table/column, independent SQLite persistence, server restart, constraints, nulls, search, and compound keys.
+
+The browser tests (Playwright) do not run a browser in the container: they drive a Chrome on the host over the DevTools protocol (`tests/browser/fixtures.ts`). Chrome 136+ refuses remote debugging on the default profile, so start a dedicated instance with its own profile:
+
+```sh
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --remote-debugging-port=9222 \
+  --user-data-dir="$TMPDIR/bantulex-e2e-chrome" --headless=new
+docker compose --profile dev run --rm --service-ports e2e
+```
+
+The `e2e` service runs `pnpm test:e2e` with the same mounts as `dev`. It connects to `PW_CDP_URL` (default `http://host.docker.internal:9222`) and publishes the test server on `127.0.0.1:14445`, where the host Chrome opens it. Each test gets a fresh browser context; Chrome is left running, so stop it yourself afterwards. Browser tests cover form visibility, populated edits, creation, cancellation, deletion, relation controls and the map, also on disposable database copies.
+
+## Framework compatibility
+
+Runtime dependencies use exact published Crouton API/Vue/core/generator **0.0.1-alpha.82** and CLI **0.0.1-alpha.81**. Do not replace these with the npm `latest` tag: it points at an older release (use the `alpha` tag).
+
+`scripts/patch-crouton.mjs`, run by postinstall and setup, applies narrowly scoped corrections to the pinned distribution. Each patch locates its (content-hashed) file by the code it rewrites, is idempotent, and prints a warning instead of failing when upstream has changed the target:
+
+- Emit pagination requests directly instead of wrapping them in `requestData`.
+- Preserve valid empty TEXT values separately from SQL NULL.
+- Connect the generic autocomplete’s existing Clear control to clearing the stored foreign key.
+- Use SQLite placeholders for calculated-column queries (readable relation labels and map data).
+
+These are framework fixes, not replacement application forms. Since alpha.82, unique-constraint violations are returned by Crouton as field validation errors (HTTP 400, code `unique`) rather than by the application's 409 mapping.
+
+## Coordinate maps
+
+The Coordinates page shows every valid coordinate below the table, regardless of table pagination or filters. Open a coordinate’s View action for its detail map. Pins show the ID, description, and latitude/longitude; list pins link to the detail view. Missing or out-of-range coordinates are counted but not plotted. Closing an editing overlay reloads map data; Refresh map also reloads it explicitly.
+
+MapLibre GL JS 6.11 renders the local `apps/frontend/public/maps/world.pmtiles` archive (served at `/admin/maps/world.pmtiles`) through the `pmtiles` protocol. The archive is not in git: `scripts/fetch-basemap.sh` extracts zoom levels 0–4 (about 6 MB) of the newest [Protomaps](https://docs.protomaps.com/basemaps/downloads) daily build with go-pmtiles. The `Dockerfile` runs it at image build time and the dev entrypoint runs it when the file is missing; delete the file and restart the dev container to refresh it. Vite and the production Express server support its HTTP range requests. The archive is a small overview basemap, so fine street detail is limited. Attribution remains visible. No access token, hosted style or external tile service is needed.
+
+`apps/frontend/src/maps/config.json` configures the resource endpoint, archive, paging and zoom. The coordinate resource JSON defines the read-only calculated map data and renderer format. The frontend wraps Crouton’s original resource view and registers its read-only renderer; CRUD remains in Crouton. Map tests check all-row coverage, detail pins and PMTiles range delivery using a disposable database.

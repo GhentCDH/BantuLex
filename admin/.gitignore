@@ -1,0 +1,12 @@
+node_modules/
+.pnpm-store/
+.nx/
+dist/
+generated/
+data/
+backups/
+test-results/
+playwright-report/
+.env
+# Downloaded at build time / by the dev entrypoint (scripts/fetch-basemap.sh).
+apps/frontend/public/maps/*.pmtiles

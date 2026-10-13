@@ -1,6 +1,8 @@
 # BantuLex
 
-Linguistic data management system for Bantu languages. Imports data from Excel (via CSV export) into an SQLite database, with a Kottster admin panel for browsing.
+Linguistic data management system for Bantu languages. Imports data from Excel into a database, exports it (EvoLex Excel, GeoJSON, BLR catalog) for the map, which lives in a separate project, and provides a Crouton admin app for browsing and editing the data.
+
+> **Known gap:** the importer currently writes to **Postgres** (`DATABASE_URL` in `utils/utils.env`), while the Crouton admin edits the **SQLite** file `data/bantulex.db`. Nothing in this repository currently produces or syncs that SQLite file from Postgres; a Postgres datasource for the admin is future work.
 
 ## Prerequisites
 
@@ -13,25 +15,31 @@ Linguistic data management system for Bantu languages. Imports data from Excel (
 just reinit
 ```
 
-This will build the containers, run the import, and set up the database.
+This builds and starts the containers, recreates the Postgres database, and runs the import.
 
 ## Services
 
-- **import** — Python/uv container for importing CSV data into SQLite
-- **bantulex-map** — MapLibre-based static vector map (port 80 via proxy)
-- **caddy** — Reverse proxy for all services
+- **utils** — Python/uv container with the importer, exporters and documenter (run on demand)
+- **postgres** — Postgres 17 database written by the importer (port 5432)
+- **admin** — Crouton admin app (UI on `/admin/`, API on `/api`) at http://localhost:4444/admin/, editing `data/bantulex.db`. It is in the `admin` compose profile, so `just up`/`just rebuild` do not start it; use `just admin`. See [admin/README.md](admin/README.md) for details.
 
 ## Recipes
 
-| Command            | Description                        |
-| ------------------ | ---------------------------------- |
-| `just rebuild`     | Rebuild and restart all containers |
-| `just up`          | Start all containers               |
-| `just import`      | Run the data import                |
-| `just map-up`      | Build and start the map service    |
-| `just map-rebuild` | Force rebuild of the map service   |
-| `just reinit`      | Rebuild + import                   |
-| `just reset-db`    | Delete the SQLite database         |
+| Command                  | Description                                                       |
+| ------------------------ | ----------------------------------------------------------------- |
+| `just rebuild`           | Rebuild and restart all containers (except the admin)             |
+| `just up` / `just down`  | Start / stop the containers                                       |
+| `just import`            | Run the data import (into Postgres)                               |
+| `just export-all`        | Run the EvoLex, map and BLR exports (into `data/`)                |
+| `just reset-db`          | Drop and recreate the Postgres database                           |
+| `just reinit`            | Rebuild + reset database + import                                 |
+| `just admin`             | Build and start the admin app (needs `data/bantulex.db`)          |
+| `just admin-dev`         | Run the admin with hot reload (UI on http://localhost:5555/admin/) |
+| `just admin-test`        | Typecheck, build and test the admin in its dev container          |
+| `just admin-e2e`         | Browser tests against the host Chrome (see admin/README.md)        |
+| `just open-admin`        | Open the admin in the browser                                     |
+
+The admin backs up `data/bantulex.db` into `backups/` on every start. Backups contain data and are gitignored. On Linux, `data/` and `backups/` must be writable by uid 1000.
 
 ## Credits
 

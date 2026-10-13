@@ -1,0 +1,14 @@
+import './style.css';
+import { createApp, defineAsyncComponent, defineComponent, h, markRaw } from 'vue';
+import { createRouter, createWebHistory, useRoute, type RouteRecordRaw } from 'vue-router';
+import axios from 'axios';
+import { CroutonPlugin, CroutonRouter } from '@ghentcdh/crouton-vue';
+import App from './App.vue';
+import CoordinateList from './maps/CoordinateList.vue';
+import CoordinateDetail from './maps/CoordinateDetail.vue';
+import mapConfig from './maps/config.json';
+const resourceRoute = CroutonRouter.flatMap((route): RouteRecordRaw[] => ('children' in route && route.children) || []).find(route => route.name === 'crouton/form')!;
+const NativeResourceView = defineAsyncComponent(resourceRoute.component as () => Promise<any>);
+resourceRoute.component = defineComponent({ setup() { const route = useRoute(); return () => h('div', [h(NativeResourceView), route.params.formId === mapConfig.resource ? h(CoordinateList) : null]); } }) as any;
+const router = createRouter({ history: createWebHistory(import.meta.env.BASE_URL), routes: [{ path: '/', children: [...CroutonRouter] }] });
+createApp(App).use(CroutonPlugin(axios.create({ baseURL: '/api' }), { readonlyRenderers: [{ tester: (ui) => ui.options?.format === 'coordinate-map' ? 30 : -1, renderer: markRaw(CoordinateDetail) }] })).use(router).mount('#app');
