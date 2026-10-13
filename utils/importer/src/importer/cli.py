@@ -488,14 +488,13 @@ def main() -> None:
 
                         # 4c. Data collectors (dynamic detection)
                         dc_names = sorted(
-                            filter(
-                                None,
-                                [
-                                    ctx.val(h)
-                                    for h in headers
-                                    if h and COLLECTOR_PATTERN.match(h)
-                                ],
-                            )
+                            # set: the same person can be listed in two columns
+                            {
+                                ctx.val(h)
+                                for h in headers
+                                if h and COLLECTOR_PATTERN.match(h)
+                            }
+                            - {None}
                         )
                         dc_objects = []
                         for name in dc_names:
@@ -516,14 +515,13 @@ def main() -> None:
 
                         # 4d. Consultants (dynamic detection)
                         con_names = sorted(
-                            filter(
-                                None,
-                                [
-                                    ctx.val(h)
-                                    for h in headers
-                                    if h and CONSULTANT_PATTERN.match(h)
-                                ],
-                            )
+                            # set: the same person can be listed in two columns
+                            {
+                                ctx.val(h)
+                                for h in headers
+                                if h and CONSULTANT_PATTERN.match(h)
+                            }
+                            - {None}
                         )
                         con_objects = []
                         for name in con_names:
