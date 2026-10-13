@@ -63,10 +63,11 @@ admin-e2e:
 
 # ── Database ─────────────────────────────────────────────────────────────────
 
+# Verwijdert data/bantulex.db na een kopie naar backups/ (de admin werkt op hetzelfde bestand)
 reset-db:
-    docker compose up -d postgres
-    docker compose exec -T postgres psql -U bantulex -d postgres -c "DROP DATABASE IF EXISTS bantulex WITH (FORCE);"
-    docker compose exec -T postgres psql -U bantulex -d postgres -c "CREATE DATABASE bantulex OWNER bantulex;"
+    mkdir -p backups
+    if [ -f data/bantulex.db ]; then cp data/bantulex.db "backups/bantulex_$(date +%Y%m%d_%H%M%S).db"; fi
+    rm -f data/bantulex.db data/bantulex.db-journal
 
 reinit: rebuild reset-db import
 
