@@ -24,6 +24,31 @@ def parse_int(val: Any) -> int | None:
         return None
 
 
+# "9094 ipv 3604": 9094 replaces ("in plaats van") 3604, so the first number is the index.
+_BLR_IPV = re.compile(r"^\s*(\d+)\s+ipv\b", re.IGNORECASE)
+
+
+def parse_blr_index(val: str | None) -> tuple[str | None, str | None, bool]:
+    """
+    Split a raw 'BLR Index' cell into (index, note, used_ipv).
+
+    Examples:
+        "3132"            -> ("3132", None, False)
+        "9094 ipv 3604"   -> ("9094", "9094 ipv 3604", True)
+        "7364 (PT??)"     -> (None, "7364 (PT??)", False)
+    Only plain integers and 'X ipv Y' get an index (and are linked to BLR);
+    any other text is kept as a note so nothing unchecked gets linked.
+    """
+    if val is None:
+        return None, None, False
+    if val.isdigit():
+        return val, None, False
+    m = _BLR_IPV.match(val)
+    if m:
+        return m.group(1), val, True
+    return None, val, False
+
+
 def parse_uncertainty(val: Any) -> tuple[str | None, bool]:
     """
     Strip uncertainty markers; return (cleaned_value, is_uncertain).

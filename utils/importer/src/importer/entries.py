@@ -301,6 +301,27 @@ class BlrUnresolvedLinkEntry(ReportEntry):
 
 
 @dataclass(frozen=True, slots=True)
+class BlrIpvResolvedEntry(ReportEntry):
+    blr_index_raw: Any = None
+    blr_index_used: str | None = None
+    term: str | None = None
+    variety_english: str | None = None
+
+    category: ClassVar[str] = "blr_ipv_resolved"
+    level: ClassVar[str] = LEVEL_NOTE
+
+
+@dataclass(frozen=True, slots=True)
+class BlrTextToNoteEntry(ReportEntry):
+    blr_index_raw: Any = None
+    term: str | None = None
+    variety_english: str | None = None
+
+    category: ClassVar[str] = "blr_text_to_note"
+    level: ClassVar[str] = LEVEL_WARNING
+
+
+@dataclass(frozen=True, slots=True)
 class CriticalErrorEntry(ReportEntry):
     error_message: str = ""
 
@@ -330,6 +351,8 @@ CATEGORY_CLASSES: dict[str, type[ReportEntry]] = {
             SourceIncompleteEntry,
             SkippedNoTermEntry,
             BlrUnresolvedLinkEntry,
+            BlrIpvResolvedEntry,
+            BlrTextToNoteEntry,
             CriticalErrorEntry,
         ),
         key=lambda c: LEVEL_ORDER[c.level],
@@ -377,6 +400,7 @@ FIELD_HEADERS: dict[str, str] = {
     "title_value": "Title Value",
     "reflex_id": "Reflex ID",
     "blr_index_raw": "BLR Index (raw)",
+    "blr_index_used": "BLR Index (used)",
     "error_message": "Error Message",
     "note": "Note",
 }

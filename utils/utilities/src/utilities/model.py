@@ -351,6 +351,8 @@ class Reflex(Table, table=True):
     semantic_field: str | None = _text(default=None)
     part_of_speech: str | None = _text(default=None)
     blr_index: str | None = _text(default=None)
+    # Unchecked BLR index text (e.g. '7364 (PT??)'); not linked to a reconstruction
+    blr_note: str | None = _text(default=None)
     ipa: str | None = _text(default=None)
     notes_on_ipa: str | None = _text(default=None)
     notes: str | None = _text(default=None)

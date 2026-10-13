@@ -38,6 +38,8 @@ from .columns import (
 from .entries import (
     CATEGORY_CLASSES,
     LEVEL_ORDER,
+    BlrIpvResolvedEntry,
+    BlrTextToNoteEntry,
     CoordinateConflictEntry,
     CriticalErrorEntry,
     DuplicateBeginningIdEntry,
@@ -53,7 +55,7 @@ from .entries import (
     build_col_index,
     check_case_variant,
 )
-from .parsing import chunked, normalize_key, parse_uncertainty
+from .parsing import chunked, normalize_key, parse_blr_index, parse_uncertainty
 from .report import ImportReport
 
 handler = RichHandler(
@@ -699,6 +701,30 @@ def main() -> None:
                         else:
                             seen_term_variety[tv_key] = excel_row
 
+                        blr_raw = ctx.val("BLR Index")
+                        blr_index, blr_note, used_ipv = parse_blr_index(blr_raw)
+                        if used_ipv:
+                            import_report.add(
+                                BlrIpvResolvedEntry(
+                                    loc=ctx.loc("BLR Index"),
+                                    note="'ipv' in BLR index: eerste nummer gebruikt en gelinkt.",
+                                    blr_index_raw=blr_raw,
+                                    blr_index_used=blr_index,
+                                    term=term,
+                                    variety_english=v_key[0],
+                                )
+                            )
+                        elif blr_note is not None:
+                            import_report.add(
+                                BlrTextToNoteEntry(
+                                    loc=ctx.loc("BLR Index"),
+                                    note="BLR index is geen getal: niet gelinkt, bewaard in blr_note.",
+                                    blr_index_raw=blr_raw,
+                                    term=term,
+                                    variety_english=v_key[0],
+                                )
+                            )
+
                         reflex = Reflex(
                             original_id=original_id,
                             beginning_id=beginning_id,
@@ -711,7 +737,8 @@ def main() -> None:
                             scientific_name=ctx.val("Scientific name"),
                             semantic_field=ctx.val("Semantic field"),
                             part_of_speech=ctx.val("Part of Speech"),
-                            blr_index=ctx.val("BLR Index"),
+                            blr_index=blr_index,
+                            blr_note=blr_note,
                             ipa=ctx.val("IPA"),
                             notes_on_ipa=ctx.val("Notes on IPA"),
                             notes=ctx.val("Opmerking"),
