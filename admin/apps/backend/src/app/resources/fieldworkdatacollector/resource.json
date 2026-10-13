@@ -4,8 +4,10 @@
   "draft": false,
   "name": "fieldworkdatacollector",
   "route": "fieldworkdatacollector",
+  "model": "fieldworkdatacollector",
   "tag": "fieldworkdatacollector",
   "title": "Fieldwork data collectors",
+  "idType": "number",
   "database": "default",
   "sidebar": {
     "group": "fieldwork",
@@ -21,12 +23,23 @@
   },
   "columns": {
     "id": {
-      "idField": true,
-      "type": "string",
+      "label": "Id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
       "hiddenInForm": true,
-      "hiddenInTable": true,
       "createable": false,
-      "updateable": false
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "idField": true,
+      "defaultSort": true
     },
     "fieldwork_id": {
       "label": "Fieldwork",
@@ -64,8 +77,7 @@
       "fieldTable": {
         "type": "number",
         "format": "number"
-      },
-      "defaultSort": true
+      }
     },
     "data_collector_id": {
       "label": "Data collector",
@@ -104,13 +116,44 @@
         "type": "number",
         "format": "number"
       }
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
     }
   },
   "modalSize": "xl",
   "include": [],
-  "kind": "prisma",
-  "idType": "string",
-  "model": "fieldworkdatacollector",
   "layout": {
     "form": {
       "type": "grid",
@@ -128,6 +171,15 @@
     }
   },
   "calculatedColumns": [
+    {
+      "id": "display_label",
+      "alias": "display_label",
+      "label": "Reference",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT d.name FROM datacollector d WHERE d.id = x.data_collector_id), (SELECT a.archive FROM fieldwork a WHERE a.id = x.fieldwork_id)), ''), '#' || x.id) FROM \"fieldworkdatacollector\" x WHERE x.id = main.id",
+      "hiddenInTable": true,
+      "hiddenInView": true
+    },
     {
       "id": "fieldwork_label",
       "alias": "fieldwork_label",
