@@ -20,8 +20,9 @@ generate-diagram:
 
 # ── Import ───────────────────────────────────────────────────────────────────
 
-import:
-    docker compose run -w /app/utils/importer --rm utils uv run importer
+# Optioneel een ander bestand in data/: just import "BantuLex_20261008.xlsx"
+import file="bantulex.xlsx":
+    docker compose run -e EXCEL_FILE="{{file}}" -w /app/utils/importer --rm utils uv run importer
 
 # ── Export (één script per "ding") ───────────────────────────────────────────
 
