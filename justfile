@@ -56,10 +56,15 @@ export-all: export-evolex export-map export-blr
 
 # Kopieert de SQLite-export naar site/database en bouwt de FTS-indexen voor HTTP VFS
 site-db: pihka-init
+    rm -f site/database/bantulex.sqlite site/database/bantulex.sqlite-journal
     cp {{SOURCE_DB}} site/database/bantulex.sqlite
+    # EvoLex-tabellen (site/evolex/): voorberekende joins en betekenissen
+    docker compose run --rm --no-deps -w /app/utils/exporter utils uv run evolex-site /app/site/database/bantulex.sqlite
     docker run --rm -v "$PWD":/work -w /work node:24-alpine node --input-type=module -e "import { readFileSync } from 'node:fs'; \
       import { prepareSampleDatabase } from './vendor/pihka/scripts/prepare-sample-db.js'; \
-      await prepareSampleDatabase('site/database/bantulex.sqlite', JSON.parse(readFileSync('site/config.json', 'utf8')));"
+      const site = JSON.parse(readFileSync('site/config.json', 'utf8')); \
+      const evolex = JSON.parse(readFileSync('site/evolex/config.json', 'utf8')); \
+      await prepareSampleDatabase('site/database/bantulex.sqlite', { ...site, tables: { ...site.tables, ...evolex.tables } });"
 
 # Lokale Pihka op {{PIHKA_URL}}, site/ is live gemount (herlaad de browser na wijzigingen)
 # pihka-init eerst: zonder submodule kan Docker site/ niet in de lege read-only map mounten

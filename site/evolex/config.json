@@ -1,0 +1,36 @@
+{
+    "description": "Build settings for the EvoLex tables (utils/exporter export_evolex_site.py). `just site-db` merges `tables` into site/config.json when it builds the search indexes, so only the listed text columns get an FTS index.",
+    "tables": {
+        "evolex_etyma": {
+            "columns": {
+                "noun_class": { "fts": false },
+                "distribution": { "fts": false },
+                "reliability": { "fts": false },
+                "contributor": { "fts": false },
+                "note": { "fts": false },
+                "has_reflexes": { "fts": false }
+            }
+        },
+        "evolex_reflex": {
+            "columns": {
+                "variety": { "fts": false }, "guthrie": { "fts": false }, "branch": { "fts": false },
+                "term": { "fts": false }, "morph": { "fts": false }, "pos": { "fts": false },
+                "meaning": { "fts": false }, "translation": { "fts": false }, "semantic_field": { "fts": false },
+                "scientific_name": { "fts": false }, "notes": { "fts": false }, "source": { "fts": false },
+                "pages": { "fts": false }
+            }
+        },
+        "evolex_variety": {
+            "columns": {
+                "name": { "fts": false }, "guthrie": { "fts": false }, "guthrie_plus": { "fts": false },
+                "branch": { "fts": false }, "branch_detailed": { "fts": false }
+            }
+        },
+        "evolex_source": {
+            "columns": { "author_year": { "fts": false }, "title": { "fts": false } }
+        },
+        "evolex_sense": {
+            "columns": { "sense": { "fts": false } }
+        }
+    }
+}
