@@ -50,9 +50,6 @@ export-blr:
 # Alle exports in één keer
 export-all: export-evolex export-map export-blr
 
-# ── Data Management (Crouton admin, zie admin/README.md) ─────────────────────
-
-<<<<<<< HEAD
 # ── Publicatie (Pihka) ───────────────────────────────────────────────────────
 # vendor/pihka is een git submodule van GhentCDH/Pihka en wordt nooit lokaal aangepast.
 # Alles wat BantuLex-specifiek is staat in site/ en wordt de app/-map van Pihka.
@@ -91,15 +88,12 @@ pihka-update:
     git submodule update --init --remote vendor/pihka
     git -C vendor/pihka log --oneline -1
 
-# ── Data Management (Kottster) ───────────────────────────────────────────────
-||||||| 6a99caa
-# ── Data Management (Kottster) ───────────────────────────────────────────────
-=======
+# ── Data Management (Crouton admin, zie admin/README.md) ─────────────────────
+
 # Productie-image bouwen en starten op :4444 (vereist data/bantulex.db, schrijfbaar voor uid 1000)
 admin:
     mkdir -p backups
     docker compose --profile admin up -d --build admin
->>>>>>> main
 
 # Dev-server met hot reload (UI :5555/admin/, API :4444/api); stop eerst `admin` (zelfde poort 4444)
 admin-dev:

@@ -21,47 +21,12 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 
 ## Services
 
-<<<<<<< HEAD
-
-- **import** — Python/uv container for importing CSV data into SQLite
-- **bantulex-map** — MapLibre-based static vector map (port 80 via proxy)
-- **caddy** — Reverse proxy for all services
-- **pihka**: local preview of the Pihka website on port 9161 (see [publishing](docs/publishing.md))
-  ||||||| 6a99caa
-- **import** — Python/uv container for importing CSV data into SQLite
-- **bantulex-map** — MapLibre-based static vector map (port 80 via proxy)
-- # **caddy** — Reverse proxy for all services
 - **utils** — Python/uv container with the importer, exporters and documenter (run on demand)
 - **admin** — Crouton admin app (UI on `/admin/`, API on `/api`) at http://localhost:4444/admin/, editing `data/bantulex.db`. It is in the `admin` compose profile, so `just up`/`just rebuild` do not start it; use `just admin`. See [admin/README.md](admin/README.md) for details.
-  > > > > > > > main
+- **pihka**: local preview of the Pihka website on port 9161 (see [publishing](docs/publishing.md))
 
 ## Recipes
 
-<<<<<<< HEAD
-| Command | Description |
-| ------------------ | ---------------------------------- |
-| `just rebuild` | Rebuild and restart all containers |
-| `just up` | Start all containers |
-| `just import` | Run the data import |
-| `just map-up` | Build and start the map service |
-| `just map-rebuild` | Force rebuild of the map service |
-| `just reinit` | Rebuild + import |
-| `just reset-db` | Recreate the Postgres database |
-| `just pihka-init` | Fetch the pinned Pihka submodule |
-| `just site-db` | Prepare the SQLite export for Pihka |
-| `just pihka-up` | Preview the website locally |
-| `just publish` | Build the website and rsync it |
-||||||| 6a99caa
-| Command | Description |
-| ------------------ | ---------------------------------- |
-| `just rebuild` | Rebuild and restart all containers |
-| `just up` | Start all containers |
-| `just import` | Run the data import |
-| `just map-up` | Build and start the map service |
-| `just map-rebuild` | Force rebuild of the map service |
-| `just reinit` | Rebuild + import |
-| `just reset-db` | Delete the SQLite database |
-=======
 | Command | Description |
 | ------------------------ | ----------------------------------------------------------------- |
 | `just rebuild` | Rebuild and restart all containers (except the admin) |
@@ -75,10 +40,12 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just admin-test` | Typecheck, build and test the admin in its dev container |
 | `just admin-e2e` | Browser tests against the host Chrome (see admin/README.md) |
 | `just open-admin` | Open the admin in the browser |
+| `just pihka-init` | Fetch the pinned Pihka submodule |
+| `just site-db` | Prepare the SQLite export for Pihka |
+| `just pihka-up` | Preview the website locally |
+| `just publish` | Build the website and rsync it |
 
 The admin backs up `data/bantulex.db` into `backups/` on every start. Backups contain data and are gitignored. On Linux, `data/` and `backups/` must be writable by uid 1000.
-
-> > > > > > > main
 
 ## Credits
 
