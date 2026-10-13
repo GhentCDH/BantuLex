@@ -8,7 +8,7 @@ _TIMESTAMPTZ = DateTime(timezone=True)
 
 
 def _text(**kwargs):
-    """TEXT column (unbounded varchar in Postgres)."""
+    """Unbounded TEXT column."""
     return Field(sa_type=Text, **kwargs)
 
 
