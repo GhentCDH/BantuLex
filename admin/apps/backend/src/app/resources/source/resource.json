@@ -67,7 +67,7 @@
       "label": "Year uncertain",
       "type": {
         "type": [
-          "integer"
+          "boolean"
         ]
       },
       "hiddenInView": false,
@@ -81,7 +81,7 @@
       "showInLookup": false,
       "required": true,
       "fieldInput": {
-        "type": "number"
+        "type": "boolean"
       }
     },
     "title": {

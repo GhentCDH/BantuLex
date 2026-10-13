@@ -119,28 +119,6 @@
         "format": "number"
       }
     },
-    "consultants": {
-      "label": "Consultants",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": true,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
-    },
     "archive": {
       "label": "Archive",
       "type": {
@@ -233,10 +211,6 @@
         },
         {
           "id": "collection_year_id",
-          "colspan": 6
-        },
-        {
-          "id": "consultants",
           "colspan": 6
         },
         {

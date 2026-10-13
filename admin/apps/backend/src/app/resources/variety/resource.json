@@ -151,6 +151,28 @@
         "type": "string"
       }
     },
+    "branch_detailed": {
+      "label": "Branch detailed",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
     "bastin_index": {
       "label": "Bastin index",
       "type": {
@@ -221,7 +243,7 @@
       "label": "Substrate suspect",
       "type": {
         "type": [
-          "integer",
+          "boolean",
           "null"
         ]
       },
@@ -236,7 +258,7 @@
       "showInLookup": false,
       "required": false,
       "fieldInput": {
-        "type": "number"
+        "type": "boolean"
       }
     },
     "created_at": {
@@ -299,6 +321,10 @@
         },
         {
           "id": "branch",
+          "colspan": 6
+        },
+        {
+          "id": "branch_detailed",
           "colspan": 6
         },
         {

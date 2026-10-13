@@ -261,6 +261,28 @@
         "type": "string"
       }
     },
+    "blr_note": {
+      "label": "Blr note",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": false,
+      "searchable": true,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "textarea"
+      }
+    },
     "ipa": {
       "label": "Ipa",
       "type": {
@@ -281,6 +303,28 @@
       "required": false,
       "fieldInput": {
         "type": "string"
+      }
+    },
+    "notes_on_ipa": {
+      "label": "Notes on ipa",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": false,
+      "searchable": true,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "textarea"
       }
     },
     "notes": {
@@ -544,8 +588,16 @@
           "colspan": 6
         },
         {
+          "id": "blr_note",
+          "colspan": 12
+        },
+        {
           "id": "ipa",
           "colspan": 6
+        },
+        {
+          "id": "notes_on_ipa",
+          "colspan": 12
         },
         {
           "id": "notes",
