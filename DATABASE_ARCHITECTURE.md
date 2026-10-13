@@ -31,7 +31,7 @@ The canonical model is `utils/utilities/src/utilities/model.py`. The importer wr
 *   `_ts`: timestamp columns, used for `created_at`/`updated_at` (server default `CURRENT_TIMESTAMP`; an `update_<table>_modtime` trigger refreshes `updated_at` on every `UPDATE`, including edits from the admin).
 *   Booleans are stored as `0`/`1` integers.
 
-The Crouton admin edits the same file. Its Prisma schema and resources were introspected from an older version of `bantulex.db` (22 STRICT tables, with separate `entry` and `blrentry` tables and no `consultant`/`fieldworkconsultant` tables), so they must be regenerated after an import.
+The Crouton admin edits the same file. Its Prisma schema (`admin/prisma/default/schema.prisma`) is introspected from it; when `model.py` changes, update the schema and the admin resources as described in `admin/README.md`.
 
 ## 3 Database Models
 

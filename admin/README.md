@@ -1,6 +1,6 @@
 # BantuLex admin
 
-The `admin/` folder of the BantuLex repository: a local SQLite editor built with Crouton, NestJS, Vue 3, TypeScript, Vite and Nx. All 22 database tables have a navigation entry; all 183 physical columns are available in detail views and all business fields are editable. IDs and timestamps are managed by SQLite.
+The `admin/` folder of the BantuLex repository: a local SQLite editor built with Crouton, NestJS, Vue 3, TypeScript, Vite and Nx. Every database table has a navigation entry; every column is available in detail views and all business fields are editable. IDs and timestamps are managed by SQLite.
 
 ## Run
 
@@ -41,15 +41,23 @@ Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so b
 
 `DATABASE_PATH` (default `data/bantulex.db`) and `BACKUP_DIR` (default `backups`) resolve relative to `admin/` (the folder containing `crouton.json`), regardless of the launch directory; in the containers that is `/app`, where the root `data/` and `backups/` folders are mounted. Set `DATABASE_PATH` to use a different file and `PORT` to change the backend port. The server refuses to create a missing database. A consistent SQLite backup is saved in the backup folder on startup before any application writes; `BACKUP_DIR` overrides its location. Stop the app before restoring a backup. Backups are retained until you remove them.
 
-No migrations, seeds, resets, `db push`, or automatic schema synchronization run. Timestamp defaults and existing update triggers remain authoritative. `entry` and `reflex`, and `blrentry` and `reconstruction`, remain separate tables.
+No migrations, seeds, resets, `db push`, or automatic schema synchronization run. The database and its schema come from the importer (`just reset-db` and `just import` in the repository root). Its timestamp defaults and `update_<table>_modtime` triggers are authoritative: Prisma never writes `created_at` or `updated_at`.
 
 ## Configuration
 
 `crouton.json` configures the title, navigation groups, resource directories, and explicit saving. Each `apps/backend/src/app/resources/<table>/resource.json` configures endpoints, columns, controls, layout, lookup URLs, and visibility. Generated Prisma/Zod files are build artifacts; JSON resources are the maintained application definition.
 
-The sole data-access adaptation is in the default datasource adapter: `fieldworkdatacollector` has a compound primary key, represented by an API-only `fieldwork_id:data_collector_id` identifier. No synthetic column is added to SQLite. Ordinary CRUD, validation, search, pagination, forms, modals, and navigation are provided by Crouton.
+The default datasource adapter only bounds page sizes and sorts lists by `id` by default. Every table, including the junctions `fieldworkdatacollector` and `fieldworkconsultant`, has an integer `id`; the junctions have a unique (fieldwork, person) pair. Ordinary CRUD, validation, search, pagination, forms, modals, and navigation are provided by Crouton.
 
-`pnpm run setup` (run automatically by the dev container) generates clients and types from the committed introspected schema without modifying the database. If the database schema changes intentionally, inspect it with Prisma and use `docker compose run --rm dev pnpm crouton update resources --help`. `pnpm crouton` runs the published `@ghentcdh/crouton-cli`. Resource regeneration is an explicit maintenance step; review its diff, keep the compound-key schema extension, and preserve the `dbgenerated("CURRENT_TIMESTAMP")` defaults.
+`pnpm run setup` (run automatically by the dev container) generates clients and types from the committed introspected schema without modifying the database.
+
+When the importer's schema changes (`utils/utilities/src/utilities/model.py`):
+
+1. Print the introspected schema with `docker compose run --rm dev pnpm exec prisma db pull --print --config prisma/default/prisma.config.ts` and copy it into `prisma/default/schema.prisma`. Keep `created_at`/`updated_at` as `String @default(dbgenerated("CURRENT_TIMESTAMP"))`, so Prisma keeps the importer's `YYYY-MM-DD HH:MM:SS` text instead of writing ISO timestamps.
+2. Edit the affected `resource.json` files by hand, following an existing resource: lookups for foreign keys, a `display_label` and `<name>_label` calculated columns, and form controls.
+3. Regenerate `tests/inventory.json` with `docker compose run --rm --no-deps utils python3 /app/admin/scripts/inventory.py` (from the repository root) and run the tests.
+
+`pnpm crouton update resources` is not used: it does nothing for this custom datasource, and with a generic one it would rename every model and field to PascalCase/camelCase.
 
 ## Verification
 
@@ -57,7 +65,7 @@ The sole data-access adaptation is in the default datasource adapter: `fieldwork
 docker compose run --rm dev sh -c "pnpm typecheck && pnpm build && pnpm test"
 ```
 
-The API tests (`pnpm test`) copy `data/bantulex.db` (in the container: the mounted root database, opened read-only) to the system temporary directory and run local test servers on the copy; they never write to the real database. They check every table/column, independent SQLite persistence, server restart, constraints, nulls, search, and compound keys.
+The API tests (`pnpm test`) copy `data/bantulex.db` (in the container: the mounted root database, opened read-only) to the system temporary directory and run local test servers on the copy; they never write to the real database. They check every table/column, independent SQLite persistence, server restart, constraints, nulls, search, and unique junction pairs.
 
 The browser tests (Playwright) do not run a browser in the container: they drive a Chrome on the host over the DevTools protocol (`tests/browser/fixtures.ts`). Chrome 136+ refuses remote debugging on the default profile, so start a dedicated instance with its own profile:
 

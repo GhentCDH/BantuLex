@@ -61,7 +61,7 @@ Notes:
 
 - Local dev has no gateway: the admin is reached directly on `127.0.0.1:4444`, and the exporters write their files to `data/`. The map that uses those exports lives in a separate project.
 - The admin has no login: in production it must sit behind an authenticating reverse proxy. Its UI base path is `/admin/` and its API `/api` (see `admin/README.md`); serving it under another sub-path requires changing that configuration.
-- The importer writes the SQLite file `bantulex.db` (`DB_PATH` in `utils/utils.env`), which the exporters read and the admin edits. Known gap: the admin's Prisma schema was introspected from an older version of that file and must be regenerated after an import.
+- The importer writes the SQLite file `bantulex.db` (`DB_PATH` in `utils/utils.env`), which the exporters read and the admin edits. When the importer's schema changes, the admin's Prisma schema and resources must follow (see `admin/README.md`).
 
 ## Legend
 

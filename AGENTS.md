@@ -55,7 +55,7 @@ Excel/CSV files
   data/ (consumed by the separate map project)
 ```
 
-Known gap: the admin's Prisma schema and resources were introspected from an older version of `data/bantulex.db`; after an import they must be regenerated before the admin works on the new file.
+The admin's Prisma schema and resources are introspected from `data/bantulex.db`; when `model.py` changes, update them as described in `admin/README.md`.
 
 ### Services (Docker Compose)
 
