@@ -10,10 +10,10 @@ The project is organized into modular directories, separating the Python import/
 .
 ├── .github/workflows/      # CI: builds the admin image, publishes it to GHCR on v* tags
 ├── admin/                  # Crouton admin app (NestJS API + Vue UI) editing data/bantulex.db; see admin/README.md
-├── data/                   # Gitignored: Excel sources, exports and the admin's SQLite database
+├── data/                   # Gitignored: Excel sources, exports and the SQLite database (bantulex.db)
 ├── utils/                  # Python tools (uv workspace)
-│   ├── importer/           # Excel → Postgres pipeline
-│   ├── exporter/           # Postgres → EvoLex Excel, GeoJSON and BLR catalog (JSON)
+│   ├── importer/           # Excel → SQLite pipeline
+│   ├── exporter/           # SQLite → EvoLex Excel, GeoJSON and BLR catalog (JSON)
 │   ├── documenter/         # Generates the data model diagram (just generate-diagram)
 │   └── utilities/          # Shared: SQLModel definitions, DB connection, config
 ├── compose.yml             # Local development services
@@ -22,16 +22,16 @@ The project is organized into modular directories, separating the Python import/
 
 The map that consumes the GeoJSON and BLR catalog exports lives in a separate project.
 
-## 2 Database Engines
+## 2 Database Engine
 
-The canonical model is `utils/utilities/src/utilities/model.py`. The importer writes it to **Postgres** (`DATABASE_URL` in `utils/utils.env`). Column helpers in `model.py`:
+The canonical model is `utils/utilities/src/utilities/model.py`. The importer writes it to the **SQLite** file `data/bantulex.db` (`DB_PATH` in `utils/utils.env`); `just reset-db` backs up and removes that file before a fresh import. Column helpers in `model.py`:
 
 *   `_text`: unbounded `TEXT` columns.
 *   `_float`: double-precision `FLOAT` columns.
-*   `_ts`: `TIMESTAMPTZ` columns, used for `created_at`/`updated_at` (server default `now()`; `updated_at` is refreshed by SQLAlchemy on ORM updates).
-*   Booleans are native Postgres `BOOLEAN`.
+*   `_ts`: timestamp columns, used for `created_at`/`updated_at` (server default `CURRENT_TIMESTAMP`; `updated_at` is refreshed by SQLAlchemy on ORM updates).
+*   Booleans are stored as `0`/`1` integers.
 
-The Crouton admin edits a separate **SQLite** file, `data/bantulex.db` (22 STRICT tables). Its schema is not generated from `model.py` and differs from it: it has separate `entry` and `blrentry` tables next to `reflex` and `reconstruction`, and no `consultant`/`fieldworkconsultant` tables. Nothing currently syncs Postgres and that file; a Postgres datasource for the admin is future work.
+The Crouton admin edits the same file. Its Prisma schema and resources were introspected from an older version of `bantulex.db` (22 STRICT tables, with separate `entry` and `blrentry` tables and no `consultant`/`fieldworkconsultant` tables), so they must be regenerated after an import.
 
 ## 3 Database Models
 

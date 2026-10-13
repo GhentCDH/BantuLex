@@ -13,17 +13,14 @@ graph TB
         utils_dev["utils<br/><small>importer + exporters (CLI)<br/>not deployed</small>"]
         style utils_dev fill:none,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5,color:#64748b
 
-        pg_dev[("postgres<br/><small>postgres:17-alpine :5432</small>")]
-        style pg_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
-
         db_dev[("./data/bantulex.db<br/><small>SQLite</small>")]
         style db_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
         exports_dev[("./data exports<br/><small>EvoLex xlsx, GeoJSON, BLR catalog</small>")]
         style exports_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
-        utils_dev -. "import" .-> pg_dev
-        pg_dev -. "export" .-> utils_dev
+        utils_dev -. "import" .-> db_dev
+        db_dev -. "export" .-> utils_dev
         utils_dev -.-> exports_dev
         admin_dev -.-> db_dev
     end
@@ -64,7 +61,7 @@ Notes:
 
 - Local dev has no gateway: the admin is reached directly on `127.0.0.1:4444`, and the exporters write their files to `data/`. The map that uses those exports lives in a separate project.
 - The admin has no login: in production it must sit behind an authenticating reverse proxy. Its UI base path is `/admin/` and its API `/api` (see `admin/README.md`); serving it under another sub-path requires changing that configuration.
-- Known gap: the importer writes to Postgres (`DATABASE_URL` in `utils/utils.env`), while the admin edits the SQLite file `bantulex.db`. Nothing currently syncs the two; a Postgres datasource for the admin is future work.
+- The importer writes the SQLite file `bantulex.db` (`DB_PATH` in `utils/utils.env`), which the exporters read and the admin edits. Known gap: the admin's Prisma schema was introspected from an older version of that file and must be regenerated after an import.
 
 ## Legend
 
