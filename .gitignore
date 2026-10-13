@@ -6,6 +6,7 @@ __pycache__
 *.db
 data/bantulex.csv
 data/import*
+data/to_fix.html
 import/erd.mermaid
 *.db-shm
 *.db-wal

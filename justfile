@@ -47,8 +47,12 @@ export-map:
 export-blr:
     docker compose run  -w /app/utils/exporter --rm utils  uv run export-blr
 
+# Werklijst van importfouten voor de admin: data/to_fix.html (na een import)
+export-tofix:
+    docker compose run  -w /app/utils/exporter --rm utils  uv run export-tofix
+
 # Alle exports in één keer
-export-all: export-evolex export-map export-blr
+export-all: export-evolex export-map export-blr export-tofix
 
 # ── Publicatie (Pihka) ───────────────────────────────────────────────────────
 # vendor/pihka is een git submodule van GhentCDH/Pihka en wordt nooit lokaal aangepast.

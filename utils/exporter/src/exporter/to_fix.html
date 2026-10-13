@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BantuLex to fix</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --line: #e3e6eb; --text: #1d2330; --muted: #677084;
+  --accent: #1f5fbf; --accent-soft: #e8f0fc;
+  --error: #c62f3a; --error-soft: #fdecee; --warning: #b26a00; --warning-soft: #fff4e0;
+  --info: #5a6475; --info-soft: #eef0f3; --done: #2b8a4b; --done-soft: #e7f5ec;
+  --radius: 10px; --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 2px 8px rgba(20, 30, 50, .04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --panel: #1a1e26; --line: #2a303b; --text: #e6e9ef; --muted: #9aa3b2;
+    --accent: #6ea2ff; --accent-soft: #1c2a44;
+    --error: #ff6b74; --error-soft: #3a1d22; --warning: #f2b04c; --warning-soft: #3a2c14;
+    --info: #a5aebd; --info-soft: #262b35; --done: #5fd38a; --done-soft: #183323;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: grid; grid-template-rows: auto 1fr; overflow: hidden;
+}
+header {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+header h1 { font-size: 17px; margin: 0; white-space: nowrap; }
+header h1 span { color: var(--muted); font-weight: 400; }
+.overall { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.bar { flex: 1; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--done); transition: width .25s; }
+.settings { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+input[type=text], input[type=search] {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0;
+}
+input[type=text]:focus, input[type=search]:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+#base { width: 230px; }
+button, .btn {
+  font: inherit; color: var(--text); background: var(--panel); cursor: pointer;
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+button:hover, .btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.1); color: #fff; }
+.layout { display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+nav { overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--line); padding: 14px 10px 30px; }
+nav h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 16px 10px 6px; }
+.cat {
+  width: 100%; text-align: left; display: block; border: 1px solid transparent; background: none;
+  border-radius: var(--radius); padding: 8px 10px; margin-bottom: 2px;
+}
+.cat:hover { background: var(--panel); border-color: var(--line); color: var(--text); }
+.cat.active { background: var(--panel); border-color: var(--accent); box-shadow: var(--shadow); }
+.cat .top { display: flex; align-items: center; gap: 8px; }
+.cat .name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat .count { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+.cat .bar { height: 4px; margin-top: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot.error { background: var(--error); } .dot.warning { background: var(--warning); } .dot.info { background: var(--info); }
+main { overflow: auto; padding: 18px 24px 40px; min-width: 0; }
+.intro { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.intro h2 { margin: 0 0 4px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.intro p { margin: 0; color: var(--muted); }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.tools input[type=search] { flex: 1; min-width: 180px; }
+.tools label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); cursor: pointer; }
+.list { display: grid; gap: 8px; }
+.item {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start;
+  background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--line);
+  border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow);
+}
+.item.error { border-left-color: var(--error); } .item.warning { border-left-color: var(--warning); } .item.info { border-left-color: var(--info); }
+.item.done { background: var(--done-soft); border-left-color: var(--done); }
+.item.done .title { text-decoration: line-through; color: var(--muted); }
+.item input[type=checkbox] { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--done); cursor: pointer; }
+.title { font-weight: 600; word-break: break-word; }
+.detail { color: var(--muted); margin-top: 2px; word-break: break-word; }
+.meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.tag { font-size: 12px; border-radius: 6px; padding: 1px 7px; background: var(--info-soft); color: var(--info); font-variant-numeric: tabular-nums; }
+.links { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 340px; }
+.links .btn { font-size: 13px; padding: 4px 9px; }
+.empty { text-align: center; color: var(--muted); padding: 50px 0; }
+.pager { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 16px; color: var(--muted); }
+.hidden { display: none !important; }
+@media (max-width: 800px) {
+  body { overflow: auto; display: block; }
+  header { padding: 10px 16px; }
+  #base { width: 100%; }
+  .settings { width: 100%; }
+  .layout { display: block; }
+  nav { border-right: 0; border-bottom: 1px solid var(--line); padding: 8px 16px; max-height: 40vh; }
+  main { padding: 14px 16px 30px; overflow: visible; }
+  .item { grid-template-columns: auto 1fr; }
+  .links { grid-column: 1 / -1; justify-content: flex-start; max-width: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>BantuLex <span>to fix</span></h1>
+  <div class="overall"><span id="overall-text"></span><div class="bar"><i id="overall-bar"></i></div></div>
+  <div class="settings">
+    <label for="base">Admin at</label>
+    <input id="base" type="text" spellcheck="false" title="Base URL of the BantuLex site; links go to <base>admin/crouton/…">
+  </div>
+  <button id="export" title="Download the done-list, e.g. to continue in another browser">Export progress</button>
+  <button id="import" title="Load a done-list exported earlier">Import progress</button>
+  <input id="import-file" type="file" accept="application/json" class="hidden">
+</header>
+<div class="layout">
+  <nav id="nav"></nav>
+  <main>
+    <section class="intro">
+      <h2><span class="dot" id="cat-dot"></span><span id="cat-title"></span></h2>
+      <p id="cat-help"></p>
+    </section>
+    <div class="tools">
+      <input id="search" type="search" placeholder="Search term, variety, value, cell…">
+      <label><input id="hide-done" type="checkbox"> Hide done</label>
+      <button id="mark-page" title="Mark every item on this page as done">Mark page done</button>
+      <button id="reset-cat" title="Clear all checkmarks in this category">Reset category</button>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="pager" id="pager"></div>
+  </main>
+</div>
+
+<script>
+// Base URL of the BantuLex site (with trailing slash). Links go to <BASE_URL>admin/crouton/<resource>.
+// Examples: 'https://tst.bantulex.ugent.be/', 'http://localhost:8000/', 'http://localhost:4444/'.
+// The "Admin at" field in the header overrides it for this browser.
+const BASE_URL = 'http://localhost:4444/';
+
+const DATA = /*__DATA__*/null;
+const PAGE_SIZE = 50;
+const KEY = 'bantulex-to-fix:';
+const LEVELS = [['error', 'Errors'], ['warning', 'Warnings'], ['info', 'Info']];
+
+// localStorage can be missing or throw (private mode, blocked storage): the page still works, without memory.
+const store = {
+  get(name, fallback) { try { const v = localStorage.getItem(KEY + name); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+  set(name, value) { try { localStorage.setItem(KEY + name, JSON.stringify(value)); } catch {} },
+};
+
+const done = new Set(store.get('done', []));
+const saveDone = () => store.set('done', [...done]);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+const byCat = new Map(DATA.categories.map((c) => [c.id, { ...c, items: [] }]));
+for (const it of DATA.items) byCat.get(it.c)?.items.push(it);
+for (const c of byCat.values()) c.level = c.items[0]?.v ?? 'info';
+const cats = [...byCat.values()].filter((c) => c.items.length);
+
+const state = {
+  cat: byCat.has(store.get('cat')) && byCat.get(store.get('cat')).items.length ? store.get('cat') : cats[0]?.id,
+  hideDone: store.get('hideDone', false),
+  q: '',
+  page: 0,
+};
+
+function baseUrl() {
+  let b = (store.get('base', '') || BASE_URL).trim();
+  if (!/^https?:\/\//.test(b)) b = 'http://' + b;
+  return b.endsWith('/') ? b : b + '/';
+}
+
+function href([, resource, id, q]) {
+  const url = `${baseUrl()}admin/crouton/${resource}`;
+  if (id != null) return `${url}?id=${id}&event=update`;
+  return q ? `${url}?q=${encodeURIComponent(q)}` : url;
+}
+
+const doneIn = (items) => items.reduce((n, it) => n + done.has(it.i), 0);
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 100);
+
+function renderNav() {
+  let html = '';
+  for (const [level, label] of LEVELS) {
+    const group = cats.filter((c) => c.level === level);
+    if (!group.length) continue;
+    html += `<h2>${label}</h2>`;
+    for (const c of group) {
+      const d = doneIn(c.items);
+      html += `<button class="cat ${c.id === state.cat ? 'active' : ''}" data-cat="${c.id}">
+        <div class="top"><span class="dot ${level}"></span><span class="name">${esc(c.title)}</span>
+        <span class="count">${d.toLocaleString()} / ${c.items.length.toLocaleString()}</span></div>
+        <div class="bar"><i style="width:${pct(d, c.items.length)}%"></i></div></button>`;
+    }
+  }
+  $('nav').innerHTML = html;
+  const total = DATA.items.length, d = doneIn(DATA.items);
+  $('overall-text').textContent = `${d.toLocaleString()} of ${total.toLocaleString()} done · ${pct(d, total)}%`;
+  $('overall-bar').style.width = pct(d, total) + '%';
+}
+
+function visibleItems() {
+  const c = byCat.get(state.cat);
+  if (!c) return [];
+  const q = state.q.toLowerCase();
+  return c.items.filter((it) =>
+    (!state.hideDone || !done.has(it.i)) &&
+    (!q || `${it.t} ${it.d} ${it.x}`.toLowerCase().includes(q)));
+}
+
+function renderList() {
+  const c = byCat.get(state.cat);
+  $('cat-title').textContent = c ? c.title : 'Nothing to fix';
+  $('cat-help').textContent = c ? c.help : '';
+  $('cat-dot').className = 'dot ' + (c?.level ?? 'info');
+  const items = visibleItems();
+  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  state.page = Math.min(state.page, pages - 1);
+  const slice = items.slice(state.page * PAGE_SIZE, (state.page + 1) * PAGE_SIZE);
+  $('list').innerHTML = slice.length ? slice.map((it) => `
+    <article class="item ${it.v} ${done.has(it.i) ? 'done' : ''}">
+      <input type="checkbox" data-id="${esc(it.i)}" ${done.has(it.i) ? 'checked' : ''} aria-label="Done">
+      <div>
+        <div class="title">${esc(it.t)}</div>
+        <div class="detail">${esc(it.d)}</div>
+        <div class="meta">${it.x ? `<span class="tag" title="Excel cell">${esc(it.x)}</span>` : ''}${it.n > 1 ? `<span class="tag">${it.n} rows</span>` : ''}</div>
+      </div>
+      <div class="links">${it.l.map((l, k) => `<a class="btn ${k === 0 ? 'primary' : ''}" target="_blank" rel="noopener" href="${esc(href(l))}">${esc(l[0])} ↗</a>`).join('') || '<span class="tag">Fix in Excel</span>'}</div>
+    </article>`).join('')
+    : `<div class="empty">${state.q || state.hideDone ? 'No items match.' : 'Nothing here.'}</div>`;
+  $('pager').innerHTML = pages > 1 ? `
+    <button data-page="0" ${state.page === 0 ? 'disabled' : ''}>«</button>
+    <button data-page="${state.page - 1}" ${state.page === 0 ? 'disabled' : ''}>‹</button>
+    <span>Page ${state.page + 1} of ${pages} · ${items.length.toLocaleString()} items</span>
+    <button data-page="${state.page + 1}" ${state.page >= pages - 1 ? 'disabled' : ''}>›</button>
+    <button data-page="${pages - 1}" ${state.page >= pages - 1 ? 'disabled' : ''}>»</button>`
+    : items.length ? `<span>${items.length.toLocaleString()} items</span>` : '';
+}
+
+function render() { renderNav(); renderList(); }
+
+$('nav').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cat]');
+  if (!b) return;
+  state.cat = b.dataset.cat; state.page = 0; store.set('cat', state.cat);
+  render(); document.querySelector('main').scrollTop = 0;
+});
+$('list').addEventListener('change', (e) => {
+  const id = e.target.dataset.id;
+  if (!id) return;
+  e.target.checked ? done.add(id) : done.delete(id);
+  saveDone();
+  e.target.closest('.item').classList.toggle('done', e.target.checked);
+  renderNav();
+  if (state.hideDone) setTimeout(renderList, 350);
+});
+$('pager').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-page]');
+  if (!b || b.disabled) return;
+  state.page = +b.dataset.page; renderList(); document.querySelector('main').scrollTop = 0;
+});
+$('search').addEventListener('input', (e) => { state.q = e.target.value.trim(); state.page = 0; renderList(); });
+$('hide-done').checked = state.hideDone;
+$('hide-done').addEventListener('change', (e) => { state.hideDone = e.target.checked; store.set('hideDone', state.hideDone); state.page = 0; renderList(); });
+$('mark-page').addEventListener('click', () => {
+  const items = visibleItems().slice(state.page * PAGE_SIZE, (state.page + 1) * PAGE_SIZE);
+  items.forEach((it) => done.add(it.i)); saveDone(); render();
+});
+$('reset-cat').addEventListener('click', () => {
+  const c = byCat.get(state.cat);
+  if (!c || !confirm(`Clear all checkmarks in “${c.title}”?`)) return;
+  c.items.forEach((it) => done.delete(it.i)); saveDone(); render();
+});
+$('base').value = baseUrl();
+$('base').addEventListener('change', (e) => {
+  const v = e.target.value.trim();
+  store.set('base', v && v !== BASE_URL ? v : '');
+  e.target.value = baseUrl(); renderList();
+});
+$('export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ generated: DATA.generated, done: [...done] }, null, 1)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `bantulex-to-fix-${new Date().toISOString().slice(0, 10)}.json` });
+  a.click(); URL.revokeObjectURL(a.href);
+});
+$('import').addEventListener('click', () => $('import-file').click());
+$('import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const ids = JSON.parse(await file.text()).done;
+    if (!Array.isArray(ids)) throw new Error('no "done" list');
+    ids.forEach((id) => done.add(id)); saveDone(); render();
+  } catch (err) { alert('Could not read progress file: ' + err.message); }
+  e.target.value = '';
+});
+
+document.title = `BantuLex to fix · ${DATA.generated}`;
+render();
+</script>
+</body>
+</html>
