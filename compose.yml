@@ -26,5 +26,16 @@ services:
       - ./backups:/app/backups
     restart: unless-stopped
 
+  # ── Pihka (lokale publicatie) ──────────────────────────────────────────────
+  # site/ wordt over de demo-app van Pihka gemount, zoals build-site dat doet.
+  pihka:
+    image: caddy:2-alpine
+    command: caddy file-server --root /srv/pihka --listen :80
+    ports:
+      - "9161:80"
+    volumes:
+      - ./vendor/pihka/pihka:/srv/pihka:ro
+      - ./site:/srv/pihka/app:ro
+
 volumes:
   venv:

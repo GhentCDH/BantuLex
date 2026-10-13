@@ -11,6 +11,10 @@ import/erd.mermaid
 *.db-wal
 *-journal
 
+# Pihka-publicatie
+dist/
+*.sqlite
+
 .claude
 .venv
 __pycache__

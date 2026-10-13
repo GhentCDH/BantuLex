@@ -1,3 +1,11 @@
+
+# Pihka-publicatie: bron-export, gebouwde site en rsync-doel (bv. user@server:/srv/bantulex/)
+PIHKA_URL     := "http://localhost:9161"
+SOURCE_DB     := env("BANTULEX_SOURCE_DB", "out/export.sqlite")
+DIST          := "dist/bantulex"
+DEPLOY_TARGET := env("BANTULEX_DEPLOY_TARGET", "")
+
+# Crouton URL
 ADMIN_URL := "http://localhost:4444/admin/"
 
 # ── Docker lifecycle ─────────────────────────────────────────────────────────
@@ -41,6 +49,44 @@ export-blr:
 
 # Alle exports in één keer
 export-all: export-evolex export-map export-blr
+
+# ── Publicatie (Pihka) ───────────────────────────────────────────────────────
+# vendor/pihka is een git submodule van GhentCDH/Pihka en wordt nooit lokaal aangepast.
+# Alles wat BantuLex-specifiek is staat in site/ en wordt de app/-map van Pihka.
+
+# Kopieert de SQLite-export naar site/database en bouwt de FTS-indexen voor HTTP VFS
+site-db:
+    cp {{SOURCE_DB}} site/database/bantulex.sqlite
+    node --input-type=module -e "import { readFileSync } from 'node:fs'; \
+      import { prepareSampleDatabase } from './vendor/pihka/scripts/prepare-sample-db.js'; \
+      await prepareSampleDatabase('site/database/bantulex.sqlite', JSON.parse(readFileSync('site/config.json', 'utf8')));"
+
+# Lokale Pihka op {{PIHKA_URL}}, site/ is live gemount (herlaad de browser na wijzigingen)
+pihka-up:
+    docker compose up -d pihka
+
+# Voegt Pihka en site/ samen tot één statische map
+build-site:
+    rm -rf {{DIST}}
+    mkdir -p {{DIST}}
+    cp -r vendor/pihka/pihka/. {{DIST}}/
+    rm -rf {{DIST}}/app
+    cp -r site {{DIST}}/app
+    rm -f {{DIST}}/app/database/.gitkeep
+
+# Kopieert de gebouwde site naar de Caddy-server
+publish: build-site
+    @test -n "{{DEPLOY_TARGET}}" || (echo "Zet BANTULEX_DEPLOY_TARGET, bv. user@server:/srv/bantulex/" && exit 1)
+    rsync -av --delete --delay-updates {{DIST}}/ {{DEPLOY_TARGET}}
+
+# Haalt de vastgezette Pihka-versie op (na clone of checkout)
+pihka-init:
+    git submodule update --init vendor/pihka
+
+# Zet vendor/pihka op de nieuwste Pihka main; commit daarna de nieuwe submodule-pointer
+pihka-update:
+    git submodule update --init --remote vendor/pihka
+    git -C vendor/pihka log --oneline -1
 
 # ── Data Management (Crouton admin, zie admin/README.md) ─────────────────────
 
