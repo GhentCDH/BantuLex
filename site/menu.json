@@ -1,7 +1,18 @@
 [
     {
+        "id": "evolex",
+        "label": {
+            "en": "Etymological dictionary",
+            "nl": "Etymologisch woordenboek"
+        },
+        "href": "app/evolex/"
+    },
+    {
         "id": "about",
-        "label": { "en": "About", "nl": "Over" },
+        "label": {
+            "en": "About",
+            "nl": "Over"
+        },
         "src": {
             "en": "app/pages/about.en.html",
             "nl": "app/pages/about.nl.html"
@@ -9,7 +20,10 @@
     },
     {
         "id": "instructions",
-        "label": { "en": "Instructions", "nl": "Handleiding" },
+        "label": {
+            "en": "Instructions",
+            "nl": "Handleiding"
+        },
         "src": {
             "en": "core/assets/pages/instructions.en.html",
             "nl": "core/assets/pages/instructions.nl.html"
