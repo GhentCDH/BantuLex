@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Float, Text, UniqueConstraint, func
+from sqlalchemy import DDL, DateTime, Float, Text, UniqueConstraint, event, func
 from sqlmodel import Field, Relationship, SQLModel
 
 _TIMESTAMPTZ = DateTime(timezone=True)
@@ -369,3 +369,23 @@ class Reflex(Table, table=True):
     fieldwork: Fieldwork | None = Relationship(back_populates="entries")
     sources: list[SourceEntries] = Relationship(back_populates="reflex")
     blr_entry: Reconstruction | None = Relationship(back_populates="linked_entries")
+
+
+# ---------------------------------------------------------------------------
+# updated_at triggers
+# ---------------------------------------------------------------------------
+
+# The admin writes through Prisma, which never sets updated_at; these triggers
+# keep it current for every UPDATE, whoever makes it.
+for _table in SQLModel.metadata.tables.values():
+    if "updated_at" in _table.c:
+        event.listen(
+            _table,
+            "after_create",
+            DDL(
+                f"CREATE TRIGGER update_{_table.name}_modtime "
+                f"AFTER UPDATE ON {_table.name} FOR EACH ROW BEGIN "
+                f"UPDATE {_table.name} SET updated_at = CURRENT_TIMESTAMP "
+                "WHERE id = NEW.id; END"
+            ).execute_if(dialect="sqlite"),
+        )
