@@ -9,6 +9,40 @@
         "type": "http-vfs"
     },
     "tables": {
+        "blr_reconstruction": {
+            "label": { "en": "BLR reconstructions", "nl": "BLR-reconstructies" },
+            "columns": {
+                "id": { "hidden": true },
+                "blr_index": { "label": { "en": "BLR index", "nl": "BLR-index" }, "format": { "useGrouping": false } },
+                "word": { "label": { "en": "Reconstruction", "nl": "Reconstructie" } },
+                "word_tone": { "label": { "en": "Reconstruction (tone)", "nl": "Reconstructie (toon)" } },
+                "english": { "label": { "en": "English", "nl": "Engels" } },
+                "french": { "label": { "en": "French", "nl": "Frans" } },
+                "noun_class": { "label": { "en": "Noun class", "nl": "Naamwoordklasse" }, "fts": false },
+                "distribution": { "label": { "en": "Distribution", "nl": "Verspreiding" }, "fts": false },
+                "proto_kk": { "label": { "en": "Proto-KK", "nl": "Proto-KK" } },
+                "note": { "label": { "en": "Note", "nl": "Opmerking" }, "type": "text", "maxWords": 20 },
+                "c1": { "label": "C₁", "fts": false },
+                "v11": { "label": "V₁₁", "fts": false },
+                "v12": { "label": "V₁₂", "fts": false },
+                "c2": { "label": "C₂", "fts": false },
+                "v21": { "label": "V₂₁", "fts": false },
+                "v22": { "label": "V₂₂", "fts": false },
+                "c3": { "label": "C₃", "fts": false },
+                "v3": { "label": "V₃", "fts": false },
+                "c4": { "label": "C₄", "fts": false },
+                "v4": { "label": "V₄", "fts": false },
+                "cs": { "label": "CS", "fts": false },
+                "t11": { "label": "T₁₁", "fts": false },
+                "t12": { "label": "T₁₂", "fts": false },
+                "t21": { "label": "T₂₁", "fts": false },
+                "t22": { "label": "T₂₂", "fts": false },
+                "t3": { "label": "T₃", "fts": false },
+                "t4": { "label": "T₄", "fts": false },
+                "reliability": { "label": { "en": "Reliability", "nl": "Betrouwbaarheid" }, "fts": false },
+                "contributor": { "label": { "en": "Contributor", "nl": "Bijdrager" }, "fts": false }
+            }
+        },
         "coordinates_map": {
             "options": {
                 "point_map": {
@@ -18,6 +52,35 @@
         }
     },
     "perspectives": [
+        {
+            "id": "reconstructions",
+            "label": { "en": "BLR reconstructions", "nl": "BLR-reconstructies" },
+            "table": "blr_reconstruction",
+            "query": "SELECT r.id, r.blr_index, r.word, r.word_tone, r.english, r.french, r.noun_class, r.distribution, r.proto_kk, r.note, COALESCE(NULLIF(cs.c1, ''), '∅') AS c1, COALESCE(NULLIF(vs.v11, ''), '∅') AS v11, COALESCE(NULLIF(vs.v12, ''), '∅') AS v12, COALESCE(NULLIF(cs.c2, ''), '∅') AS c2, COALESCE(NULLIF(vs.v21, ''), '∅') AS v21, COALESCE(NULLIF(vs.v22, ''), '∅') AS v22, COALESCE(NULLIF(cs.c3, ''), '∅') AS c3, COALESCE(NULLIF(vs.v3, ''), '∅') AS v3, COALESCE(NULLIF(cs.c4, ''), '∅') AS c4, COALESCE(NULLIF(vs.v4, ''), '∅') AS v4, COALESCE(NULLIF(cs.cs, ''), '∅') AS cs, COALESCE(NULLIF(ts.t11, ''), '∅') AS t11, COALESCE(NULLIF(ts.t12, ''), '∅') AS t12, COALESCE(NULLIF(ts.t21, ''), '∅') AS t21, COALESCE(NULLIF(ts.t22, ''), '∅') AS t22, COALESCE(NULLIF(ts.t3, ''), '∅') AS t3, COALESCE(NULLIF(ts.t4, ''), '∅') AS t4, rel.value AS reliability, con.name AS contributor FROM reconstruction r LEFT JOIN blrconsonantstructure cs ON cs.id = r.consonant_structure_id LEFT JOIN blrvowelstructure vs ON vs.id = r.vowel_structure_id LEFT JOIN blrtonestructure ts ON ts.id = r.tone_structure_id LEFT JOIN blrreliability rel ON rel.id = r.reliability_id LEFT JOIN blrcontributor con ON con.id = r.contributor_id",
+            "default_sort": "blr_index",
+            "facets": [
+                { "field": "c1", "type": "dropdown" },
+                { "field": "v11", "type": "dropdown" },
+                { "field": "v12", "type": "dropdown" },
+                { "field": "c2", "type": "dropdown" },
+                { "field": "v21", "type": "dropdown" },
+                { "field": "v22", "type": "dropdown" },
+                { "field": "c3", "type": "dropdown" },
+                { "field": "v3", "type": "dropdown" },
+                { "field": "c4", "type": "dropdown" },
+                { "field": "v4", "type": "dropdown" },
+                { "field": "cs", "type": "dropdown" },
+                { "field": "t11", "type": "dropdown" },
+                { "field": "t12", "type": "dropdown" },
+                { "field": "t21", "type": "dropdown" },
+                { "field": "t22", "type": "dropdown" },
+                { "field": "t3", "type": "dropdown" },
+                { "field": "t4", "type": "dropdown" },
+                { "field": "noun_class", "type": "dropdown" },
+                { "field": "reliability", "type": "dropdown" },
+                { "field": "contributor", "type": "dropdown" }
+            ]
+        },
         {
             "id": "reflex-coordinates",
             "label": {
@@ -42,6 +105,7 @@
     ],
     "uiPlugins": [
         "extensions/point_map/point-map-component.js",
-        "extensions/geo-filter/geo-filter-component.js"
+        "extensions/geo-filter/geo-filter-component.js",
+        "app/plugins/blr-segment-grid.js"
     ]
 }
