@@ -172,7 +172,8 @@ const state = {
 
 function baseUrl() {
   let b = (store.get('base', '') || BASE_URL).trim();
-  if (!/^https?:\/\//.test(b)) b = 'http://' + b;
+  // No scheme given: https, except for a local server.
+  if (!/^https?:\/\//.test(b)) b = (/^(localhost|127\.)/.test(b) ? 'http://' : 'https://') + b;
   return b.endsWith('/') ? b : b + '/';
 }
 

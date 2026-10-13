@@ -111,6 +111,12 @@ def build_items(report: dict, row_reflex: dict[int, int]) -> list[dict[str, Any]
                 )
             )
         }
+        source_by_author = defaultdict(list)
+        for r in c.execute(text("SELECT id, author_year, title FROM source")):
+            source_by_author[r.author_year].append(r)
+        year_by_value = defaultdict(list)
+        for r in c.execute(text("SELECT id, value, status FROM collectionyear")):
+            year_by_value[r.value].append(r)
         variety_by_name = defaultdict(list)
         for r in c.execute(text("SELECT id, name_english, guthrie_index FROM variety")):
             variety_by_name[(r.name_english or "").lower()].append(r)
@@ -141,8 +147,7 @@ def build_items(report: dict, row_reflex: dict[int, int]) -> list[dict[str, Any]
         r = reflex.get(e["reflex_id"])
         add("blr_unresolved_link", str(e["reflex_id"]), f"{r.term if r else '?'} · BLR {e['blr_index_raw']}",
             f"No reconstruction with BLR index {e['blr_index_raw']}.", "",
-            [link("Reflex", "reflex", e["reflex_id"]),
-             link("Reconstructions", "reconstruction", q=str(e["blr_index_raw"]))])
+            [link("Reflex", "reflex", e["reflex_id"])])
 
     for e in report.get("skipped_no_term", []):
         if not e.get("variety_english"):  # Excel padding: nothing but the row number
@@ -187,12 +192,15 @@ def build_items(report: dict, row_reflex: dict[int, int]) -> list[dict[str, Any]
         e = es[0]
         resource = "collectionyear" if column == "Year of collection" else "source"
         cleaned = e.get("cleaned_value")
+        if resource == "collectionyear":
+            records = [link(f"Year {y.value} ({y.status})", "collectionyear", y.id)
+                       for y in year_by_value.get(cleaned, [])]
+        else:
+            records = [link(f"Source #{x.id}", "source", x.id) for x in source_by_author.get(cleaned, [])]
         add("uncertainty", f"{column}:{value}", f"“{value}”",
             f"{column}: read as “{cleaned or '(empty)'}” in {len(es)} row(s).",
             e["location"]["cell"] + (f" +{len(es) - 1}" if len(es) > 1 else ""),
-            [link("Collection years" if resource == "collectionyear" else "Sources", resource,
-                  q=str(cleaned)) if cleaned else None,
-             reflex_link(e["location"]["row"], "Example reflex")], rows=len(es))
+            [*records, reflex_link(e["location"]["row"], "Example reflex")], rows=len(es))
 
     groups = defaultdict(list)
     for e in report.get("source_incomplete", []):
@@ -202,7 +210,8 @@ def build_items(report: dict, row_reflex: dict[int, int]) -> list[dict[str, Any]
         add("source_incomplete", f"{author}:{title}", f"{author}",
             f"Title: {title}. {e['author_year_column']}, {len(es)} row(s).",
             e["location"]["cell"] + (f" +{len(es) - 1}" if len(es) > 1 else ""),
-            [link("Sources", "source", q=author.rstrip("?").strip()),
+            [*(link(f"Source #{s.id}", "source", s.id)
+               for s in source_by_author.get(author.rstrip("?").strip(), []) if not s.title),
              reflex_link(e["location"]["row"], "Example reflex")], rows=len(es))
 
     groups = defaultdict(list)
