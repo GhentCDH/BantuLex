@@ -18,6 +18,7 @@ data/*.xlsx --just import--> data/bantulex.db (SQLite)
 | `site/` | Everything specific to BantuLex. It becomes Pihka's `app/` folder. |
 | `site/config.json` | Database, datasource, perspectives, table options and plugins. |
 | `site/menu.json`, `site/footer.json`, `site/pages/` | Menu, footer and the about pages (en, nl). |
+| `site/evolex/` | The etymological dictionary (EvoLex/EvoSem style), served at `app/evolex/`. See its README. |
 | `site/extensions/` | Optional BantuLex-specific Pihka plugins, referenced as `app/extensions/...` in `config.json`. |
 | `site/database/` | The prepared database. Gitignored. |
 | `dist/` | The built site. Gitignored. |
@@ -41,7 +42,9 @@ The submodule URL is relative (`../Pihka.git`), so it uses the same protocol
 1. **`just import`** builds `data/bantulex.db` from the Excel files (see the
    main README).
 2. **`just site-db`** copies `data/bantulex.db` to `site/database/bantulex.sqlite`
-   and adds the full-text search indexes and the perspective views. This is
+   and adds the precomputed tables of the etymological dictionary
+   ([`site/evolex/`](../site/evolex/README.md)), the full-text search indexes
+   and the perspective views. This is
    necessary because the HTTP VFS datasource reads the database without changing
    it. Run it again after an import, or after you change `perspectives` or the
    search settings in `site/config.json`. Use `BANTULEX_SOURCE_DB=<path>` for a
