@@ -62,7 +62,8 @@ site-db:
       await prepareSampleDatabase('site/database/bantulex.sqlite', JSON.parse(readFileSync('site/config.json', 'utf8')));"
 
 # Lokale Pihka op {{PIHKA_URL}}, site/ is live gemount (herlaad de browser na wijzigingen)
-pihka-up:
+# pihka-init eerst: zonder submodule kan Docker site/ niet in de lege read-only map mounten
+pihka-up: pihka-init
     docker compose up -d pihka
 
 # Voegt Pihka en site/ samen tot één statische map
