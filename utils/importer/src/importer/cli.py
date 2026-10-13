@@ -660,7 +660,7 @@ def main() -> None:
                                 import_report.add(
                                     DuplicateBeginningIdEntry(
                                         loc=ctx.loc("ID beginning"),
-                                        note="Dubbel ID beginning — rij geskipt.",
+                                        note="Dubbel ID beginning — ID beginning leeggemaakt; nieuw ID toekennen.",
                                         beginning_id=beginning_id,
                                         first_seen_row=seen_beginning_ids[
                                             beginning_id
@@ -669,8 +669,11 @@ def main() -> None:
                                         variety_english=ctx.val("Variety (English)"),
                                     )
                                 )
-                                continue
-                            seen_beginning_ids[beginning_id] = excel_row
+                                # Split rows (e.g. "kíla ou bóondo") share the ID:
+                                # import them, but without the unique beginning_id.
+                                beginning_id = None
+                            else:
+                                seen_beginning_ids[beginning_id] = excel_row
 
                         term = ctx.val("Term")
                         if not term:
