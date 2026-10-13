@@ -1,0 +1,10 @@
+{
+  "resource": "coordinate",
+  "endpoint": "/api/coordinate",
+  "archive": "maps/world.pmtiles",
+  "latitude": "latitude",
+  "longitude": "longitude",
+  "description": "description",
+  "pageSize": 100,
+  "maxZoom": 10
+}

@@ -1,0 +1,298 @@
+{
+  "$schema": "https://ghentcdh.github.io/crouton/schema/v1/resource.schema.json",
+  "schemaVersion": 1,
+  "draft": false,
+  "name": "fieldwork",
+  "route": "fieldwork",
+  "model": "fieldwork",
+  "tag": "fieldwork",
+  "title": "Fieldworks",
+  "idType": "number",
+  "database": "default",
+  "sidebar": {
+    "group": "fieldwork",
+    "hide": false
+  },
+  "operations": {
+    "findAll": true,
+    "findOne": true,
+    "create": true,
+    "update": true,
+    "patch": true,
+    "delete": true
+  },
+  "columns": {
+    "id": {
+      "label": "Id",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "idField": true,
+      "defaultSort": true
+    },
+    "project_id": {
+      "label": "Project",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": true,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../project/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/project/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "collection_year_id": {
+      "label": "Collection year",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": true,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../collectionyear/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/collectionyear/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
+    "consultants": {
+      "label": "Consultants",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": true,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "archive": {
+      "label": "Archive",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": true,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "data_entered_by": {
+      "label": "Data entered by",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "label": "Created at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    },
+    "updated_at": {
+      "label": "Updated at",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false
+    }
+  },
+  "modalSize": "xl",
+  "include": [],
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "controls": [
+        {
+          "id": "project_id",
+          "colspan": 6
+        },
+        {
+          "id": "collection_year_id",
+          "colspan": 6
+        },
+        {
+          "id": "consultants",
+          "colspan": 6
+        },
+        {
+          "id": "archive",
+          "colspan": 6
+        },
+        {
+          "id": "data_entered_by",
+          "colspan": 6
+        }
+      ]
+    }
+  },
+  "calculatedColumns": [
+    {
+      "id": "display_label",
+      "alias": "display_label",
+      "label": "Reference",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT p.name FROM project p WHERE p.id = x.project_id), (SELECT y.value FROM collectionyear y WHERE y.id = x.collection_year_id), x.archive), ''), '#' || x.id) FROM \"fieldwork\" x WHERE x.id = main.id",
+      "hiddenInTable": true,
+      "hiddenInView": true
+    },
+    {
+      "id": "project_label",
+      "alias": "project_label",
+      "label": "Project",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"project\" x WHERE x.id = main.\"project_id\"",
+      "position": 1,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "collection_year_label",
+      "alias": "collection_year_label",
+      "label": "Collection year",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.value || CASE WHEN x.status <> 'known' THEN ' (' || x.status || ')' ELSE '' END, ''), '#' || x.id) FROM \"collectionyear\" x WHERE x.id = main.\"collection_year_id\"",
+      "position": 1,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    }
+  ]
+}

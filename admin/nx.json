@@ -1,0 +1,26 @@
+{
+  "defaultBase": "main",
+  "targetDefaults": {
+    "build": {
+      "cache": true
+    },
+    "typecheck": {
+      "cache": true
+    }
+  },
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/node_modules/**/*",
+      "sharedGlobals"
+    ],
+    "sharedGlobals": [
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/tsconfig.json",
+      "{workspaceRoot}/pnpm-lock.yaml",
+      "{workspaceRoot}/scripts/**/*",
+      "{workspaceRoot}/generated/**/*",
+      "{workspaceRoot}/crouton.json"
+    ]
+  }
+}

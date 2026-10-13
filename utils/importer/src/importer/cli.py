@@ -38,6 +38,8 @@ from .columns import (
 from .entries import (
     CATEGORY_CLASSES,
     LEVEL_ORDER,
+    BlrIpvResolvedEntry,
+    BlrTextToNoteEntry,
     CoordinateConflictEntry,
     CriticalErrorEntry,
     DuplicateBeginningIdEntry,
@@ -53,7 +55,7 @@ from .entries import (
     build_col_index,
     check_case_variant,
 )
-from .parsing import chunked, normalize_key, parse_uncertainty
+from .parsing import chunked, normalize_key, parse_blr_index, parse_uncertainty
 from .report import ImportReport
 
 handler = RichHandler(
@@ -486,14 +488,13 @@ def main() -> None:
 
                         # 4c. Data collectors (dynamic detection)
                         dc_names = sorted(
-                            filter(
-                                None,
-                                [
-                                    ctx.val(h)
-                                    for h in headers
-                                    if h and COLLECTOR_PATTERN.match(h)
-                                ],
-                            )
+                            # set: the same person can be listed in two columns
+                            {
+                                ctx.val(h)
+                                for h in headers
+                                if h and COLLECTOR_PATTERN.match(h)
+                            }
+                            - {None}
                         )
                         dc_objects = []
                         for name in dc_names:
@@ -514,14 +515,13 @@ def main() -> None:
 
                         # 4d. Consultants (dynamic detection)
                         con_names = sorted(
-                            filter(
-                                None,
-                                [
-                                    ctx.val(h)
-                                    for h in headers
-                                    if h and CONSULTANT_PATTERN.match(h)
-                                ],
-                            )
+                            # set: the same person can be listed in two columns
+                            {
+                                ctx.val(h)
+                                for h in headers
+                                if h and CONSULTANT_PATTERN.match(h)
+                            }
+                            - {None}
                         )
                         con_objects = []
                         for name in con_names:
@@ -635,6 +635,10 @@ def main() -> None:
                                 ),
                                 session,
                             )
+                            # Only "????" without a title: nothing to link
+                            # (already reported as uncertainty above).
+                            if source is None:
+                                continue
 
                             # Determine order: increment for the same role within this record
                             order = 1 + sum(
@@ -658,7 +662,7 @@ def main() -> None:
                                 import_report.add(
                                     DuplicateBeginningIdEntry(
                                         loc=ctx.loc("ID beginning"),
-                                        note="Dubbel ID beginning — rij geskipt.",
+                                        note="Dubbel ID beginning — ID beginning leeggemaakt; nieuw ID toekennen.",
                                         beginning_id=beginning_id,
                                         first_seen_row=seen_beginning_ids[
                                             beginning_id
@@ -667,8 +671,11 @@ def main() -> None:
                                         variety_english=ctx.val("Variety (English)"),
                                     )
                                 )
-                                continue
-                            seen_beginning_ids[beginning_id] = excel_row
+                                # Split rows (e.g. "kíla ou bóondo") share the ID:
+                                # import them, but without the unique beginning_id.
+                                beginning_id = None
+                            else:
+                                seen_beginning_ids[beginning_id] = excel_row
 
                         term = ctx.val("Term")
                         if not term:
@@ -699,6 +706,30 @@ def main() -> None:
                         else:
                             seen_term_variety[tv_key] = excel_row
 
+                        blr_raw = ctx.val("BLR Index")
+                        blr_index, blr_note, used_ipv = parse_blr_index(blr_raw)
+                        if used_ipv:
+                            import_report.add(
+                                BlrIpvResolvedEntry(
+                                    loc=ctx.loc("BLR Index"),
+                                    note="'ipv' in BLR index: eerste nummer gebruikt en gelinkt.",
+                                    blr_index_raw=blr_raw,
+                                    blr_index_used=blr_index,
+                                    term=term,
+                                    variety_english=v_key[0],
+                                )
+                            )
+                        elif blr_note is not None:
+                            import_report.add(
+                                BlrTextToNoteEntry(
+                                    loc=ctx.loc("BLR Index"),
+                                    note="BLR index is geen getal: niet gelinkt, bewaard in blr_note.",
+                                    blr_index_raw=blr_raw,
+                                    term=term,
+                                    variety_english=v_key[0],
+                                )
+                            )
+
                         reflex = Reflex(
                             original_id=original_id,
                             beginning_id=beginning_id,
@@ -711,7 +742,8 @@ def main() -> None:
                             scientific_name=ctx.val("Scientific name"),
                             semantic_field=ctx.val("Semantic field"),
                             part_of_speech=ctx.val("Part of Speech"),
-                            blr_index=ctx.val("BLR Index"),
+                            blr_index=blr_index,
+                            blr_note=blr_note,
                             ipa=ctx.val("IPA"),
                             notes_on_ipa=ctx.val("Notes on IPA"),
                             notes=ctx.val("Opmerking"),

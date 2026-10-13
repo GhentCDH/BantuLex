@@ -10,20 +10,22 @@ env_path = Path(__file__).parent.parent.parent.parent
 load_dotenv(env_path / "utils.env")
 
 print(f"Loading environment variables from: {env_path / 'utils.env'}")
-print(f"DATABASE_URL: {'\u2219' * len(os.getenv('DATABASE_URL') or '')}")
+print(f"DB_PATH: {os.getenv('DB_PATH')}")
 print(f"DATA_ROOT: {os.getenv('DATA_ROOT')}")
 
-required_env_vars = ["DATABASE_URL", "DATA_ROOT"]
+required_env_vars = ["DB_PATH", "DATA_ROOT"]
 for var in required_env_vars:
     if var not in os.environ:
         raise OSError(f"Required environment variable '{var}' is not set.")
 
-DB_STRING = os.environ["DATABASE_URL"]
+DB_PATH = Path(os.environ["DB_PATH"])
+DB_STRING = f"sqlite:///{DB_PATH}"
 
 DATA_ROOT = Path(os.getenv("DATA_ROOT") or exit(1))
 
 CSV = DATA_ROOT / "bantulex.csv"
-EXCEL = DATA_ROOT / "bantulex.xlsx"
+# EXCEL_FILE: optional file name in DATA_ROOT, e.g. a newly delivered version
+EXCEL = DATA_ROOT / (os.getenv("EXCEL_FILE") or "bantulex.xlsx")
 BLR_EXCEL = DATA_ROOT / "BLR.xlsx"
 
 EXPORT_EVOLEX_EXCEL = DATA_ROOT / "evolex_export.xlsx"

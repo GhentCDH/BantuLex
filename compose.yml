@@ -9,38 +9,22 @@ services:
       - venv:/opt/venv
     env_file:
       - dev.env
-    depends_on:
-      postgres:
-        condition: service_healthy
 
-  # ── Postgres ───────────────────────────────────────────────────────────────
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_DB: bantulex
-      POSTGRES_USER: bantulex
-      POSTGRES_PASSWORD: bantulex
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+  # ── Data Management (Crouton admin) ────────────────────────────────────────
+  # UI on /admin/, API on /api. Edits the SQLite file data/bantulex.db (see admin/README.md).
+  # Behind the "admin" profile so a plain `docker compose up` works without that file:
+  #   docker compose --profile admin up -d --build admin   (or: just admin)
+  admin:
+    build: ./admin
+    image: ghcr.io/ghentcdh/bantulex
+    profiles: ["admin"]
     ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bantulex -d bantulex"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-  # ── Gateway & Data Publishing (Caddy) ──────────────────────────────────────
-  gateway:
-    image: caddy:2-alpine
-    ports:
-      - "9160:80"
+      - "127.0.0.1:4444:4444"
     volumes:
-      - ./caddy/:/etc/caddy/:ro
-      - ./local-map:/srv/local-map:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    restart: always
+      # Must contain bantulex.db and be writable by uid 1000 (SQLite journal files).
+      - ./data:/app/data
+      - ./backups:/app/backups
+    restart: unless-stopped
 
   # ── Pihka (lokale publicatie) ──────────────────────────────────────────────
   # site/ wordt over de demo-app van Pihka gemount, zoals build-site dat doet.
@@ -54,7 +38,4 @@ services:
       - ./site:/srv/pihka/app:ro
 
 volumes:
-  caddy-data:
-  caddy-config:
-  pgdata:
   venv:
