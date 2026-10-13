@@ -5,7 +5,7 @@ static files and one SQLite database, which the browser queries itself. There is
 no backend on the server, only Caddy as a file server.
 
 ```
-data/*.xlsx --importer--> Postgres --Dataflow--> SQLite export
+data/*.xlsx --just import--> data/bantulex.db (SQLite)
     --just site-db--> site/database/bantulex.sqlite (with search indexes and views)
     --just build-site--> dist/bantulex/ --just publish--> web server
 ```
@@ -38,15 +38,15 @@ The submodule URL is relative (`../Pihka.git`), so it uses the same protocol
 
 ## Steps
 
-1. **Export Postgres to SQLite** with [Dataflow](https://github.com/GhentCDH/Dataflow)
-   and `dataflow.config.json`. The config writes to `/out/export.sqlite`; mount
-   `./out` there, so the result is `out/export.sqlite`.
-2. **`just site-db`** copies the export to `site/database/bantulex.sqlite` and
-   adds the full-text search indexes and the perspective views. This is
+1. **`just import`** builds `data/bantulex.db` from the Excel files (see the
+   main README).
+2. **`just site-db`** copies `data/bantulex.db` to `site/database/bantulex.sqlite`
+   and adds the full-text search indexes and the perspective views. This is
    necessary because the HTTP VFS datasource reads the database without changing
-   it. Run it again after you change `perspectives` or the search settings in
-   `site/config.json`. Use `BANTULEX_SOURCE_DB=<path>` for a different export.
-   Needs Node.js 22.13 or newer.
+   it. Run it again after an import, or after you change `perspectives` or the
+   search settings in `site/config.json`. Use `BANTULEX_SOURCE_DB=<path>` for a
+   different database. Pihka's script runs in a `node:24-alpine` container, so
+   no local Node.js is needed.
 3. **`just pihka-up`** serves the site on http://localhost:9161. `site/` is
    mounted live: reload the browser after a change.
 4. **`just publish`** builds `dist/bantulex` (Pihka plus `site/` as `app/`,

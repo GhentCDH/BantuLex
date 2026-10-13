@@ -1,7 +1,7 @@
 
 # Pihka-publicatie: bron-export, gebouwde site en rsync-doel (bv. user@server:/srv/bantulex/)
 PIHKA_URL     := "http://localhost:9161"
-SOURCE_DB     := env("BANTULEX_SOURCE_DB", "out/export.sqlite")
+SOURCE_DB     := env("BANTULEX_SOURCE_DB", "data/bantulex.db")
 DIST          := "dist/bantulex"
 DEPLOY_TARGET := env("BANTULEX_DEPLOY_TARGET", "")
 
@@ -55,9 +55,9 @@ export-all: export-evolex export-map export-blr
 # Alles wat BantuLex-specifiek is staat in site/ en wordt de app/-map van Pihka.
 
 # Kopieert de SQLite-export naar site/database en bouwt de FTS-indexen voor HTTP VFS
-site-db:
+site-db: pihka-init
     cp {{SOURCE_DB}} site/database/bantulex.sqlite
-    node --input-type=module -e "import { readFileSync } from 'node:fs'; \
+    docker run --rm -v "$PWD":/work -w /work node:24-alpine node --input-type=module -e "import { readFileSync } from 'node:fs'; \
       import { prepareSampleDatabase } from './vendor/pihka/scripts/prepare-sample-db.js'; \
       await prepareSampleDatabase('site/database/bantulex.sqlite', JSON.parse(readFileSync('site/config.json', 'utf8')));"
 
