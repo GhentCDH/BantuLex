@@ -635,6 +635,10 @@ def main() -> None:
                                 ),
                                 session,
                             )
+                            # Only "????" without a title: nothing to link
+                            # (already reported as uncertainty above).
+                            if source is None:
+                                continue
 
                             # Determine order: increment for the same role within this record
                             order = 1 + sum(
