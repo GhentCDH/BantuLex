@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Float, Text, func
+from sqlalchemy import DateTime, Float, Text, UniqueConstraint, func
 from sqlmodel import Field, Relationship, SQLModel
 
 _TIMESTAMPTZ = DateTime(timezone=True)
@@ -161,11 +161,13 @@ class DataCollector(Table, table=True):
     )
 
 
-class FieldworkDataCollector(SQLModel, table=True):
-    """Link table: Fieldwork <-> DataCollector. Composite PK, no auto-id."""
+class FieldworkDataCollector(Table, table=True):
+    """Link table: Fieldwork <-> DataCollector. Surrogate id; the pair is unique."""
 
-    fieldwork_id: int = Field(foreign_key="fieldwork.id", primary_key=True)
-    data_collector_id: int = Field(foreign_key="datacollector.id", primary_key=True)
+    __table_args__ = (UniqueConstraint("fieldwork_id", "data_collector_id"),)
+
+    fieldwork_id: int = Field(foreign_key="fieldwork.id", nullable=False)
+    data_collector_id: int = Field(foreign_key="datacollector.id", nullable=False)
 
     fieldwork: "Fieldwork" = Relationship(back_populates="data_collector_links")
     data_collector: DataCollector = Relationship(back_populates="fieldwork_links")
@@ -181,11 +183,13 @@ class Consultant(Table, table=True):
     )
 
 
-class FieldworkConsultant(SQLModel, table=True):
-    """Link table: Fieldwork <-> Consultant. Composite PK, no auto-id."""
+class FieldworkConsultant(Table, table=True):
+    """Link table: Fieldwork <-> Consultant. Surrogate id; the pair is unique."""
 
-    fieldwork_id: int = Field(foreign_key="fieldwork.id", primary_key=True)
-    consultant_id: int = Field(foreign_key="consultant.id", primary_key=True)
+    __table_args__ = (UniqueConstraint("fieldwork_id", "consultant_id"),)
+
+    fieldwork_id: int = Field(foreign_key="fieldwork.id", nullable=False)
+    consultant_id: int = Field(foreign_key="consultant.id", nullable=False)
 
     fieldwork: "Fieldwork" = Relationship(back_populates="consultant_links")
     consultant: Consultant = Relationship(back_populates="fieldwork_links")

@@ -35,7 +35,7 @@ The Crouton admin edits the same file. Its Prisma schema and resources were intr
 
 ## 3 Database Models
 
-Models are organized by their role in the BantuLex linguistics management workflow. All models except the two link tables in 3.4 inherit `id`, `created_at` and `updated_at` from a common `Table` base class.
+Models are organized by their role in the BantuLex linguistics management workflow. All models inherit `id`, `created_at` and `updated_at` from a common `Table` base class.
 
 ### 3.1 Primary Entities (Linguistic Data)
 
@@ -100,7 +100,7 @@ Connects `Reflex` to `Source` with roles and sequence.
 *   **Fields**: `role` (`primary` or `cited`), `order` (1, 2, 3...), `pages`, `entry_id` (→ `Reflex`), `source_id` (→ `Source`).
 
 #### FieldworkConsultant / FieldworkDataCollector
-Many-to-many link tables with a composite primary key (no `id` or timestamps), ensuring normalization of persons involved in fieldwork.
+Many-to-many link tables with a surrogate `id` and a unique constraint on the pair (`fieldwork_id`, `data_collector_id`/`consultant_id`), ensuring normalization of persons involved in fieldwork.
 
 ## 4 Entity Relationship Matrix
 
