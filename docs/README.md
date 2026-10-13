@@ -12,8 +12,8 @@
 data/bantulex.xlsx, data/BLR.xlsx
         │  just import (utils/importer)
         ▼
-     Postgres ──── exporters (utils/exporter) ──► EvoLex Excel, GeoJSON, BLR catalog ──► local-map/
-        │  Dataflow
+  data/bantulex.db (SQLite) ◄──► Crouton admin (/admin)
+        │  ├── exporters (utils/exporter) ──► EvoLex Excel, GeoJSON, BLR catalog
         ▼
-  SQLite export ──► just site-db ──► just publish ──► bantulex.ugent.be (Pihka)
+  just site-db ──► just publish ──► bantulex.ugent.be (Pihka)
 ```

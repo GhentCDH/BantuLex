@@ -7,9 +7,9 @@ dataset). All other tables describe where, when, by whom and from which
 publication a word was recorded.
 
 The canonical model is [`utils/utilities/src/utilities/model.py`](../utils/utilities/src/utilities/model.py).
-The importer writes it to Postgres. Every table there has `id`, `created_at` and
-`updated_at`; the SQLite export used for publishing has no timestamp columns
-(see [publishing](publishing.md)).
+The importer writes it to the SQLite file `data/bantulex.db`. Every table has
+`id`, `created_at` and `updated_at`; the website database is built from the same
+file (see [publishing](publishing.md)).
 
 Row counts below are from the export of 2026-10-12. "Excel column" is the column
 of the source spreadsheet that the importer reads.
@@ -146,9 +146,9 @@ A row is a combination of name and classification, not a unique language: the
 
 ## Storage
 
-The SQLite export from Dataflow uses only `TEXT`, `INTEGER` and `REAL`, and its
-tables are not STRICT. Booleans such as `substrate_suspect` and `year_uncertain`
-are stored as `INTEGER` 0/1.
+`data/bantulex.db` is created by SQLAlchemy from `model.py`; its tables are not
+STRICT. Booleans such as `substrate_suspect` and `year_uncertain` are stored as
+0/1 and timestamps as `YYYY-MM-DD HH:MM:SS` text.
 
 The design choices behind this model (normalized persons, source roles with
 order, fixed BLR slots) are explained in [ARCHITECTURE.md](../ARCHITECTURE.md#data-model--normalization).

@@ -37,12 +37,6 @@ and `KongoKing`, `KongoKing  Gent` (two spaces) and `KongoKing Verviers`.
 `reflex` to all coordinates returns those reflexes twice. Join on
 `coordinate.description = 'default'` to get one point per location.
 
-### Outdated documentation
-
-`ARCHITECTURE.md`, `AGENTS.md`/`CLAUDE.md` and `README.md` still describe the
-Kottster admin and `data/bantulex.db` as the main database. The importer writes
-to Postgres. The `feat/crouton` branch updates these files.
-
 ## Open questions
 
 - **`reconstruction.proto_kk`** (Excel `Proto KK`) is empty for all rows. What
