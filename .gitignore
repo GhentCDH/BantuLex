@@ -13,7 +13,7 @@ import/erd.mermaid
 
 # Pihka-publicatie
 dist/
-site/database/*.sqlite
+*.sqlite
 
 .claude
 .DS_Store
