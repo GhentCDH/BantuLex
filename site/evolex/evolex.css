@@ -1,0 +1,71 @@
+/* BantuLex EvoLex: additions on top of Pico + Pihka base.css. Only Pico variables. */
+
+.evolex-header nav { border-bottom: 1px solid var(--pico-muted-border-color); margin-bottom: 1rem; }
+.evolex-brand { text-decoration: none; }
+.evolex-brand span { color: var(--pico-primary); }
+.evolex-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--pico-muted-border-color); color: var(--pico-muted-color); }
+
+.evolex-muted { color: var(--pico-muted-color); }
+.evolex-form { font-family: "Charis SIL", "Doulos SIL", "Gentium Plus", "Noto Serif", serif; font-size: 1.05em; }
+.evolex-error { border-left: 4px solid var(--pico-del-color); }
+
+/* Faceted layout, like the Pihka list views */
+.evolex-faceted { display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; align-items: start; }
+.evolex-faceted > section { min-width: 0; }
+.evolex-facets { position: sticky; top: 1rem; }
+.evolex-facets input[type="search"] { margin-bottom: .25rem; }
+.evolex-clear { width: 100%; margin-top: .75rem; }
+@media (max-width: 900px) {
+  .evolex-faceted { grid-template-columns: 1fr; }
+  .evolex-facets { position: static; }
+}
+
+.evolex-table { font-size: .92rem; }
+.evolex-table td, .evolex-table th { padding: .4rem .6rem; vertical-align: top; }
+.evolex-sort { all: unset; cursor: pointer; font-weight: 600; }
+.evolex-sort:hover { color: var(--pico-primary); }
+
+/* Entry header */
+.evolex-entry-head header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap; }
+.evolex-entry-head hgroup { margin: 0; }
+.evolex-facts { display: grid; grid-template-columns: max-content 1fr; gap: .2rem 1rem; margin: 0 0 .75rem; }
+.evolex-facts dt { color: var(--pico-muted-color); font-weight: normal; }
+.evolex-facts dd { margin: 0; }
+.evolex-slots { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.evolex-slots code { margin-right: .2rem; }
+.evolex-chip { display: inline-block; padding: .05rem .5rem; margin: .1rem .25rem .1rem 0; border-radius: 1rem;
+  background: var(--pico-secondary-background); color: var(--pico-secondary-inverse); font-size: .85rem; }
+
+/* Maps */
+.evolex-map { width: 100%; border-radius: var(--pico-border-radius); overflow: hidden; margin-bottom: .25rem; }
+.evolex-legend { display: flex; flex-wrap: wrap; gap: .25rem 1rem; list-style: none; padding: 0; margin: .25rem 0 1rem; font-size: .85rem; }
+.evolex-legend li { list-style: none; margin: 0; }
+.evolex-dot { display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .35rem; vertical-align: middle; }
+
+/* Home */
+.evolex-hero { margin-bottom: 1.5rem; }
+.evolex-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
+.evolex-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.evolex-stat { display: flex; flex-direction: column; margin: 0; text-align: center; }
+.evolex-stat strong { font-size: 1.6rem; color: var(--pico-primary); }
+.evolex-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .75rem; }
+.evolex-card { display: flex; flex-direction: column; padding: .75rem 1rem; border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius); text-decoration: none; color: inherit; }
+.evolex-card:hover { border-color: var(--pico-primary); }
+.evolex-gaps dt { font-weight: 600; margin-top: .5rem; }
+.evolex-gaps dd { margin-left: 0; color: var(--pico-muted-color); }
+
+/* Etymograph */
+.evolex-graph-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: 1.5rem; }
+@media (max-width: 900px) { .evolex-graph-layout { grid-template-columns: 1fr; } }
+.evolex-graph { width: 100%; height: auto; background: var(--pico-card-background-color);
+  border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); }
+.evolex-edge { stroke: var(--pico-muted-border-color); cursor: pointer; }
+.evolex-edge.is-shared { stroke: var(--pico-secondary); }
+.evolex-edge.is-selected, .evolex-edge:hover { stroke: var(--pico-primary); }
+.evolex-node { cursor: pointer; }
+.evolex-node circle { fill: var(--pico-primary-background); stroke: var(--pico-background-color); stroke-width: 2; opacity: .85; }
+.evolex-node.is-selected circle, .evolex-node:hover circle { fill: var(--pico-primary-hover-background); opacity: 1; }
+.evolex-node text { fill: var(--pico-color); font-size: 12px; paint-order: stroke; stroke: var(--pico-background-color); stroke-width: 3px; }
+.evolex-compact { padding-left: 1rem; font-size: .9rem; }
+.evolex-compact li { margin-bottom: .2rem; }

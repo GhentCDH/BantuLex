@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BantuLex EvoLex</title>
+        <script>
+            // Same theme preference as the Pihka data browser, applied before first paint.
+            (function () {
+                try {
+                    var prefs = JSON.parse(localStorage.getItem("pihka-prefs") || "{}");
+                    if (prefs.theme === "light" || prefs.theme === "dark") document.documentElement.dataset.theme = prefs.theme;
+                } catch (e) { /* localStorage unavailable */ }
+            })();
+        </script>
+        <link rel="stylesheet" href="../../core/assets/stylesheets/pico.min.css" />
+        <link rel="stylesheet" href="../../core/assets/stylesheets/base.css" />
+        <link rel="stylesheet" href="../../extensions/point_map/vendor/maplibre-gl/dist/maplibre-gl.css" />
+        <link rel="stylesheet" href="../../extensions/point_map/css/maplibre-pico-reset.css" />
+        <link rel="stylesheet" href="./evolex.css" />
+        <script type="importmap">
+            {
+                "imports": {
+                    "@sqlite.org/sqlite-wasm": "../../core/vendor/@sqlite.org/sqlite-wasm/dist/index.mjs",
+                    "preact": "../../core/vendor/preact/dist/preact.mjs",
+                    "preact/hooks": "../../core/vendor/preact/hooks/dist/hooks.mjs"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div id="app"><p class="container" aria-busy="true">Loading BantuLex…</p></div>
+        <script type="module" src="./main.js"></script>
+    </body>
+</html>
