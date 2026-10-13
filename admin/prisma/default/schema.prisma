@@ -20,7 +20,6 @@ model blrconsonantstructure {
   c3             String?
   c4             String?
   cs             String?
-  blrentry       blrentry[]
   reconstruction reconstruction[]
 }
 
@@ -29,37 +28,7 @@ model blrcontributor {
   created_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
   updated_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
   name           String?
-  blrentry       blrentry[]
   reconstruction reconstruction[]
-}
-
-model blrentry {
-  id                     Int                    @id @default(autoincrement())
-  created_at             String                 @default(dbgenerated("CURRENT_TIMESTAMP"))
-  updated_at             String                 @default(dbgenerated("CURRENT_TIMESTAMP"))
-  blr_index              Int?
-  word_tone              String?
-  word                   String?
-  english                String?
-  french                 String?
-  noun_class             String?
-  distribution           String?
-  note                   String?
-  proto_kk               String?
-  date_of_entry          String?
-  contributor_id         Int?
-  reliability_id         Int?
-  consonant_structure_id Int?
-  vowel_structure_id     Int?
-  tone_structure_id      Int?
-  blrtonestructure       blrtonestructure?      @relation(fields: [tone_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  blrvowelstructure      blrvowelstructure?     @relation(fields: [vowel_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  blrconsonantstructure  blrconsonantstructure? @relation(fields: [consonant_structure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  blrreliability         blrreliability?        @relation(fields: [reliability_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  blrcontributor         blrcontributor?        @relation(fields: [contributor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  entry                  entry[]
-
-  @@index([blr_index], map: "ix_blrentry_blr_index")
 }
 
 model blrreliability {
@@ -67,7 +36,6 @@ model blrreliability {
   created_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
   updated_at     String           @default(dbgenerated("CURRENT_TIMESTAMP"))
   value          String?
-  blrentry       blrentry[]
   reconstruction reconstruction[]
 }
 
@@ -81,7 +49,6 @@ model blrtonestructure {
   t22            String?
   t3             String?
   t4             String?
-  blrentry       blrentry[]
   reconstruction reconstruction[]
 }
 
@@ -95,7 +62,6 @@ model blrvowelstructure {
   v22            String?
   v3             String?
   v4             String?
-  blrentry       blrentry[]
   reconstruction reconstruction[]
 }
 
@@ -109,14 +75,15 @@ model collectionyear {
 }
 
 model coordinate {
-  id          Int       @id @default(autoincrement())
-  created_at  String    @default(dbgenerated("CURRENT_TIMESTAMP"))
-  updated_at  String    @default(dbgenerated("CURRENT_TIMESTAMP"))
-  latitude    Float?
-  longitude   Float?
-  description String?
-  location_id Int?
-  location    location? @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                Int       @id @default(autoincrement())
+  created_at        String    @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at        String    @default(dbgenerated("CURRENT_TIMESTAMP"))
+  latitude          Float?
+  longitude         Float?
+  description       String?
+  coordinate_source String?
+  location_id       Int?
+  location          location? @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model country {
@@ -136,56 +103,31 @@ model datacollector {
   fieldworkdatacollector fieldworkdatacollector[]
 }
 
-model entry {
-  id                  Int             @id @default(autoincrement())
-  created_at          String          @default(dbgenerated("CURRENT_TIMESTAMP"))
-  updated_at          String          @default(dbgenerated("CURRENT_TIMESTAMP"))
-  original_id         Int?
-  beginning_id        Int?            @unique(map: "ix_entry_beginning_id")
-  term                String?
-  term_morph_analysis String?
-  translation         String?
-  meaning             String?
-  scientific_name     String?
-  semantic_field      String?
-  part_of_speech      String?
-  blr_index           String?
-  ipa                 String?
-  notes               String?
-  variety_id          Int?
-  location_id         Int?
-  fieldwork_id        Int?
-  blr_entry_id        Int?
-  blrentry            blrentry?       @relation(fields: [blr_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  fieldwork           fieldwork?      @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  location            location?       @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  variety             variety?        @relation(fields: [variety_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  sourceentries       sourceentries[]
-}
-
 model fieldwork {
   id                     Int                      @id @default(autoincrement())
   created_at             String                   @default(dbgenerated("CURRENT_TIMESTAMP"))
   updated_at             String                   @default(dbgenerated("CURRENT_TIMESTAMP"))
   project_id             Int?
   collection_year_id     Int?
-  consultants            String?
   archive                String?
   data_entered_by        String?
-  entry                  entry[]
   collectionyear         collectionyear?          @relation(fields: [collection_year_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project                project?                 @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fieldworkconsultant    fieldworkconsultant[]
   fieldworkdatacollector fieldworkdatacollector[]
   reflex                 reflex[]
 }
 
 model fieldworkdatacollector {
+  id                Int           @id @default(autoincrement())
+  created_at        String        @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at        String        @default(dbgenerated("CURRENT_TIMESTAMP"))
   fieldwork_id      Int
   data_collector_id Int
   datacollector     datacollector @relation(fields: [data_collector_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   fieldwork         fieldwork     @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@id([fieldwork_id, data_collector_id])
+  @@unique([fieldwork_id, data_collector_id], map: "sqlite_autoindex_fieldworkdatacollector_1")
 }
 
 model location {
@@ -196,7 +138,6 @@ model location {
   region_id  Int?
   country_id Int?
   coordinate coordinate[]
-  entry      entry[]
   country    country?     @relation(fields: [country_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region     region?      @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   place      place?       @relation(fields: [place_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -264,7 +205,9 @@ model reflex {
   semantic_field      String?
   part_of_speech      String?
   blr_index           String?
+  blr_note            String?
   ipa                 String?
+  notes_on_ipa        String?
   notes               String?
   variety_id          Int?
   location_id         Int?
@@ -274,6 +217,7 @@ model reflex {
   fieldwork           fieldwork?      @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   location            location?       @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   variety             variety?        @relation(fields: [variety_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sourceentries       sourceentries[]
 }
 
 model region {
@@ -292,7 +236,7 @@ model source {
   created_at     String          @default(dbgenerated("CURRENT_TIMESTAMP"))
   updated_at     String          @default(dbgenerated("CURRENT_TIMESTAMP"))
   author_year    String?
-  year_uncertain Int
+  year_uncertain Boolean
   title          String?
   sourceentries  sourceentries[]
 }
@@ -302,11 +246,12 @@ model sourceentries {
   created_at String  @default(dbgenerated("CURRENT_TIMESTAMP"))
   updated_at String  @default(dbgenerated("CURRENT_TIMESTAMP"))
   role       String
+  order      Int
   pages      String?
   entry_id   Int?
   source_id  Int?
   source     source? @relation(fields: [source_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  entry      entry?  @relation(fields: [entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  entry      reflex? @relation(fields: [entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([role], map: "ix_sourceentries_role")
 }
@@ -320,10 +265,30 @@ model variety {
   name_bantu        String?
   name_bastin       String?
   branch            String?
+  branch_detailed   String?
   bastin_index      String?
   guthrie_index     String?
   guthrie_plus      String?
-  substrate_suspect Int?
-  entry             entry[]
+  substrate_suspect Boolean?
   reflex            reflex[]
+}
+
+model consultant {
+  id                  Int                   @id @default(autoincrement())
+  created_at          String                @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at          String                @default(dbgenerated("CURRENT_TIMESTAMP"))
+  name                String?
+  fieldworkconsultant fieldworkconsultant[]
+}
+
+model fieldworkconsultant {
+  id            Int        @id @default(autoincrement())
+  created_at    String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at    String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  fieldwork_id  Int
+  consultant_id Int
+  consultant    consultant @relation(fields: [consultant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fieldwork     fieldwork  @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([fieldwork_id, consultant_id], map: "sqlite_autoindex_fieldworkconsultant_1")
 }
