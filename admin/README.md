@@ -65,7 +65,7 @@ When the importer's schema changes (`utils/utilities/src/utilities/model.py`):
 docker compose run --rm dev sh -c "pnpm typecheck && pnpm build && pnpm test"
 ```
 
-The API tests (`pnpm test`) copy `data/bantulex.db` (in the container: the mounted root database, opened read-only) to the system temporary directory and run local test servers on the copy; they never write to the real database. They check every table/column, independent SQLite persistence, server restart, constraints, nulls, search, and unique junction pairs.
+The API tests (`pnpm test`) copy `data/bantulex.db` (in the container: the mounted root database, opened read-only) to the system temporary directory and run local test servers on the copy; they never write to the real database. They check every table/column, independent SQLite persistence, server restart, constraints, nulls, search, and unique junction pairs. `tests/bulk.test.mjs` imports 5,000 rows and checks the dry run, the rollback of an invalid import and undo.
 
 The browser tests (Playwright) do not run a browser in the container: they drive a Chrome on the host over the DevTools protocol (`tests/browser/fixtures.ts`). Chrome 136+ refuses remote debugging on the default profile, so start a dedicated instance with its own profile:
 
@@ -89,6 +89,19 @@ Runtime dependencies use exact published Crouton API/Vue/core/generator **0.0.1-
 - Use SQLite placeholders for calculated-column queries (readable relation labels and map data).
 
 These are framework fixes, not replacement application forms. Since alpha.82, unique-constraint violations are returned by Crouton as field validation errors (HTTP 400, code `unique`) rather than by the application's 409 mapping.
+
+## Bulk import
+
+*Lexical data → Bulk import* (`/admin/crouton/bulk-import`) adds many reflexes at once, for example all words of a newly digitised dictionary.
+
+1. Set what all rows share: an import label, the source (pick one or create it), the source role, and optionally a variety (pick or create), location and fieldwork.
+2. Paste the words into the grid. Copy cells in Excel, LibreOffice or Google Sheets and paste into any cell: the block fills right and down and adds rows. A header row (Term, Translation, Meaning, Part of speech, Morphology, Semantic field, Scientific name, Pages, Notes, BLR index) selects the columns. Arrow keys, Enter and Tab move between cells; shift selects a block to copy or clear; row numbers select rows to delete. The draft is kept in the browser until it is saved.
+3. *Validate* runs the whole import and rolls it back: it reports how many BLR indexes link to a reconstruction and marks rows with problems. BLR indexes follow the importer: a number, or "X ipv Y" (X is used); other text is kept in `blr_note`.
+4. *Save* writes everything in one SQLite transaction: either all rows are saved or none.
+
+Every save is a batch (`bulkimport`, listed under *Sources → Bulk imports*); its reflexes carry `bulkimport_id`. *Undo* on the bulk import page deletes the batch's reflexes and source links in one transaction, and the source or variety the batch created if nothing else uses them; the batch stays listed as `undone`.
+
+API: `POST /api/bulk/reflex[?dryRun=1]` (up to 20,000 rows, JSON body up to 25 MB), `GET /api/bulk/imports`, `POST /api/bulk/imports/:id/undo`. While a bulk transaction runs (about a second for 5,000 rows) other admin requests wait, because the admin uses one SQLite connection. The table and column come from `model.py`; an existing database gets them with `just migrate-db` in the repository root.
 
 ## Coordinate maps
 
