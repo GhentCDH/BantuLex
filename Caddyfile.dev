@@ -1,0 +1,10 @@
+{
+	auto_https off
+}
+
+:80 {
+	root * /srv/pihka
+	@revalidate path *.html *.js *.css /
+	header @revalidate Cache-Control "no-cache"
+	file_server
+}
