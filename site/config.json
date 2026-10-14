@@ -1,139 +1,295 @@
 {
-    "defaultLanguage": "en",
-    "languages": [
-        "en",
-        "nl"
-    ],
-    "database": "app/database/bantulex.sqlite",
-    "datasource": {
-        "type": "http-vfs"
-    },
-    "tables": {
-        "blr_reconstruction": {
-            "label": { "en": "BLR reconstructions", "nl": "BLR-reconstructies" },
-            "columns": {
-                "id": { "hidden": true },
-                "blr_index": { "label": { "en": "BLR index", "nl": "BLR-index" }, "format": { "useGrouping": false } },
-                "word": { "label": { "en": "Reconstruction", "nl": "Reconstructie" } },
-                "word_tone": { "label": { "en": "Reconstruction (tone)", "nl": "Reconstructie (toon)" } },
-                "english": { "label": { "en": "English", "nl": "Engels" } },
-                "french": { "label": { "en": "French", "nl": "Frans" } },
-                "noun_class": { "label": { "en": "Noun class", "nl": "Naamwoordklasse" }, "fts": false },
-                "distribution": { "label": { "en": "Distribution", "nl": "Verspreiding" }, "fts": false },
-                "proto_kk": { "label": { "en": "Proto-KK", "nl": "Proto-KK" } },
-                "note": { "label": { "en": "Note", "nl": "Opmerking" }, "type": "text", "maxWords": 20 },
-                "c1": { "label": "C₁", "fts": false },
-                "v11": { "label": "V₁₁", "fts": false },
-                "v12": { "label": "V₁₂", "fts": false },
-                "c2": { "label": "C₂", "fts": false },
-                "v21": { "label": "V₂₁", "fts": false },
-                "v22": { "label": "V₂₂", "fts": false },
-                "c3": { "label": "C₃", "fts": false },
-                "v3": { "label": "V₃", "fts": false },
-                "c4": { "label": "C₄", "fts": false },
-                "v4": { "label": "V₄", "fts": false },
-                "cs": { "label": "CS", "fts": false },
-                "t11": { "label": "T₁₁", "fts": false },
-                "t12": { "label": "T₁₂", "fts": false },
-                "t21": { "label": "T₂₁", "fts": false },
-                "t22": { "label": "T₂₂", "fts": false },
-                "t3": { "label": "T₃", "fts": false },
-                "t4": { "label": "T₄", "fts": false },
-                "reliability": { "label": { "en": "Reliability", "nl": "Betrouwbaarheid" }, "fts": false },
-                "contributor": { "label": { "en": "Contributor", "nl": "Bijdrager" }, "fts": false }
-            }
+  "defaultLanguage": "en",
+  "languages": ["en", "nl"],
+  "database": "app/database/bantulex.sqlite",
+  "databaseVersion": "2026.10.14",
+  "tables": {
+    "blr_reconstruction": {
+      "label": { "en": "BLR reconstructions", "nl": "BLR-reconstructies" },
+      "columns": {
+        "id": { "hidden": true },
+        "blr_index": {
+          "label": { "en": "BLR index", "nl": "BLR-index" },
+          "format": { "useGrouping": false }
         },
-        "reflex_search": {
-            "label": { "en": "Reflexes", "nl": "Reflexen" },
-            "columns": {
-                "id": { "hidden": true },
-                "term": { "label": { "en": "Term", "nl": "Term" } },
-                "translation": { "label": { "en": "Translation", "nl": "Vertaling" } },
-                "meaning": { "label": { "en": "Meaning", "nl": "Betekenis" } },
-                "semantic_field": { "label": { "en": "Semantic field", "nl": "Semantisch veld" }, "fts": false },
-                "part_of_speech": { "label": { "en": "Part of speech", "nl": "Woordsoort" }, "fts": false },
-                "ipa": { "label": "IPA", "fts": false },
-                "blr_index": { "label": { "en": "BLR index", "nl": "BLR-index" }, "fts": false },
-                "variety": { "label": { "en": "Variety", "nl": "Variëteit" }, "fts": false },
-                "guthrie": { "label": "Guthrie", "fts": false },
-                "zone": { "label": { "en": "Zone", "nl": "Zone" }, "fts": false },
-                "latitude": { "label": { "en": "Latitude", "nl": "Breedtegraad" } },
-                "longitude": { "label": { "en": "Longitude", "nl": "Lengtegraad" } }
-            },
-            "options": {
-                "point_map": {
-                    "clustering": true
-                }
-            }
+        "word": { "label": { "en": "Reconstruction", "nl": "Reconstructie" } },
+        "word_tone": {
+          "label": {
+            "en": "Reconstruction (tone)",
+            "nl": "Reconstructie (toon)"
+          }
         },
-        "coordinates_map": {
-            "options": {
-                "point_map": {
-                    "clustering": true
-                }
-            }
+        "english": { "label": { "en": "English", "nl": "Engels" } },
+        "french": { "label": { "en": "French", "nl": "Frans" } },
+        "noun_class": {
+          "label": { "en": "Noun class", "nl": "Naamwoordklasse" },
+          "fts": false
+        },
+        "distribution": {
+          "label": { "en": "Distribution", "nl": "Verspreiding" },
+          "fts": false
+        },
+        "proto_kk": { "label": { "en": "Proto-KK", "nl": "Proto-KK" } },
+        "note": {
+          "label": { "en": "Note", "nl": "Opmerking" },
+          "type": "text",
+          "maxWords": 20
+        },
+        "c1": { "label": "C₁", "fts": false },
+        "v11": { "label": "V₁₁", "fts": false },
+        "v12": { "label": "V₁₂", "fts": false },
+        "c2": { "label": "C₂", "fts": false },
+        "v21": { "label": "V₂₁", "fts": false },
+        "v22": { "label": "V₂₂", "fts": false },
+        "c3": { "label": "C₃", "fts": false },
+        "v3": { "label": "V₃", "fts": false },
+        "c4": { "label": "C₄", "fts": false },
+        "v4": { "label": "V₄", "fts": false },
+        "cs": { "label": "CS", "fts": false },
+        "t11": { "label": "T₁₁", "fts": false },
+        "t12": { "label": "T₁₂", "fts": false },
+        "t21": { "label": "T₂₁", "fts": false },
+        "t22": { "label": "T₂₂", "fts": false },
+        "t3": { "label": "T₃", "fts": false },
+        "t4": { "label": "T₄", "fts": false },
+        "reliability": {
+          "label": { "en": "Reliability", "nl": "Betrouwbaarheid" },
+          "fts": false
+        },
+        "contributor": {
+          "label": { "en": "Contributor", "nl": "Bijdrager" },
+          "fts": false
         }
+      }
     },
-    "perspectives": [
-        {
-            "id": "reconstructions",
-            "label": { "en": "BLR reconstructions", "nl": "BLR-reconstructies" },
-            "table": "blr_reconstruction",
-            "query": "SELECT r.id, r.blr_index, r.word, r.word_tone, r.english, r.french, r.noun_class, r.distribution, r.proto_kk, r.note, COALESCE(NULLIF(cs.c1, ''), '∅') AS c1, COALESCE(NULLIF(vs.v11, ''), '∅') AS v11, COALESCE(NULLIF(vs.v12, ''), '∅') AS v12, COALESCE(NULLIF(cs.c2, ''), '∅') AS c2, COALESCE(NULLIF(vs.v21, ''), '∅') AS v21, COALESCE(NULLIF(vs.v22, ''), '∅') AS v22, COALESCE(NULLIF(cs.c3, ''), '∅') AS c3, COALESCE(NULLIF(vs.v3, ''), '∅') AS v3, COALESCE(NULLIF(cs.c4, ''), '∅') AS c4, COALESCE(NULLIF(vs.v4, ''), '∅') AS v4, COALESCE(NULLIF(cs.cs, ''), '∅') AS cs, COALESCE(NULLIF(ts.t11, ''), '∅') AS t11, COALESCE(NULLIF(ts.t12, ''), '∅') AS t12, COALESCE(NULLIF(ts.t21, ''), '∅') AS t21, COALESCE(NULLIF(ts.t22, ''), '∅') AS t22, COALESCE(NULLIF(ts.t3, ''), '∅') AS t3, COALESCE(NULLIF(ts.t4, ''), '∅') AS t4, rel.value AS reliability, con.name AS contributor FROM reconstruction r LEFT JOIN blrconsonantstructure cs ON cs.id = r.consonant_structure_id LEFT JOIN blrvowelstructure vs ON vs.id = r.vowel_structure_id LEFT JOIN blrtonestructure ts ON ts.id = r.tone_structure_id LEFT JOIN blrreliability rel ON rel.id = r.reliability_id LEFT JOIN blrcontributor con ON con.id = r.contributor_id",
-            "default_sort": "blr_index",
-            "facets": [
-                { "field": "c1", "type": "dropdown", "only": ["p", "t", "c", "k", "b", "d", "j", "g", "y", "m", "mp", "mb", "n", "nt", "nd", "ny", "nc", "nj", "ŋ", "nk", "ng"] },
-                { "field": "v11", "type": "dropdown", "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"] },
-                { "field": "v12", "type": "dropdown", "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"] },
-                { "field": "c2", "type": "dropdown", "only": ["p", "t", "c", "k", "b", "d", "j", "g", "y", "m", "mp", "mb", "n", "nt", "nd", "ny", "nc", "nj", "ŋ", "nk", "ng"] },
-                { "field": "v21", "type": "dropdown", "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"] },
-                { "field": "v22", "type": "dropdown", "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"] },
-                { "field": "c3", "type": "dropdown", "only": ["p", "t", "c", "k", "b", "d", "j", "g", "y", "m", "mp", "mb", "n", "nt", "nd", "ny", "nc", "nj", "ŋ", "nk", "ng"] },
-                { "field": "v3", "type": "dropdown", "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"] },
-                { "field": "c4", "type": "dropdown", "only": ["p", "t", "c", "k", "b", "d", "j", "g", "y", "m", "mp", "mb", "n", "nt", "nd", "ny", "nc", "nj", "ŋ", "nk", "ng"] },
-                { "field": "v4", "type": "dropdown", "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"] },
-                { "field": "cs", "type": "dropdown" },
-                { "field": "t11", "type": "dropdown" },
-                { "field": "t12", "type": "dropdown" },
-                { "field": "t21", "type": "dropdown" },
-                { "field": "t22", "type": "dropdown" },
-                { "field": "t3", "type": "dropdown" },
-                { "field": "t4", "type": "dropdown" },
-                { "field": "noun_class", "type": "dropdown" },
-                { "field": "reliability", "type": "dropdown" },
-                { "field": "contributor", "type": "dropdown" }
-            ]
+    "reflex_search": {
+      "label": { "en": "Reflexes", "nl": "Reflexen" },
+      "columns": {
+        "id": { "hidden": true },
+        "term": { "label": { "en": "Term", "nl": "Term" } },
+        "translation": { "label": { "en": "Translation", "nl": "Vertaling" } },
+        "meaning": { "label": { "en": "Meaning", "nl": "Betekenis" } },
+        "semantic_field": {
+          "label": { "en": "Semantic field", "nl": "Semantisch veld" },
+          "fts": false
         },
-        {
-            "id": "reflexes",
-            "label": { "en": "Reflexes", "nl": "Reflexen" },
-            "table": "reflex_search",
-            "materialize": true,
-            "query": "SELECT r.id, r.term, r.translation, r.meaning, r.semantic_field, r.part_of_speech, r.ipa, r.blr_index, COALESCE(v.name_english, v.name_bantu, v.name_french) || COALESCE(' (' || NULLIF(v.guthrie_index, '') || ')', '') AS variety, v.guthrie_index AS guthrie, CASE WHEN v.guthrie_index GLOB '[A-Z]*' THEN substr(v.guthrie_index, 1, 1) END AS zone, c.latitude, c.longitude FROM reflex r LEFT JOIN variety v ON v.id = r.variety_id LEFT JOIN (SELECT location_id, min(id) AS id FROM coordinate WHERE description = 'default' GROUP BY location_id) d ON d.location_id = r.location_id LEFT JOIN coordinate c ON c.id = d.id",
-            "default_sort": "term",
-            "facets": [
-                { "field": "zone", "type": "dropdown" },
-                { "field": "variety", "type": "dropdown" },
-                { "field": "semantic_field", "type": "dropdown" },
-                { "field": "part_of_speech", "type": "dropdown" }
-            ]
+        "part_of_speech": {
+          "label": { "en": "Part of speech", "nl": "Woordsoort" },
+          "fts": false
         },
-        {
-            "id": "coordinates-map",
-            "label": {
-                "en": "Coordinates map"
-            },
-            "table": "coordinates_map",
-            "query": "SELECT id, latitude, longitude FROM coordinate"
+        "ipa": { "label": "IPA", "fts": false },
+        "blr_index": {
+          "label": { "en": "BLR index", "nl": "BLR-index" },
+          "fts": false
+        },
+        "variety": {
+          "label": { "en": "Variety", "nl": "Variëteit" },
+          "fts": false
+        },
+        "guthrie": { "label": "Guthrie", "fts": false },
+        "zone": { "label": { "en": "Zone", "nl": "Zone" }, "fts": false },
+        "latitude": { "label": { "en": "Latitude", "nl": "Breedtegraad" } },
+        "longitude": { "label": { "en": "Longitude", "nl": "Lengtegraad" } }
+      },
+      "options": {
+        "point_map": {
+          "clustering": true
         }
-    ],
-    "enginePlugins": [
-        "extensions/http-vfs/http-vfs-component.js",
-        "extensions/geo-filter/geo-filter-engine.js"
-    ],
-    "uiPlugins": [
-        "extensions/point_map/point-map-component.js",
-        "extensions/geo-filter/geo-filter-component.js",
-        "app/plugins/blr-segment-grid.js"
-    ]
+      }
+    },
+    "coordinates_map": {
+      "options": {
+        "point_map": {
+          "clustering": true
+        }
+      }
+    }
+  },
+  "perspectives": [
+    {
+      "id": "reconstructions",
+      "label": { "en": "BLR reconstructions", "nl": "BLR-reconstructies" },
+      "table": "blr_reconstruction",
+      "query": "SELECT r.id, r.blr_index, r.word, r.word_tone, r.english, r.french, r.noun_class, r.distribution, r.proto_kk, r.note, COALESCE(NULLIF(cs.c1, ''), '∅') AS c1, COALESCE(NULLIF(vs.v11, ''), '∅') AS v11, COALESCE(NULLIF(vs.v12, ''), '∅') AS v12, COALESCE(NULLIF(cs.c2, ''), '∅') AS c2, COALESCE(NULLIF(vs.v21, ''), '∅') AS v21, COALESCE(NULLIF(vs.v22, ''), '∅') AS v22, COALESCE(NULLIF(cs.c3, ''), '∅') AS c3, COALESCE(NULLIF(vs.v3, ''), '∅') AS v3, COALESCE(NULLIF(cs.c4, ''), '∅') AS c4, COALESCE(NULLIF(vs.v4, ''), '∅') AS v4, COALESCE(NULLIF(cs.cs, ''), '∅') AS cs, COALESCE(NULLIF(ts.t11, ''), '∅') AS t11, COALESCE(NULLIF(ts.t12, ''), '∅') AS t12, COALESCE(NULLIF(ts.t21, ''), '∅') AS t21, COALESCE(NULLIF(ts.t22, ''), '∅') AS t22, COALESCE(NULLIF(ts.t3, ''), '∅') AS t3, COALESCE(NULLIF(ts.t4, ''), '∅') AS t4, rel.value AS reliability, con.name AS contributor FROM reconstruction r LEFT JOIN blrconsonantstructure cs ON cs.id = r.consonant_structure_id LEFT JOIN blrvowelstructure vs ON vs.id = r.vowel_structure_id LEFT JOIN blrtonestructure ts ON ts.id = r.tone_structure_id LEFT JOIN blrreliability rel ON rel.id = r.reliability_id LEFT JOIN blrcontributor con ON con.id = r.contributor_id",
+      "default_sort": "blr_index",
+      "facets": [
+        {
+          "field": "c1",
+          "type": "dropdown",
+          "only": [
+            "p",
+            "t",
+            "c",
+            "k",
+            "b",
+            "d",
+            "j",
+            "g",
+            "y",
+            "m",
+            "mp",
+            "mb",
+            "n",
+            "nt",
+            "nd",
+            "ny",
+            "nc",
+            "nj",
+            "ŋ",
+            "nk",
+            "ng"
+          ]
+        },
+        {
+          "field": "v11",
+          "type": "dropdown",
+          "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"]
+        },
+        {
+          "field": "v12",
+          "type": "dropdown",
+          "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"]
+        },
+        {
+          "field": "c2",
+          "type": "dropdown",
+          "only": [
+            "p",
+            "t",
+            "c",
+            "k",
+            "b",
+            "d",
+            "j",
+            "g",
+            "y",
+            "m",
+            "mp",
+            "mb",
+            "n",
+            "nt",
+            "nd",
+            "ny",
+            "nc",
+            "nj",
+            "ŋ",
+            "nk",
+            "ng"
+          ]
+        },
+        {
+          "field": "v21",
+          "type": "dropdown",
+          "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"]
+        },
+        {
+          "field": "v22",
+          "type": "dropdown",
+          "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"]
+        },
+        {
+          "field": "c3",
+          "type": "dropdown",
+          "only": [
+            "p",
+            "t",
+            "c",
+            "k",
+            "b",
+            "d",
+            "j",
+            "g",
+            "y",
+            "m",
+            "mp",
+            "mb",
+            "n",
+            "nt",
+            "nd",
+            "ny",
+            "nc",
+            "nj",
+            "ŋ",
+            "nk",
+            "ng"
+          ]
+        },
+        {
+          "field": "v3",
+          "type": "dropdown",
+          "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"]
+        },
+        {
+          "field": "c4",
+          "type": "dropdown",
+          "only": [
+            "p",
+            "t",
+            "c",
+            "k",
+            "b",
+            "d",
+            "j",
+            "g",
+            "y",
+            "m",
+            "mp",
+            "mb",
+            "n",
+            "nt",
+            "nd",
+            "ny",
+            "nc",
+            "nj",
+            "ŋ",
+            "nk",
+            "ng"
+          ]
+        },
+        {
+          "field": "v4",
+          "type": "dropdown",
+          "only": ["i", "ɪ", "e", "a", "o", "ʊ", "u"]
+        },
+        { "field": "cs", "type": "dropdown" },
+        { "field": "t11", "type": "dropdown" },
+        { "field": "t12", "type": "dropdown" },
+        { "field": "t21", "type": "dropdown" },
+        { "field": "t22", "type": "dropdown" },
+        { "field": "t3", "type": "dropdown" },
+        { "field": "t4", "type": "dropdown" },
+        { "field": "noun_class", "type": "dropdown" },
+        { "field": "reliability", "type": "dropdown" },
+        { "field": "contributor", "type": "dropdown" }
+      ]
+    },
+    {
+      "id": "reflexes",
+      "label": { "en": "Reflexes", "nl": "Reflexen" },
+      "table": "reflex_search",
+      "materialize": true,
+      "query": "SELECT r.id, r.term, r.translation, r.meaning, r.semantic_field, r.part_of_speech, r.ipa, r.blr_index, COALESCE(v.name_english, v.name_bantu, v.name_french) || COALESCE(' (' || NULLIF(v.guthrie_index, '') || ')', '') AS variety, v.guthrie_index AS guthrie, CASE WHEN v.guthrie_index GLOB '[A-Z]*' THEN substr(v.guthrie_index, 1, 1) END AS zone, c.latitude, c.longitude FROM reflex r LEFT JOIN variety v ON v.id = r.variety_id LEFT JOIN (SELECT location_id, min(id) AS id FROM coordinate WHERE description = 'default' GROUP BY location_id) d ON d.location_id = r.location_id LEFT JOIN coordinate c ON c.id = d.id",
+      "default_sort": "term",
+      "facets": [
+        { "field": "zone", "type": "dropdown" },
+        { "field": "variety", "type": "dropdown" },
+        { "field": "semantic_field", "type": "dropdown" },
+        { "field": "part_of_speech", "type": "dropdown" }
+      ]
+    },
+    {
+      "id": "coordinates-map",
+      "label": {
+        "en": "Coordinates map"
+      },
+      "table": "coordinates_map",
+      "query": "SELECT id, latitude, longitude FROM coordinate"
+    }
+  ],
+  "enginePlugins": ["extensions/geo-filter/geo-filter-engine.js"],
+  "uiPlugins": [
+    "extensions/point_map/point-map-component.js",
+    "extensions/geo-filter/geo-filter-component.js",
+    "app/plugins/blr-segment-grid.js"
+  ]
 }

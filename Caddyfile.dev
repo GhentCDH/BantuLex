@@ -6,5 +6,17 @@
 	root * /srv/pihka
 	@revalidate path *.html *.js *.css /
 	header @revalidate Cache-Control "no-cache"
-	file_server
+
+	# The ?v= query string in the request busts the cache on a new version.
+	@sqlite path *.db *.sqlite
+	header @sqlite Cache-Control "public, max-age=31536000, immutable"
+
+	encode {
+		zstd
+		gzip 5
+		minimum_length 1024
+	}
+	file_server {
+		precompressed
+	}
 }
