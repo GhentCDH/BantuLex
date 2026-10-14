@@ -140,11 +140,11 @@ async function send(dryRun: boolean) {
   try {
     const { data } = await axios.post(`/api/bulk/reflex${dryRun ? '?dryRun=1' : ''}`, body());
     if (dryRun) { check.value = data; return; }
+    await loadImports();
     NotificationService.success(`Imported ${data.rows.toLocaleString()} reflexes as bulk import #${data.bulkimport_id}.`);
     result.value = data;
     Object.assign(draft, blank());
     localStorage.removeItem(DRAFT_KEY);
-    await loadImports();
   } catch (e: any) {
     const res = e.response?.data;
     showServerErrors(res?.errors ?? []);
@@ -272,7 +272,8 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
             <label><input v-model="draft.sourceMode" type="radio" value="pick" /> Existing source</label>
             <label><input v-model="draft.sourceMode" type="radio" value="new" /> New source</label>
           </div>
-          <RecordPicker v-if="draft.sourceMode === 'pick'" v-model="draft.source" resource="source" label="Source" placeholder="Search author, year or title…" />
+          <RecordPicker v-if="draft.sourceMode === 'pick'" v-model="draft.source" resource="source" label="Source" placeholder="Search author, year or title…"
+                        :fields="['author_year', 'title']" :detail="(r: any) => r.title" />
           <template v-else>
             <input v-model="draft.newSource.author_year" :class="field" placeholder="Author year *, e.g. Delorme 1877" aria-label="New source author year" />
             <input v-model="draft.newSource.title" :class="field" placeholder="Title" aria-label="New source title" />
@@ -292,7 +293,9 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
             <label><input v-model="draft.varietyMode" type="radio" value="new" /> New</label>
             <label><input v-model="draft.varietyMode" type="radio" value="none" /> None</label>
           </div>
-          <RecordPicker v-if="draft.varietyMode === 'pick'" v-model="draft.variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…" />
+          <RecordPicker v-if="draft.varietyMode === 'pick'" v-model="draft.variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…"
+                        :fields="['name_english', 'name_french', 'name_bantu', 'name_bastin', 'guthrie_index']"
+                        :detail="(r: any) => [r.branch, r.guthrie_plus].filter(Boolean).join(' · ')" />
           <div v-else-if="draft.varietyMode === 'new'" class="grid gap-2 sm:grid-cols-2">
             <input v-model="draft.newVariety.name_english" :class="field" placeholder="Name (English) *" aria-label="New variety name" />
             <input v-model="draft.newVariety.name_french" :class="field" placeholder="Name (French)" aria-label="New variety French name" />
@@ -303,8 +306,11 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
         <fieldset class="border rounded p-3 flex flex-col gap-2">
           <legend class="px-1 font-semibold">d. Location and fieldwork</legend>
           <p class="text-xs opacity-70">Optional: where and during which fieldwork the words were recorded.</p>
-          <RecordPicker v-model="draft.location" resource="location" label="Location" placeholder="Search place, region, country…" />
-          <RecordPicker v-model="draft.fieldwork" resource="fieldwork" label="Fieldwork" placeholder="Search project, year, archive…" />
+          <RecordPicker v-model="draft.location" resource="location" label="Location" placeholder="Search place, region, country…"
+                        :fields="['place.name', 'region.name', 'country.name']" />
+          <RecordPicker v-model="draft.fieldwork" resource="fieldwork" label="Fieldwork" placeholder="Search project, year, archive…"
+                        :fields="['project.name', 'collectionyear.value', 'archive']"
+                        :detail="(r: any) => [r.archive, r.data_entered_by].filter(Boolean).join(' · ')" />
         </fieldset>
       </div>
       <div class="flex justify-between mt-3">

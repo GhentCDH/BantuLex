@@ -36,6 +36,10 @@ test('bulk import wizard: template, links, upload, check, process and undo',asyn
  const source=page.getByLabel('Source',{exact:true});
  await source.fill('Bastin');
  await page.getByRole('button',{name:/Bastin/}).first().click();
+ const location=page.getByLabel('Location',{exact:true});
+ await location.fill('Boma');
+ await page.getByRole('button',{name:/^Boma, Kongo Central, DRC/}).click();
+ await expect(page.getByText(/Boma, Kongo Central, DRC #\d+/)).toBeVisible();
  await page.getByRole('button',{name:'Next: upload ›'}).click();
 
  // 3. Upload and check.
