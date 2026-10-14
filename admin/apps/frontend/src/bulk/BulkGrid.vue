@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// Spreadsheet-like grid for thousands of rows: only the visible rows are
-// rendered (fixed row height). Paste TSV from Excel/Sheets at any cell to fill
-// right and down (a header row maps columns); copy a selected block as TSV;
-// arrows/Enter move between cells; Delete clears the selection.
+// Review grid for the rows of an uploaded file (thousands of rows): no pages,
+// one scrolling box in which only the visible rows are rendered (fixed row
+// height). Meant for small corrections; larger changes go through the Excel
+// file. Arrows/Enter move between cells; Delete clears a selected block.
 import { computed, nextTick, ref, watch } from 'vue';
 import { COLUMNS, columnForHeader, emptyRow, isEmptyRow, type BulkRow } from './columns';
 import { parseTsv, toTsv } from './tsv';
@@ -129,11 +129,7 @@ function deleteSelected() {
   selectedRows.value = new Set();
   if (!rows.value.length) rows.value = [emptyRow()];
 }
-function insertAbove() {
-  const at = selectedRows.value.size ? Math.min(...selectedRows.value) : focus.value[0];
-  rows.value.splice(at, 0, emptyRow());
-}
-function addRows(n: number) { ensureRows(rows.value.length + n); }
+function addRow() { ensureRows(rows.value.length + 1); }
 
 const filled = computed(() => rows.value.filter(r => !isEmptyRow(r)).length);
 const width = computed(() => 56 + cols.value.reduce((n, c) => n + c.width, 0));
@@ -144,13 +140,11 @@ defineExpose({ focusCell });
 <template>
   <div class="flex flex-col gap-2">
     <div class="flex flex-wrap items-center gap-2">
-      <button class="btn btn-sm" type="button" @click="addRows(1)">Add row</button>
-      <button class="btn btn-sm" type="button" @click="addRows(100)">Add 100 rows</button>
-      <button class="btn btn-sm" type="button" @click="insertAbove">Insert row above</button>
+      <button class="btn btn-sm" type="button" @click="addRow">Add row</button>
       <button class="btn btn-sm btn-error" type="button" :disabled="!selectedRows.size" @click="deleteSelected">
         Delete {{ selectedRows.size || '' }} selected row{{ selectedRows.size === 1 ? '' : 's' }}
       </button>
-      <span class="text-sm opacity-70 ml-auto">{{ filled.toLocaleString() }} filled of {{ rows.length.toLocaleString() }} rows · paste from a spreadsheet into any cell</span>
+      <span class="text-sm opacity-70 ml-auto">{{ filled.toLocaleString() }} rows</span>
     </div>
     <div ref="viewport" class="bulk-viewport border rounded" :style="{ height: VIEW_H + 'px' }" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
       <div :style="{ width: width + 'px' }">

@@ -34,6 +34,8 @@ export const COLUMNS: BulkColumn[] = [
     example: '368' },
 ];
 export const DEFAULT_COLUMNS = ['term', 'translation'];
+/** Rows per import, as enforced by the API (admin/apps/backend/src/app/bulk/bulk.schema.ts). */
+export const MAX_ROWS = 20000;
 
 export type BulkRow = Record<string, string>;
 export const emptyRow = (): BulkRow => Object.fromEntries(COLUMNS.map(c => [c.key, '']));

@@ -10,7 +10,7 @@ import { ModalService, NotificationService } from '@ghentcdh/ui';
 import BulkGrid from './BulkGrid.vue';
 import RecordPicker, { type PickedRecord } from './RecordPicker.vue';
 import WizardStep, { type StepStatus } from './WizardStep.vue';
-import { COLUMNS, DEFAULT_COLUMNS, isEmptyRow, type BulkRow } from './columns';
+import { COLUMNS, DEFAULT_COLUMNS, MAX_ROWS, isEmptyRow, type BulkRow } from './columns';
 import { TEMPLATE_NAME, downloadTemplate, readWorkbook } from './xlsx';
 
 const DRAFT_KEY = 'bantulex-bulk-draft';
@@ -73,6 +73,8 @@ async function onFile(file: File | undefined) {
   reading.value = true;
   try {
     const parsed = await readWorkbook(file);
+    if (parsed.rows.length > MAX_ROWS)
+      throw new Error(`${file.name} has ${parsed.rows.length.toLocaleString()} rows; at most ${MAX_ROWS.toLocaleString()} can be imported at once. Split the file and import the parts one after another.`);
     draft.rows = parsed.rows.map((row, i) => ({ ...row, _row: String(parsed.excelRows[i]) }));
     draft.columns = parsed.columns;
     draft.warnings = parsed.warnings;
@@ -241,7 +243,7 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
 
     <!-- 1. Template -->
     <WizardStep :n="1" title="Download the template" :status="statuses[1]" :summary="draft.templateDone ? TEMPLATE_NAME : ''" :open="draft.step === 1" @toggle="toggle(1)">
-      <p class="text-sm mb-3">Download the Excel template and fill in one word per row on the “Reflexes” sheet. Only <strong>Term</strong> is required. Hover over a column header in Excel for its explanation; the “Instructions” sheet has an example.</p>
+      <p class="text-sm mb-3">Download the Excel template and fill in one word per row on the “Reflexes” sheet. Only <strong>Term</strong> is required. Hover over a column header in Excel for its explanation; the “Instructions” sheet has an example. One import can hold up to {{ MAX_ROWS.toLocaleString() }} rows.</p>
       <button class="btn btn-sm btn-primary" type="button" @click="template">Download template (.xlsx)</button>
       <table class="table text-sm mt-3">
         <thead><tr><th>Column</th><th>Required</th><th>Description</th><th>Example</th></tr></thead>
@@ -350,7 +352,7 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
             </li>
           </ul>
         </details>
-        <p class="text-xs opacity-70 mt-3">Check the data below. Small corrections can be made directly in the grid (it also accepts pasted cells). Row numbers are grid rows; the list above gives Excel row numbers.</p>
+        <p class="text-xs opacity-70 mt-3">Review the data below. Fix larger problems in the Excel file and upload it again; small corrections can be made directly in the grid. Row numbers are grid rows; the list above gives Excel row numbers.</p>
         <BulkGrid v-model:rows="draft.rows" v-model:columns="draft.columns" :errors="rowIssues" />
         <div class="flex flex-wrap items-center gap-2 mt-3">
           <button class="btn btn-sm" type="button" :disabled="!!busy || !filled.length || !linksOk || termErrors.length > 0" @click="send(true)">
