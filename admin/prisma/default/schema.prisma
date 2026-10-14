@@ -261,6 +261,8 @@ model sourceentries {
   entry      reflex? @relation(fields: [entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([role], map: "ix_sourceentries_role")
+  @@index([source_id], map: "ix_sourceentries_source_id")
+  @@index([entry_id], map: "ix_sourceentries_entry_id")
 }
 
 model variety {

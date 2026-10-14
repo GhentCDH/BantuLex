@@ -225,8 +225,9 @@ class SourceEntries(Table, table=True):
     order: int = Field(default=1)
     pages: str | None = _text(default=None)  # page number as printed, per Reflex
 
-    entry_id: int | None = Field(default=None, foreign_key="reflex.id")
-    source_id: int | None = Field(default=None, foreign_key="source.id")
+    # Indexed: deleting or looking up a reflex checks its source links.
+    entry_id: int | None = Field(default=None, foreign_key="reflex.id", index=True)
+    source_id: int | None = Field(default=None, foreign_key="source.id", index=True)
 
     reflex: "Reflex" = Relationship(back_populates="sources")
     source: "Source" = Relationship()

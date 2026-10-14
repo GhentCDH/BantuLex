@@ -3,7 +3,7 @@
 A re-import rebuilds data/bantulex.db from the spreadsheets and loses edits
 made in the admin. This adds what model.py has and the database lacks:
 missing tables (with their updated_at triggers) and missing nullable columns
-(with their foreign keys and indexes). Running it again changes nothing.
+(with their foreign keys) and missing indexes. Running it again changes nothing.
 
 Gebruik:
   uv run migrate-db
@@ -49,8 +49,11 @@ def main() -> None:
                     ddl += f' REFERENCES "{fk.column.table.name}"("{fk.column.name}")'
                 conn.exec_driver_sql(ddl)
                 logger.info(f"  added column {table.name}.{column.name}")
-                for index in table.indexes:
-                    if column.name in index.columns:
-                        conn.execute(CreateIndex(index, if_not_exists=True))
-                        logger.info(f"  created index {index.name}")
+        # Indexes added to existing columns (e.g. sourceentries.entry_id).
+        indexes = {row[0] for row in conn.exec_driver_sql("SELECT name FROM sqlite_master WHERE type = 'index'")}
+        for table in SQLModel.metadata.sorted_tables:
+            for index in table.indexes:
+                if index.name not in indexes:
+                    conn.execute(CreateIndex(index, if_not_exists=True))
+                    logger.info(f"  created index {index.name}")
     logger.info("Migration done.")
