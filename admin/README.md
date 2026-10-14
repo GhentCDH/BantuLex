@@ -92,14 +92,16 @@ These are framework fixes, not replacement application forms. Since alpha.82, un
 
 ## Bulk import
 
-*Lexical data → Bulk import* (`/admin/crouton/bulk-import`) adds many reflexes at once, for example all words of a newly digitised dictionary.
+*Lexical data → Bulk import* (`/admin/crouton/bulk-import`) adds many reflexes at once, for example all words of a newly digitised dictionary. It is a wizard in four steps (an accordion; each step shows whether it is done):
 
-1. Set what all rows share: an import label, the source (pick one or create it), the source role, and optionally a variety (pick or create), location and fieldwork.
-2. Paste the words into the grid. Copy cells in Excel, LibreOffice or Google Sheets and paste into any cell: the block fills right and down and adds rows. A header row (Term, Translation, Meaning, Part of speech, Morphology, Semantic field, Scientific name, Pages, Notes, BLR index) selects the columns. Arrow keys, Enter and Tab move between cells; shift selects a block to copy or clear; row numbers select rows to delete. The draft is kept in the browser until it is saved.
-3. *Validate* runs the whole import and rolls it back: it reports how many BLR indexes link to a reconstruction and marks rows with problems. BLR indexes follow the importer: a number, or "X ipv Y" (X is used); other text is kept in `blr_note`.
-4. *Save* writes everything in one SQLite transaction: either all rows are saved or none.
+1. **Download the template** (`bantulex-bulk-import.xlsx`). The "Reflexes" sheet has one column per field: Term (required) and Translation, Meaning (English), Part of speech, Morphology, Semantic field, Scientific name, Pages, Notes, BLR index (optional). Each header has a comment explaining the column; the "Instructions" sheet has a how-to and an example.
+2. **Link or create the related records**, the same for every row: a. import label and note; b. the source (pick or create) and its role; c. the variety (pick, create or none); d. location and fieldwork (optional).
+3. **Upload and check the file.** The filled-in template is read in the browser (ExcelJS, loaded only on this page). Rows are shown in a grid where small corrections can be made; rows without a term must be fixed, BLR text that is not a number is kept as a note. *Check against the database* runs the whole import and rolls it back, and marks unknown BLR indexes. Messages give the Excel row number. Columns not in the template are ignored with a warning.
+4. **Process the import.** One request, one SQLite transaction: either all rows are saved or none.
 
-Every save is a batch (`bulkimport`, listed under *Sources → Bulk imports*); its reflexes carry `bulkimport_id`. *Undo* on the bulk import page deletes the batch's reflexes and source links in one transaction, and the source or variety the batch created if nothing else uses them; the batch stays listed as `undone`.
+BLR indexes follow the importer: a number, or "X ipv Y" (X is used); other text is kept in `blr_note`.
+
+Every import is a batch (`bulkimport`, listed under *Sources → Bulk imports*); its reflexes carry `bulkimport_id`. *Undo* in "Previous imports" deletes the batch's reflexes and source links in one transaction, and the source or variety the batch created if nothing else uses them; the batch stays listed as `undone`. The wizard's choices and uploaded rows are kept in the browser until the import is processed.
 
 API: `POST /api/bulk/reflex[?dryRun=1]` (up to 20,000 rows, JSON body up to 25 MB), `GET /api/bulk/imports`, `POST /api/bulk/imports/:id/undo`. While a bulk transaction runs (about a second for 5,000 rows) other admin requests wait, because the admin uses one SQLite connection. The table and column come from `model.py`; an existing database gets them with `just migrate-db` in the repository root.
 
