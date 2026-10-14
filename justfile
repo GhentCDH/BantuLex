@@ -32,6 +32,10 @@ generate-diagram:
 import file="bantulex.xlsx":
     docker compose run -e EXCEL_FILE="{{file}}" -w /app/utils/importer --rm utils uv run importer
 
+# Bestaande data/bantulex.db bijwerken naar model.py zonder herimport (behoudt admin-bewerkingen)
+migrate-db:
+    docker compose run --rm --no-deps -w /app/utils/importer utils uv run migrate-db
+
 # ── Export (één script per "ding") ───────────────────────────────────────────
 
 # Volledig EvoLex Excel-export

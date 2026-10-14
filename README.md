@@ -34,6 +34,7 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just import` | Run the data import (into `data/bantulex.db`) |
 | `just export-all` | Run the EvoLex, map, BLR and to-fix exports (into `data/`) |
 | `just export-tofix` | Worklist of import errors and warnings with admin links: `data/to_fix.html` |
+| `just migrate-db` | Add new tables/columns from `model.py` to an existing `data/bantulex.db` (keeps admin edits) |
 | `just reset-db` | Back up `data/bantulex.db` to `backups/` and remove it |
 | `just reinit` | Rebuild + reset database + import |
 | `just admin` | Build and start the admin app (needs `data/bantulex.db`) |

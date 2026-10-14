@@ -21,6 +21,7 @@ just export-evolex  # Export to EvoLex Excel format
 just export-map     # Export linguistic data as GeoJSON
 just export-blr     # Export BLR phonological data + catalog
 just export-tofix   # Worklist of import errors/warnings → data/to_fix.html (links to /admin)
+just migrate-db   # Add new tables/columns from model.py to an existing data/bantulex.db
 just reset-db     # Back up data/bantulex.db to backups/ and remove it
 just admin        # Build + start the Crouton admin (compose profile "admin", :4444/admin/)
 just admin-dev    # Admin with hot reload (admin/docker-compose.yml, dev profile)

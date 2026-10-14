@@ -335,6 +335,27 @@ class Reconstruction(Table, table=True):
 # ---------------------------------------------------------------------------
 
 
+class BulkImport(Table, table=True):
+    """A batch of reflexes pasted into the admin's bulk import, so it can be undone.
+
+    The shared links are kept for reference; `*_created` marks a source or
+    variety that the batch itself created (undo removes it if unused).
+    """
+
+    label: str | None = _text(default=None)
+    note: str | None = _text(default=None)
+    rows: int = Field(default=0)
+    status: str = _text(default="saved")  # 'saved' or 'undone'
+    undone_at: datetime | None = _ts()
+    role: str | None = _text(default=None)  # source role of the reflexes
+    source_id: int | None = Field(default=None, foreign_key="source.id")
+    variety_id: int | None = Field(default=None, foreign_key="variety.id")
+    location_id: int | None = Field(default=None, foreign_key="location.id")
+    fieldwork_id: int | None = Field(default=None, foreign_key="fieldwork.id")
+    source_created: bool = Field(default=False)
+    variety_created: bool = Field(default=False)
+
+
 class Reflex(Table, table=True):
     """A single lexical Reflex."""
 
@@ -362,6 +383,8 @@ class Reflex(Table, table=True):
     location_id: int | None = Field(default=None, foreign_key="location.id")
     fieldwork_id: int | None = Field(default=None, foreign_key="fieldwork.id")
     blr_entry_id: int | None = Field(default=None, foreign_key="reconstruction.id")
+    # Set for reflexes added by an admin bulk import (NULL for the spreadsheet import)
+    bulkimport_id: int | None = Field(default=None, foreign_key="bulkimport.id", index=True)
 
     # Relationships
     variety: Variety | None = Relationship(back_populates="entries")

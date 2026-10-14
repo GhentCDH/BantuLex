@@ -95,6 +95,11 @@ Fixed-slot phonological profiles shared across reconstructions: `BLRConsonantStr
 
 ### 3.4 Joins & Ordering
 
+#### BulkImport
+A batch of reflexes added through the admin's bulk import, so the whole batch can be undone.
+*   **Fields**: `label`, `note`, `rows`, `status` (`saved` or `undone`), `undone_at`, `role`, the shared links `source_id`, `variety_id`, `location_id`, `fieldwork_id`, and `source_created`/`variety_created` (the batch created that record).
+*   `reflex.bulkimport_id` points to the batch; it is NULL for reflexes from the spreadsheet import.
+
 #### SourceEntries
 Connects `Reflex` to `Source` with roles and sequence.
 *   **Fields**: `role` (`primary` or `cited`), `order` (1, 2, 3...), `pages`, `entry_id` (→ `Reflex`), `source_id` (→ `Source`).
