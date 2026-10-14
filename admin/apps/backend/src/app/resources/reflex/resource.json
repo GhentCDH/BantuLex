@@ -505,6 +505,45 @@
         "format": "number"
       }
     },
+    "bulkimport_id": {
+      "label": "Bulk import",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": true,
+      "hiddenInForm": true,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": true,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../bulkimport/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/bulkimport/schemas",
+          "enableCreate": false
+        }
+      },
+      "fieldView": {
+        "type": "number",
+        "format": "number"
+      },
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
+      }
+    },
     "created_at": {
       "label": "Created at",
       "type": {
@@ -691,6 +730,23 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.blr_index, x.word, x.english), ''), '#' || x.id) FROM \"reconstruction\" x WHERE x.id = main.\"blr_entry_id\"",
       "position": 10,
       "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "bulkimport_label",
+      "alias": "bulkimport_label",
+      "label": "Bulk import",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.label, ''), '#' || x.id) FROM \"bulkimport\" x WHERE x.id = main.\"bulkimport_id\"",
+      "position": 20,
+      "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
         "type": "string",

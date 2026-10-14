@@ -111,6 +111,7 @@ model fieldwork {
   collection_year_id     Int?
   archive                String?
   data_entered_by        String?
+  bulkimport             bulkimport[]
   collectionyear         collectionyear?          @relation(fields: [collection_year_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project                project?                 @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   fieldworkconsultant    fieldworkconsultant[]
@@ -137,6 +138,7 @@ model location {
   place_id   Int?
   region_id  Int?
   country_id Int?
+  bulkimport bulkimport[]
   coordinate coordinate[]
   country    country?     @relation(fields: [country_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region     region?      @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -213,11 +215,15 @@ model reflex {
   location_id         Int?
   fieldwork_id        Int?
   blr_entry_id        Int?
+  bulkimport_id       Int?
   reconstruction      reconstruction? @relation(fields: [blr_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   fieldwork           fieldwork?      @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   location            location?       @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   variety             variety?        @relation(fields: [variety_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bulkimport          bulkimport?     @relation(fields: [bulkimport_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   sourceentries       sourceentries[]
+
+  @@index([bulkimport_id], map: "ix_reflex_bulkimport_id")
 }
 
 model region {
@@ -238,6 +244,7 @@ model source {
   author_year    String?
   year_uncertain Boolean
   title          String?
+  bulkimport     bulkimport[]
   sourceentries  sourceentries[]
 }
 
@@ -257,9 +264,9 @@ model sourceentries {
 }
 
 model variety {
-  id                Int      @id @default(autoincrement())
-  created_at        String   @default(dbgenerated("CURRENT_TIMESTAMP"))
-  updated_at        String   @default(dbgenerated("CURRENT_TIMESTAMP"))
+  id                Int          @id @default(autoincrement())
+  created_at        String       @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at        String       @default(dbgenerated("CURRENT_TIMESTAMP"))
   name_english      String?
   name_french       String?
   name_bantu        String?
@@ -270,6 +277,7 @@ model variety {
   guthrie_index     String?
   guthrie_plus      String?
   substrate_suspect Boolean?
+  bulkimport        bulkimport[]
   reflex            reflex[]
 }
 
@@ -291,4 +299,27 @@ model fieldworkconsultant {
   fieldwork     fieldwork  @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([fieldwork_id, consultant_id], map: "sqlite_autoindex_fieldworkconsultant_1")
+}
+
+model bulkimport {
+  id              Int        @id @default(autoincrement())
+  created_at      String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at      String     @default(dbgenerated("CURRENT_TIMESTAMP"))
+  label           String?
+  note            String?
+  rows            Int
+  status          String
+  undone_at       String?
+  role            String?
+  source_id       Int?
+  variety_id      Int?
+  location_id     Int?
+  fieldwork_id    Int?
+  source_created  Boolean
+  variety_created Boolean
+  fieldwork       fieldwork? @relation(fields: [fieldwork_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  location        location?  @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variety         variety?   @relation(fields: [variety_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  source          source?    @relation(fields: [source_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reflex          reflex[]
 }

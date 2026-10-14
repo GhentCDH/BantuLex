@@ -14,9 +14,13 @@ test('every table has a resource that preserves all fields and persists CRUD to 
   for(const t of inventory) {
    const config=JSON.parse(readFileSync(`apps/backend/src/app/resources/${t.table}/resource.json`));
    for(const c of t.columns) assert.ok(config.columns[c.name],`${t.table}.${c.name} configured`);
-   const list=await request(server.base,`/${t.table}?pageSize=2`);assert.equal(list.status,200,JSON.stringify(list));assert.equal(list.body.data.length,2);
+   const list=await request(server.base,`/${t.table}?pageSize=2`);assert.equal(list.status,200,JSON.stringify(list));
+   // Read-only resources (bulkimport: written by the bulk import API only) are listed, not edited.
+   if(config.operations?.create===false) {console.log(`Verified ${t.table}: read-only`);continue;}
+   assert.equal(list.body.data.length,2);
    const data={};
-   for(const c of t.columns.filter(c=>!['id','created_at','updated_at'].includes(c.name))) {
+   // Columns the resource does not let users set (e.g. reflex.bulkimport_id) are left to the API that owns them.
+   for(const c of t.columns.filter(c=>!['id','created_at','updated_at'].includes(c.name)&&config.columns[c.name]?.createable!==false)) {
     if(t.foreignKeys[c.name]) data[c.name]=sql(db,`select id from "${t.foreignKeys[c.name]}" order by id desc limit 1`)[0].id;
     else data[c.name]=c.type==='INTEGER'?1900000000:c.type==='BOOLEAN'?true:['REAL','FLOAT'].includes(c.type)?1.234:`TEST ${c.name} bá ɪ e\u0301`;
    }

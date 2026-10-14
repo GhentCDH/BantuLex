@@ -39,7 +39,7 @@ const app=await NestFactory.create(AppModule,{logger:['error','warn','log']});
 app.useGlobalFilters(new DatabaseErrors());
 app.enableShutdownHooks();
 const configs=await app.get(ResourceConfigRegistry).getAll();
-if(configs.length!==22) throw new Error(`Expected 22 resources, loaded ${configs.length}. Inspect resource errors.`);
+if(configs.length!==23) throw new Error(`Expected 23 resources, loaded ${configs.length}. Inspect resource errors.`);
 const frontend=resolve(root,'dist/frontend');
 // The UI is built with base /admin/ (vite.config.ts); the API stays at /api.
 const uiBase='/admin';

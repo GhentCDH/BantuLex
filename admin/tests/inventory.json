@@ -234,6 +234,107 @@
     "foreignKeys": {}
   },
   {
+    "table": "bulkimport",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "label",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "note",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "rows",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "status",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "undone_at",
+        "type": "DATETIME",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "role",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "source_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "variety_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "location_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "fieldwork_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "source_created",
+        "type": "BOOLEAN",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "variety_created",
+        "type": "BOOLEAN",
+        "required": true,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "fieldwork_id": "fieldwork",
+      "location_id": "location",
+      "variety_id": "variety",
+      "source_id": "source"
+    }
+  },
+  {
     "table": "collectionyear",
     "columns": [
       {
@@ -906,13 +1007,20 @@
         "type": "INTEGER",
         "required": false,
         "pk": 0
+      },
+      {
+        "name": "bulkimport_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
       }
     ],
     "foreignKeys": {
       "blr_entry_id": "reconstruction",
       "fieldwork_id": "fieldwork",
       "location_id": "location",
-      "variety_id": "variety"
+      "variety_id": "variety",
+      "bulkimport_id": "bulkimport"
     }
   },
   {
