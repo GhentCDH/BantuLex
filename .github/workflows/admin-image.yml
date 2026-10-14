@@ -4,7 +4,9 @@
 # and publishes it as ghcr.io/ghentcdh/bantulex.
 #
 # Triggers:
-#   - push of a tag v*            -> typecheck, then build linux/amd64 + linux/arm64 and push to GHCR
+#   - push of a tag v*            -> typecheck, then build linux/amd64 and push to GHCR
+#                                    (arm64 is left out to keep the build fast; add it back to `platforms`
+#                                    together with docker/setup-qemu-action when an arm64 server needs it)
 #                                    (tags: 1.2.3, 1.2, 1, latest for non-prerelease tags, sha-<short>)
 #   - pull_request / push to main -> typecheck + build-only check (linux/amd64, no login, no push)
 #     touching admin/** or this file
@@ -123,10 +125,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # better-sqlite3 installs a prebuilt binary per architecture, so arm64 is built under QEMU.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -161,7 +159,7 @@ jobs:
         with:
           context: ./admin
           file: admin/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
