@@ -59,6 +59,30 @@ export async function downloadTemplate() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * Remove cell comments from an xlsx before ExcelJS reads it. The template's
+ * header comments come back in every file, and ExcelJS fails on comments it did
+ * not write itself (e.g. saved by openpyxl or other tools). Reading needs only
+ * the cell values, so the comment parts are dropped.
+ */
+async function withoutComments(data: ArrayBuffer): Promise<ArrayBuffer> {
+  const mod: any = await import('jszip');
+  const JSZip = mod.default ?? mod;
+  const zip = await JSZip.loadAsync(data);
+  for (const name of Object.keys(zip.files)) {
+    if (/^xl\/worksheets\/_rels\/[^/]+\.rels$/.test(name)) {
+      const xml: string = await zip.file(name).async('string');
+      const cleaned = xml.replace(/<Relationship\b[^>]*Type="[^"]*\/(comments|vmlDrawing)"[^>]*\/>/g, '');
+      if (cleaned !== xml) zip.file(name, cleaned);
+    } else if (/^xl\/worksheets\/[^/]+\.xml$/.test(name)) {
+      const xml: string = await zip.file(name).async('string');
+      const cleaned = xml.replace(/<legacyDrawing\b[^>]*\/>/g, '');
+      if (cleaned !== xml) zip.file(name, cleaned);
+    }
+  }
+  return zip.generateAsync({ type: 'arraybuffer' });
+}
+
 export interface ParsedWorkbook {
   rows: BulkRow[];
   /** Excel row number per parsed row (for messages). */
@@ -74,9 +98,9 @@ export async function readWorkbook(file: File): Promise<ParsedWorkbook> {
   const ExcelJS = await excel();
   const wb = new ExcelJS.Workbook();
   try {
-    await wb.xlsx.load(await file.arrayBuffer());
-  } catch {
-    throw new Error(`${file.name} is not a valid .xlsx file.`);
+    await wb.xlsx.load(await withoutComments(await file.arrayBuffer()));
+  } catch (error: any) {
+    throw new Error(`${file.name} could not be read as an .xlsx file (${error?.message ?? error}).`);
   }
   const ws = wb.getWorksheet(SHEET) ?? wb.worksheets[0];
   if (!ws) throw new Error('The file has no sheets.');
