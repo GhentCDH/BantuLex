@@ -1,70 +1,113 @@
 <script setup lang="ts">
-// Bulk import of reflexes: set the shared links once, paste rows from a
-// spreadsheet, validate (dry run) and save everything in one transaction.
-// Every save is a batch that can be undone as a whole.
+// Bulk import of reflexes as a four-step wizard:
+//   1. download the xlsx template, 2. set the shared links (label, source,
+//   variety, location, fieldwork), 3. upload the filled-in file and check it,
+//   4. process: everything is saved in one transaction.
+// Every import is a batch that can be undone (list below the wizard).
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import { ModalService, NotificationService } from '@ghentcdh/ui';
 import BulkGrid from './BulkGrid.vue';
 import RecordPicker, { type PickedRecord } from './RecordPicker.vue';
-import { DEFAULT_COLUMNS, emptyRow, isEmptyRow, type BulkRow } from './columns';
+import WizardStep, { type StepStatus } from './WizardStep.vue';
+import { COLUMNS, DEFAULT_COLUMNS, isEmptyRow, type BulkRow } from './columns';
+import { TEMPLATE_NAME, downloadTemplate, readWorkbook } from './xlsx';
 
 const DRAFT_KEY = 'bantulex-bulk-draft';
 interface Draft {
+  step: number; templateDone: boolean;
   label: string; note: string; role: 'primary' | 'cited';
   sourceMode: 'pick' | 'new'; source: PickedRecord | null; newSource: { author_year: string; title: string; year_uncertain: boolean };
   varietyMode: 'pick' | 'new' | 'none'; variety: PickedRecord | null; newVariety: { name_english: string; name_french: string; guthrie_index: string; branch: string };
   location: PickedRecord | null; fieldwork: PickedRecord | null;
-  columns: string[]; rows: BulkRow[];
+  file: string | null; warnings: string[]; columns: string[];
+  /** Uploaded rows; `_row` holds the Excel row number. */
+  rows: BulkRow[];
 }
 const blank = (): Draft => ({
+  step: 1, templateDone: false,
   label: '', note: '', role: 'primary',
   sourceMode: 'pick', source: null, newSource: { author_year: '', title: '', year_uncertain: false },
   varietyMode: 'pick', variety: null, newVariety: { name_english: '', name_french: '', guthrie_index: '', branch: '' },
   location: null, fieldwork: null,
-  columns: [...DEFAULT_COLUMNS], rows: Array.from({ length: 20 }, emptyRow),
+  file: null, warnings: [], columns: [...DEFAULT_COLUMNS], rows: [],
 });
-
 function loadDraft(): Draft {
   try {
     const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null');
-    if (saved?.rows?.length) return { ...blank(), ...saved };
+    if (saved && typeof saved === 'object' && Array.isArray(saved.rows)) return { ...blank(), ...saved };
   } catch { /* no or broken draft */ }
   return blank();
 }
 const draft = reactive<Draft>(loadDraft());
-// The draft survives a reload: paste 5000 rows once, finish the links later.
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 watch(draft, () => {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* quota */ } }, 800);
 }, { deep: true });
 
-// Grid rows that are sent (non-empty), with their grid index for error markers.
+// ── Step 2: links ───────────────────────────────────────────────────────────
+const sourceOk = computed(() => (draft.sourceMode === 'pick' ? !!draft.source : !!draft.newSource.author_year.trim()));
+const varietyOk = computed(() => draft.varietyMode !== 'new' || !!draft.newVariety.name_english.trim());
+const linksOk = computed(() => !!draft.label.trim() && sourceOk.value && varietyOk.value);
+const linksTouched = computed(() => !!(draft.label || draft.source || draft.newSource.author_year || draft.variety || draft.location || draft.fieldwork));
+const sourceName = computed(() => (draft.sourceMode === 'pick' ? draft.source?.label : draft.newSource.author_year && `${draft.newSource.author_year} (new)`));
+const varietyName = computed(() => draft.varietyMode === 'none' ? 'no variety'
+  : draft.varietyMode === 'pick' ? draft.variety?.label : draft.newVariety.name_english && `${draft.newVariety.name_english} (new)`);
+const linksSummary = computed(() => [draft.label, sourceName.value, varietyName.value, draft.location?.label, draft.fieldwork?.label].filter(Boolean).join(' · '));
+
+// ── Step 3: upload and check ────────────────────────────────────────────────
 const filled = computed(() => draft.rows.map((row, index) => ({ row, index })).filter(({ row }) => !isEmptyRow(row)));
-const errors = ref(new Map<number, Record<string, string>>());
+const excelRow = (index: number) => Number(draft.rows[index]?._row) || index + 2;
+const uploadError = ref('');
+const reading = ref(false);
+const dragging = ref(false);
+const check = ref<any>(null);
+const serverErrors = ref(new Map<number, Record<string, string>>());
 const linkErrors = ref<string[]>([]);
-const summary = ref<any>(null);
-const busy = ref<'' | 'validate' | 'save'>('');
-const imports = ref<any[]>([]);
+const busy = ref<'' | 'check' | 'process'>('');
+
+async function onFile(file: File | undefined) {
+  if (!file) return;
+  uploadError.value = '';
+  reading.value = true;
+  try {
+    const parsed = await readWorkbook(file);
+    draft.rows = parsed.rows.map((row, i) => ({ ...row, _row: String(parsed.excelRows[i]) }));
+    draft.columns = parsed.columns;
+    draft.warnings = parsed.warnings;
+    draft.file = file.name;
+    check.value = null; serverErrors.value = new Map(); linkErrors.value = [];
+  } catch (e: any) {
+    uploadError.value = e.message ?? String(e);
+  } finally {
+    reading.value = false;
+  }
+}
 
 const BLR_OK = /^\s*\d+\s*$|^\s*\d+\s+ipv\b/i;
-const localErrors = computed(() => {
+const blrNumber = (v: string) => /^\s*(\d+)/.exec(v ?? '')?.[1];
+/** Per grid row: blocking errors (term) and warnings (BLR) by field. */
+const rowIssues = computed(() => {
   const map = new Map<number, Record<string, string>>();
+  const unknown = new Set((check.value?.blr_unknown ?? []).map(String));
   for (const { row, index } of filled.value) {
     const e: Record<string, string> = {};
     if (!row.term?.trim()) e.term = 'Term is empty';
-    if (row.blr_index?.trim() && !BLR_OK.test(row.blr_index)) e.blr_index = 'Not a BLR number: kept as a note, not linked';
+    const blr = row.blr_index?.trim();
+    if (blr && !BLR_OK.test(blr)) e.blr_index = 'Not a BLR number: kept as a note, not linked';
+    else if (blr && unknown.has(blrNumber(blr)!)) e.blr_index = `No reconstruction with BLR index ${blrNumber(blr)}: not linked`;
     if (Object.keys(e).length) map.set(index, e);
   }
+  for (const [i, e] of serverErrors.value) map.set(i, { ...map.get(i), ...e });
   return map;
 });
-const shownErrors = computed(() => {
-  const merged = new Map(localErrors.value);
-  for (const [i, e] of errors.value) merged.set(i, { ...merged.get(i), ...e });
-  return merged;
-});
-const blocking = computed(() => [...shownErrors.value.values()].filter(e => e.term).length);
+const termErrors = computed(() => [...rowIssues.value.entries()].filter(([, e]) => e.term).map(([i]) => i));
+const blrWarnings = computed(() => [...rowIssues.value.entries()].filter(([, e]) => e.blr_index && !e.term).map(([i]) => i));
+const uploadOk = computed(() => !!draft.file && filled.value.length > 0 && !termErrors.value.length);
+const uploadSummary = computed(() => draft.file ? `${draft.file} · ${filled.value.length.toLocaleString()} rows${termErrors.value.length ? ` · ${termErrors.value.length} without a term` : ''}` : '');
+// Any change to the data or links invalidates the last database check.
+watch(() => [draft.rows, draft.columns, draft.sourceMode, draft.source, draft.newSource, draft.varietyMode, draft.variety, draft.newVariety, draft.location, draft.fieldwork], () => { check.value = null; }, { deep: true });
 
 function body() {
   return {
@@ -84,43 +127,65 @@ function showServerErrors(list: { row: number | null; field: string; message: st
   for (const e of list ?? []) {
     if (e.row == null) { linkErrors.value.push(`${e.field}: ${e.message}`); continue; }
     const index = filled.value[e.row - 1]?.index;
-    if (index == null) continue;
-    map.set(index, { ...map.get(index), [e.field]: e.message });
+    if (index != null) map.set(index, { ...map.get(index), [e.field]: e.message });
   }
-  errors.value = map;
+  serverErrors.value = map;
 }
 
 async function send(dryRun: boolean) {
-  busy.value = dryRun ? 'validate' : 'save';
-  errors.value = new Map(); linkErrors.value = [];
+  busy.value = dryRun ? 'check' : 'process';
+  serverErrors.value = new Map(); linkErrors.value = [];
   try {
     const { data } = await axios.post(`/api/bulk/reflex${dryRun ? '?dryRun=1' : ''}`, body());
-    summary.value = data;
-    if (!dryRun) {
-      NotificationService.success(`Saved ${data.rows.toLocaleString()} reflexes as bulk import #${data.bulkimport_id}.`);
-      Object.assign(draft, { ...blank(), columns: draft.columns });
-      localStorage.removeItem(DRAFT_KEY);
-      await loadImports();
-    }
+    if (dryRun) { check.value = data; return; }
+    NotificationService.success(`Imported ${data.rows.toLocaleString()} reflexes as bulk import #${data.bulkimport_id}.`);
+    result.value = data;
+    Object.assign(draft, blank());
+    localStorage.removeItem(DRAFT_KEY);
+    await loadImports();
   } catch (e: any) {
     const res = e.response?.data;
-    summary.value = null;
     showServerErrors(res?.errors ?? []);
     NotificationService.error(res?.message ?? e.message ?? 'The import failed; nothing was saved.');
+    if (linkErrors.value.length) draft.step = 2;
   } finally {
     busy.value = '';
   }
 }
 
-function save() {
+// ── Step 4: process ─────────────────────────────────────────────────────────
+const result = ref<any>(null);
+const ready = computed(() => linksOk.value && uploadOk.value);
+function processImport() {
   ModalService.showConfirm({
-    title: 'Save bulk import',
-    message: `Save ${filled.value.length.toLocaleString()} reflexes in one transaction as “${draft.label}”? You can undo the whole import later.`,
-    confirmLabel: 'Save',
+    title: 'Process bulk import',
+    message: `Add ${filled.value.length.toLocaleString()} reflexes from ${draft.file} as “${draft.label}”, linked to ${sourceName.value}? Everything is saved in one transaction and can be undone later.`,
+    confirmLabel: 'Process import',
     onClose: ({ confirmed }) => { if (confirmed) void send(false); },
   });
 }
 
+// ── Wizard ──────────────────────────────────────────────────────────────────
+const statuses = computed<Record<number, StepStatus>>(() => ({
+  1: draft.templateDone || !!draft.file ? 'done' : 'todo',
+  2: linksOk.value ? 'done' : linksTouched.value ? 'attention' : 'todo',
+  3: uploadOk.value ? 'done' : draft.file || uploadError.value ? 'attention' : 'todo',
+  4: result.value ? 'done' : ready.value ? 'todo' : 'todo',
+}));
+const toggle = (n: number) => { draft.step = draft.step === n ? 0 : n; };
+const go = (n: number) => { draft.step = n; };
+
+async function template() {
+  try {
+    await downloadTemplate();
+    draft.templateDone = true;
+  } catch (e: any) {
+    NotificationService.error(`Could not create the template: ${e.message ?? e}`);
+  }
+}
+
+// ── Previous imports ────────────────────────────────────────────────────────
+const imports = ref<any[]>([]);
 async function loadImports() {
   try { imports.value = (await axios.get('/api/bulk/imports')).data; } catch { imports.value = []; }
 }
@@ -141,105 +206,187 @@ function undo(batch: any) {
     },
   });
 }
-function clearAll() {
+function startOver() {
   ModalService.showConfirm({
-    title: 'Clear the grid',
-    message: 'Remove all rows and links from this draft?',
-    confirmLabel: 'Clear',
+    title: 'Start over',
+    message: 'Clear the uploaded rows and all choices of this import?',
+    confirmLabel: 'Start over',
     onClose: ({ confirmed }) => {
       if (!confirmed) return;
-      Object.assign(draft, blank()); errors.value = new Map(); summary.value = null; linkErrors.value = [];
+      Object.assign(draft, blank()); check.value = null; serverErrors.value = new Map(); linkErrors.value = []; uploadError.value = ''; result.value = null;
       localStorage.removeItem(DRAFT_KEY);
     },
   });
 }
-
-const ready = computed(() => draft.label.trim() && filled.value.length && !blocking.value
-  && (draft.sourceMode === 'pick' ? !!draft.source : !!draft.newSource.author_year.trim())
-  && (draft.varietyMode !== 'new' || !!draft.newVariety.name_english.trim()));
 onMounted(loadImports);
+const field = 'w-full border rounded px-2 py-1 text-sm';
 </script>
 
 <template>
-  <section class="max-w-screen-2xl mx-auto p-4 flex flex-col gap-4" aria-label="Bulk import">
-    <header>
-      <h2 class="text-xl font-semibold">Bulk import of reflexes</h2>
-      <p class="text-sm opacity-70">Set the links that all rows share, paste the words from a spreadsheet, validate, then save. The whole import is one transaction and can be undone as a batch.</p>
+  <section class="max-w-screen-2xl mx-auto p-4 flex flex-col gap-3" aria-label="Bulk import">
+    <header class="flex items-start gap-4">
+      <div>
+        <h2 class="text-xl font-semibold">Bulk import of reflexes</h2>
+        <p class="text-sm opacity-70">Import many words from one source at once, e.g. a digitised dictionary. Follow the four steps; the import is saved in one transaction and can be undone as a batch.</p>
+      </div>
+      <button class="btn btn-sm ml-auto" type="button" @click="startOver">Start over</button>
     </header>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 border rounded p-4">
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-semibold" for="bulk-label">Import label *</label>
-        <input id="bulk-label" v-model="draft.label" class="w-full border rounded px-2 py-1 text-sm" placeholder="e.g. Delorme 1877, full dictionary" />
-        <label class="text-sm font-semibold" for="bulk-note">Note</label>
-        <textarea id="bulk-note" v-model="draft.note" class="w-full border rounded px-2 py-1 text-sm" rows="2" />
+    <div v-if="result" class="alert text-sm" role="status">
+      Imported {{ result.rows.toLocaleString() }} reflexes as bulk import #{{ result.bulkimport_id }}
+      ({{ result.blr_linked.toLocaleString() }} linked to a BLR reconstruction). It is listed under “Previous imports” below, where it can be undone.
+    </div>
+
+    <!-- 1. Template -->
+    <WizardStep :n="1" title="Download the template" :status="statuses[1]" :summary="draft.templateDone ? TEMPLATE_NAME : ''" :open="draft.step === 1" @toggle="toggle(1)">
+      <p class="text-sm mb-3">Download the Excel template and fill in one word per row on the “Reflexes” sheet. Only <strong>Term</strong> is required. Hover over a column header in Excel for its explanation; the “Instructions” sheet has an example.</p>
+      <button class="btn btn-sm btn-primary" type="button" @click="template">Download template (.xlsx)</button>
+      <table class="table text-sm mt-3">
+        <thead><tr><th>Column</th><th>Required</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr v-for="c in COLUMNS" :key="c.key"><td class="font-semibold">{{ c.label }}</td><td>{{ c.required ? 'yes' : 'no' }}</td><td>{{ c.help }}</td><td class="opacity-70">{{ c.example }}</td></tr>
+        </tbody>
+      </table>
+      <div class="flex justify-end mt-3"><button class="btn btn-sm" type="button" @click="go(2)">Next: links ›</button></div>
+    </WizardStep>
+
+    <!-- 2. Links -->
+    <WizardStep :n="2" title="Link or create the related records" :status="statuses[2]" :summary="linksSummary" :open="draft.step === 2" @toggle="toggle(2)">
+      <p class="text-sm mb-3">These links are the same for every row of the import.</p>
+      <div v-if="linkErrors.length" class="alert alert-error text-sm mb-3" role="alert"><ul><li v-for="e in linkErrors" :key="e">{{ e }}</li></ul></div>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <fieldset class="border rounded p-3 flex flex-col gap-2">
+          <legend class="px-1 font-semibold">a. Import</legend>
+          <p class="text-xs opacity-70">A name to recognise this import later, e.g. in the list of imports.</p>
+          <label class="text-sm font-semibold" for="bulk-label">Label *</label>
+          <input id="bulk-label" v-model="draft.label" :class="field" placeholder="e.g. Delorme 1877, full dictionary" />
+          <label class="text-sm font-semibold" for="bulk-note">Note</label>
+          <textarea id="bulk-note" v-model="draft.note" :class="field" rows="2" placeholder="Where the data comes from, who prepared it, …" />
+        </fieldset>
+        <fieldset class="border rounded p-3 flex flex-col gap-2">
+          <legend class="px-1 font-semibold">b. Source *</legend>
+          <p class="text-xs opacity-70">The publication the words come from. Every reflex gets a link to it.</p>
+          <div class="text-sm flex gap-4">
+            <label><input v-model="draft.sourceMode" type="radio" value="pick" /> Existing source</label>
+            <label><input v-model="draft.sourceMode" type="radio" value="new" /> New source</label>
+          </div>
+          <RecordPicker v-if="draft.sourceMode === 'pick'" v-model="draft.source" resource="source" label="Source" placeholder="Search author, year or title…" />
+          <template v-else>
+            <input v-model="draft.newSource.author_year" :class="field" placeholder="Author year *, e.g. Delorme 1877" aria-label="New source author year" />
+            <input v-model="draft.newSource.title" :class="field" placeholder="Title" aria-label="New source title" />
+            <label class="text-sm"><input v-model="draft.newSource.year_uncertain" type="checkbox" /> Year uncertain</label>
+          </template>
+          <label class="text-sm font-semibold" for="bulk-role">Role of the source</label>
+          <select id="bulk-role" v-model="draft.role" :class="field">
+            <option value="primary">primary — the words are taken from this source</option>
+            <option value="cited">cited — the source is cited for the words</option>
+          </select>
+        </fieldset>
+        <fieldset class="border rounded p-3 flex flex-col gap-2">
+          <legend class="px-1 font-semibold">c. Variety</legend>
+          <p class="text-xs opacity-70">The language variety of all words in the file.</p>
+          <div class="text-sm flex gap-4">
+            <label><input v-model="draft.varietyMode" type="radio" value="pick" /> Existing</label>
+            <label><input v-model="draft.varietyMode" type="radio" value="new" /> New</label>
+            <label><input v-model="draft.varietyMode" type="radio" value="none" /> None</label>
+          </div>
+          <RecordPicker v-if="draft.varietyMode === 'pick'" v-model="draft.variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…" />
+          <div v-else-if="draft.varietyMode === 'new'" class="grid gap-2 sm:grid-cols-2">
+            <input v-model="draft.newVariety.name_english" :class="field" placeholder="Name (English) *" aria-label="New variety name" />
+            <input v-model="draft.newVariety.name_french" :class="field" placeholder="Name (French)" aria-label="New variety French name" />
+            <input v-model="draft.newVariety.guthrie_index" :class="field" placeholder="Guthrie index, e.g. H16" aria-label="New variety Guthrie index" />
+            <input v-model="draft.newVariety.branch" :class="field" placeholder="Branch" aria-label="New variety branch" />
+          </div>
+        </fieldset>
+        <fieldset class="border rounded p-3 flex flex-col gap-2">
+          <legend class="px-1 font-semibold">d. Location and fieldwork</legend>
+          <p class="text-xs opacity-70">Optional: where and during which fieldwork the words were recorded.</p>
+          <RecordPicker v-model="draft.location" resource="location" label="Location" placeholder="Search place, region, country…" />
+          <RecordPicker v-model="draft.fieldwork" resource="fieldwork" label="Fieldwork" placeholder="Search project, year, archive…" />
+        </fieldset>
       </div>
-      <div class="flex flex-col gap-2">
-        <div class="join text-sm">
-          <label class="mr-3"><input v-model="draft.sourceMode" type="radio" value="pick" /> Existing source</label>
-          <label><input v-model="draft.sourceMode" type="radio" value="new" /> New source</label>
+      <div class="flex justify-between mt-3">
+        <button class="btn btn-sm" type="button" @click="go(1)">‹ Back</button>
+        <span v-if="!linksOk" class="text-sm text-amber-700 self-center">Fill in the label and the source{{ varietyOk ? '' : ', and the name of the new variety' }}.</span>
+        <button class="btn btn-sm" type="button" @click="go(3)">Next: upload ›</button>
+      </div>
+    </WizardStep>
+
+    <!-- 3. Upload and check -->
+    <WizardStep :n="3" title="Upload and check the file" :status="statuses[3]" :summary="uploadSummary" :open="draft.step === 3" @toggle="toggle(3)">
+      <label class="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded p-6 cursor-pointer text-sm"
+             :class="dragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
+             @dragover.prevent="dragging = true" @dragleave="dragging = false"
+             @drop.prevent="dragging = false; onFile($event.dataTransfer?.files?.[0])">
+        <span class="font-semibold">{{ draft.file ? 'Replace the file' : 'Choose the filled-in template' }}</span>
+        <span class="opacity-70">Drop an .xlsx file here or click to choose one</span>
+        <input type="file" class="sr-only" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+               aria-label="Upload filled-in template" @change="onFile(($event.target as HTMLInputElement).files?.[0]); ($event.target as HTMLInputElement).value = ''" />
+      </label>
+      <p v-if="reading" class="text-sm mt-2" role="status">Reading the file…</p>
+      <div v-if="uploadError" class="alert alert-error text-sm mt-2" role="alert">{{ uploadError }}</div>
+
+      <template v-if="draft.file">
+        <div class="flex flex-wrap gap-2 items-center text-sm mt-3">
+          <span class="badge">{{ draft.file }}</span>
+          <span>{{ filled.length.toLocaleString() }} rows</span>
+          <span v-if="termErrors.length" class="text-red-700">· {{ termErrors.length }} row(s) without a term (must be fixed)</span>
+          <span v-if="blrWarnings.length" class="text-amber-700">· {{ blrWarnings.length }} BLR index(es) will not be linked</span>
         </div>
-        <RecordPicker v-if="draft.sourceMode === 'pick'" v-model="draft.source" resource="source" label="Source *" placeholder="Search author or title…" />
-        <template v-else>
-          <input v-model="draft.newSource.author_year" class="w-full border rounded px-2 py-1 text-sm" placeholder="Author year *" aria-label="New source author year" />
-          <input v-model="draft.newSource.title" class="w-full border rounded px-2 py-1 text-sm" placeholder="Title" aria-label="New source title" />
-          <label class="text-sm"><input v-model="draft.newSource.year_uncertain" type="checkbox" /> Year uncertain</label>
-        </template>
-        <label class="text-sm font-semibold" for="bulk-role">Source role</label>
-        <select id="bulk-role" v-model="draft.role" class="w-full border rounded px-2 py-1 text-sm">
-          <option value="primary">primary</option>
-          <option value="cited">cited</option>
-        </select>
-      </div>
-      <div class="flex flex-col gap-2">
-        <div class="join text-sm">
-          <label class="mr-3"><input v-model="draft.varietyMode" type="radio" value="pick" /> Existing variety</label>
-          <label class="mr-3"><input v-model="draft.varietyMode" type="radio" value="new" /> New variety</label>
-          <label><input v-model="draft.varietyMode" type="radio" value="none" /> None</label>
+        <ul v-if="draft.warnings.length" class="text-sm text-amber-700 list-disc ml-5 mt-1"><li v-for="w in draft.warnings" :key="w">{{ w }}</li></ul>
+        <details v-if="termErrors.length || blrWarnings.length" class="text-sm mt-2">
+          <summary class="cursor-pointer">Rows to look at</summary>
+          <ul class="list-disc ml-5 max-h-40 overflow-auto">
+            <li v-for="i in [...termErrors, ...blrWarnings].slice(0, 200)" :key="i">
+              Excel row {{ excelRow(i) }}: {{ Object.values(rowIssues.get(i) ?? {}).join('; ') }}
+            </li>
+          </ul>
+        </details>
+        <p class="text-xs opacity-70 mt-3">Check the data below. Small corrections can be made directly in the grid (it also accepts pasted cells). Row numbers are grid rows; the list above gives Excel row numbers.</p>
+        <BulkGrid v-model:rows="draft.rows" v-model:columns="draft.columns" :errors="rowIssues" />
+        <div class="flex flex-wrap items-center gap-2 mt-3">
+          <button class="btn btn-sm" type="button" :disabled="!!busy || !filled.length || !linksOk" @click="send(true)">
+            {{ busy === 'check' ? 'Checking…' : 'Check against the database' }}
+          </button>
+          <span v-if="!linksOk" class="text-sm opacity-70">Complete step 2 to check the links.</span>
+          <span v-if="check" class="text-sm text-green-800" role="status">
+            Check passed: {{ check.rows.toLocaleString() }} rows; {{ check.blr_linked.toLocaleString() }} linked to BLR;
+            {{ check.blr_text.toLocaleString() }} BLR texts kept as notes<span v-if="check.blr_unknown.length">; {{ check.blr_unknown.length }} unknown BLR index(es)</span>.
+          </span>
         </div>
-        <RecordPicker v-if="draft.varietyMode === 'pick'" v-model="draft.variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…" />
-        <template v-else-if="draft.varietyMode === 'new'">
-          <input v-model="draft.newVariety.name_english" class="w-full border rounded px-2 py-1 text-sm" placeholder="Name (English) *" aria-label="New variety name" />
-          <input v-model="draft.newVariety.name_french" class="w-full border rounded px-2 py-1 text-sm" placeholder="Name (French)" aria-label="New variety French name" />
-          <input v-model="draft.newVariety.guthrie_index" class="w-full border rounded px-2 py-1 text-sm" placeholder="Guthrie index" aria-label="New variety Guthrie index" />
-          <input v-model="draft.newVariety.branch" class="w-full border rounded px-2 py-1 text-sm" placeholder="Branch" aria-label="New variety branch" />
-        </template>
+      </template>
+      <div class="flex justify-between mt-3">
+        <button class="btn btn-sm" type="button" @click="go(2)">‹ Back</button>
+        <button class="btn btn-sm" type="button" @click="go(4)">Next: process ›</button>
       </div>
-      <div class="flex flex-col gap-2">
-        <RecordPicker v-model="draft.location" resource="location" label="Location" placeholder="Search place, region, country…" />
-        <RecordPicker v-model="draft.fieldwork" resource="fieldwork" label="Fieldwork" placeholder="Search project, year, archive…" />
+    </WizardStep>
+
+    <!-- 4. Process -->
+    <WizardStep :n="4" title="Process the import" :status="statuses[4]" :open="draft.step === 4" @toggle="toggle(4)">
+      <dl class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm mb-3">
+        <dt class="opacity-70">Label</dt><dd>{{ draft.label || '—' }}</dd>
+        <dt class="opacity-70">Source</dt><dd>{{ sourceName || '—' }} ({{ draft.role }})</dd>
+        <dt class="opacity-70">Variety</dt><dd>{{ varietyName || '—' }}</dd>
+        <dt class="opacity-70">Location</dt><dd>{{ draft.location?.label ?? '—' }}</dd>
+        <dt class="opacity-70">Fieldwork</dt><dd>{{ draft.fieldwork?.label ?? '—' }}</dd>
+        <dt class="opacity-70">Rows</dt><dd>{{ filled.length.toLocaleString() }} from {{ draft.file ?? 'no file yet' }}</dd>
+        <dt class="opacity-70">BLR</dt>
+        <dd>{{ check ? `${check.blr_linked.toLocaleString()} linked, ${check.blr_text.toLocaleString()} kept as notes, ${check.blr_unknown.length} unknown` : 'not checked yet (optional, step 3)' }}</dd>
+      </dl>
+      <ul v-if="!ready" class="text-sm text-amber-700 list-disc ml-5 mb-3">
+        <li v-if="!linksOk">Step 2: fill in the label and the source.</li>
+        <li v-if="!draft.file">Step 3: upload the filled-in template.</li>
+        <li v-else-if="termErrors.length">Step 3: {{ termErrors.length }} row(s) have no term.</li>
+      </ul>
+      <div class="flex justify-between">
+        <button class="btn btn-sm" type="button" @click="go(3)">‹ Back</button>
+        <button class="btn btn-sm btn-primary" type="button" :disabled="!!busy || !ready" @click="processImport">
+          {{ busy === 'process' ? 'Processing…' : `Process import (${filled.length.toLocaleString()} reflexes)` }}
+        </button>
       </div>
-    </div>
+    </WizardStep>
 
-    <div v-if="linkErrors.length" class="alert alert-error text-sm" role="alert">
-      <ul><li v-for="e in linkErrors" :key="e">{{ e }}</li></ul>
-    </div>
-
-    <BulkGrid v-model:rows="draft.rows" v-model:columns="draft.columns" :errors="shownErrors" />
-
-    <div class="flex flex-wrap items-center gap-2">
-      <button class="btn btn-sm" type="button" :disabled="!!busy || !filled.length" @click="send(true)">
-        {{ busy === 'validate' ? 'Validating…' : 'Validate' }}
-      </button>
-      <button class="btn btn-sm btn-primary" type="button" :disabled="!!busy || !ready" @click="save">
-        {{ busy === 'save' ? 'Saving…' : `Save ${filled.length.toLocaleString()} reflexes` }}
-      </button>
-      <button class="btn btn-sm" type="button" :disabled="!!busy" @click="clearAll">Clear draft</button>
-      <span v-if="blocking" class="text-sm text-red-700">{{ blocking }} row(s) without a term</span>
-      <span v-else-if="!ready && filled.length" class="text-sm opacity-70">Fill in the label and the source to save.</span>
-    </div>
-
-    <div v-if="summary" class="border rounded p-3 text-sm" role="status">
-      <strong>{{ summary.dryRun ? 'Validation passed — nothing saved yet.' : `Saved as bulk import #${summary.bulkimport_id}.` }}</strong>
-      {{ summary.rows.toLocaleString() }} reflexes;
-      {{ summary.blr_linked.toLocaleString() }} linked to a BLR reconstruction;
-      {{ summary.blr_text.toLocaleString() }} BLR texts kept as notes<span v-if="summary.blr_unknown.length">;
-        unknown BLR indexes (not linked): {{ summary.blr_unknown.slice(0, 20).join(', ') }}{{ summary.blr_unknown.length > 20 ? '…' : '' }}</span>.
-      <span v-if="summary.source.created">A new source is created.</span>
-      <span v-if="summary.variety.created">A new variety is created.</span>
-    </div>
-
-    <div>
+    <div class="mt-4">
       <h3 class="text-lg font-semibold mb-2">Previous imports</h3>
       <p v-if="!imports.length" class="text-sm opacity-70">No bulk imports yet.</p>
       <table v-else class="table text-sm">
