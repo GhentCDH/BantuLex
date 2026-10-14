@@ -32,6 +32,7 @@
     "@tiptap/vue-3": "^3.31.3",
     "axios": "^1.0.0",
     "dotenv": "^16.0.0",
+    "exceljs": "4.4.0",
     "express": "^5.1.0",
     "maplibre-gl": "6.11.0",
     "nestjs-zod": "^5.0.0",
