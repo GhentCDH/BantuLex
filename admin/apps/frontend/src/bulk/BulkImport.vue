@@ -106,8 +106,10 @@ const termErrors = computed(() => [...rowIssues.value.entries()].filter(([, e]) 
 const blrWarnings = computed(() => [...rowIssues.value.entries()].filter(([, e]) => e.blr_index && !e.term).map(([i]) => i));
 const uploadOk = computed(() => !!draft.file && filled.value.length > 0 && !termErrors.value.length);
 const uploadSummary = computed(() => draft.file ? `${draft.file} · ${filled.value.length.toLocaleString()} rows${termErrors.value.length ? ` · ${termErrors.value.length} without a term` : ''}` : '');
-// Any change to the data or links invalidates the last database check.
-watch(() => [draft.rows, draft.columns, draft.sourceMode, draft.source, draft.newSource, draft.varietyMode, draft.variety, draft.newVariety, draft.location, draft.fieldwork], () => { check.value = null; }, { deep: true });
+// Any change to the data or links invalidates the last database check and its errors.
+watch(() => [draft.rows, draft.columns, draft.sourceMode, draft.source, draft.newSource, draft.varietyMode, draft.variety, draft.newVariety, draft.location, draft.fieldwork], () => {
+  check.value = null; serverErrors.value = new Map(); linkErrors.value = [];
+}, { deep: true });
 
 function body() {
   return {
@@ -345,10 +347,11 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
         <p class="text-xs opacity-70 mt-3">Check the data below. Small corrections can be made directly in the grid (it also accepts pasted cells). Row numbers are grid rows; the list above gives Excel row numbers.</p>
         <BulkGrid v-model:rows="draft.rows" v-model:columns="draft.columns" :errors="rowIssues" />
         <div class="flex flex-wrap items-center gap-2 mt-3">
-          <button class="btn btn-sm" type="button" :disabled="!!busy || !filled.length || !linksOk" @click="send(true)">
+          <button class="btn btn-sm" type="button" :disabled="!!busy || !filled.length || !linksOk || termErrors.length > 0" @click="send(true)">
             {{ busy === 'check' ? 'Checking…' : 'Check against the database' }}
           </button>
           <span v-if="!linksOk" class="text-sm opacity-70">Complete step 2 to check the links.</span>
+          <span v-else-if="termErrors.length" class="text-sm opacity-70">Give every row a term first (in the file or in the grid).</span>
           <span v-if="check" class="text-sm text-green-800" role="status">
             Check passed: {{ check.rows.toLocaleString() }} rows; {{ check.blr_linked.toLocaleString() }} linked to BLR;
             {{ check.blr_text.toLocaleString() }} BLR texts kept as notes<span v-if="check.blr_unknown.length">; {{ check.blr_unknown.length }} unknown BLR index(es)</span>.
