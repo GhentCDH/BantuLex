@@ -3,7 +3,7 @@
 // rendered (fixed row height). Paste TSV from Excel/Sheets at any cell to fill
 // right and down (a header row maps columns); copy a selected block as TSV;
 // arrows/Enter move between cells; Delete clears the selection.
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { COLUMNS, columnForHeader, emptyRow, isEmptyRow, type BulkRow } from './columns';
 import { parseTsv, toTsv } from './tsv';
 
@@ -31,6 +31,8 @@ const inRange = (r: number, c: number) => {
   return r >= g.top && r <= g.bottom && c >= g.left && c <= g.right && (g.top !== g.bottom || g.left !== g.right);
 };
 const selectedRows = ref(new Set<number>());
+// A new row array (after save or clear) starts without a selection.
+watch(() => rows.value, () => { anchor.value = [0, 0]; focus.value = [0, 0]; selectedRows.value = new Set(); });
 
 function cellId(r: number, c: number) { return `bulk-cell-${r}-${c}`; }
 // Set while focusCell() moves focus to extend a selection, so onFocus keeps the anchor.

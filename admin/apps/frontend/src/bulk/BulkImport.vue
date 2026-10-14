@@ -170,9 +170,9 @@ onMounted(loadImports);
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 border rounded p-4">
       <div class="flex flex-col gap-2">
         <label class="text-sm font-semibold" for="bulk-label">Import label *</label>
-        <input id="bulk-label" v-model="draft.label" class="input input-sm border rounded px-2 py-1" placeholder="e.g. Delorme 1877, full dictionary" />
+        <input id="bulk-label" v-model="draft.label" class="w-full border rounded px-2 py-1 text-sm" placeholder="e.g. Delorme 1877, full dictionary" />
         <label class="text-sm font-semibold" for="bulk-note">Note</label>
-        <textarea id="bulk-note" v-model="draft.note" class="textarea border rounded px-2 py-1 text-sm" rows="2" />
+        <textarea id="bulk-note" v-model="draft.note" class="w-full border rounded px-2 py-1 text-sm" rows="2" />
       </div>
       <div class="flex flex-col gap-2">
         <div class="join text-sm">
@@ -181,12 +181,12 @@ onMounted(loadImports);
         </div>
         <RecordPicker v-if="draft.sourceMode === 'pick'" v-model="draft.source" resource="source" label="Source *" placeholder="Search author or title…" />
         <template v-else>
-          <input v-model="draft.newSource.author_year" class="input input-sm border rounded px-2 py-1" placeholder="Author year *" aria-label="New source author year" />
-          <input v-model="draft.newSource.title" class="input input-sm border rounded px-2 py-1" placeholder="Title" aria-label="New source title" />
+          <input v-model="draft.newSource.author_year" class="w-full border rounded px-2 py-1 text-sm" placeholder="Author year *" aria-label="New source author year" />
+          <input v-model="draft.newSource.title" class="w-full border rounded px-2 py-1 text-sm" placeholder="Title" aria-label="New source title" />
           <label class="text-sm"><input v-model="draft.newSource.year_uncertain" type="checkbox" /> Year uncertain</label>
         </template>
         <label class="text-sm font-semibold" for="bulk-role">Source role</label>
-        <select id="bulk-role" v-model="draft.role" class="select select-sm border rounded px-2 py-1">
+        <select id="bulk-role" v-model="draft.role" class="w-full border rounded px-2 py-1 text-sm">
           <option value="primary">primary</option>
           <option value="cited">cited</option>
         </select>
@@ -199,10 +199,10 @@ onMounted(loadImports);
         </div>
         <RecordPicker v-if="draft.varietyMode === 'pick'" v-model="draft.variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…" />
         <template v-else-if="draft.varietyMode === 'new'">
-          <input v-model="draft.newVariety.name_english" class="input input-sm border rounded px-2 py-1" placeholder="Name (English) *" aria-label="New variety name" />
-          <input v-model="draft.newVariety.name_french" class="input input-sm border rounded px-2 py-1" placeholder="Name (French)" aria-label="New variety French name" />
-          <input v-model="draft.newVariety.guthrie_index" class="input input-sm border rounded px-2 py-1" placeholder="Guthrie index" aria-label="New variety Guthrie index" />
-          <input v-model="draft.newVariety.branch" class="input input-sm border rounded px-2 py-1" placeholder="Branch" aria-label="New variety branch" />
+          <input v-model="draft.newVariety.name_english" class="w-full border rounded px-2 py-1 text-sm" placeholder="Name (English) *" aria-label="New variety name" />
+          <input v-model="draft.newVariety.name_french" class="w-full border rounded px-2 py-1 text-sm" placeholder="Name (French)" aria-label="New variety French name" />
+          <input v-model="draft.newVariety.guthrie_index" class="w-full border rounded px-2 py-1 text-sm" placeholder="Guthrie index" aria-label="New variety Guthrie index" />
+          <input v-model="draft.newVariety.branch" class="w-full border rounded px-2 py-1 text-sm" placeholder="Branch" aria-label="New variety branch" />
         </template>
       </div>
       <div class="flex flex-col gap-2">

@@ -44,7 +44,7 @@ function onFocus() { open.value = true; if (!results.value.length) search(query.
       <button type="button" class="btn btn-sm" @click="model = null">Change</button>
     </div>
     <template v-else>
-      <input v-model="query" class="input input-sm w-full border rounded px-2 py-1" :placeholder="placeholder ?? 'Search…'"
+      <input v-model="query" class="w-full border rounded px-2 py-1 text-sm" :placeholder="placeholder ?? 'Search…'"
              :aria-label="label" @focus="onFocus" @blur="onBlur" />
       <ul v-if="open" class="absolute z-20 mt-1 w-full max-h-64 overflow-auto bg-white border rounded shadow text-sm">
         <li v-if="loading" class="px-2 py-1 opacity-60">Searching…</li>
