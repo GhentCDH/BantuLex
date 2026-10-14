@@ -134,11 +134,6 @@ function insertAbove() {
   rows.value.splice(at, 0, emptyRow());
 }
 function addRows(n: number) { ensureRows(rows.value.length + n); }
-function toggleColumn(key: string) {
-  if (key === 'term') return;
-  const next = props.columns.includes(key) ? props.columns.filter(k => k !== key) : [...props.columns, key];
-  emit('update:columns', COLUMNS.map(c => c.key).filter(k => next.includes(k)));
-}
 
 const filled = computed(() => rows.value.filter(r => !isEmptyRow(r)).length);
 const width = computed(() => 56 + cols.value.reduce((n, c) => n + c.width, 0));
@@ -148,13 +143,6 @@ defineExpose({ focusCell });
 
 <template>
   <div class="flex flex-col gap-2">
-    <div class="flex flex-wrap items-center gap-2 text-sm">
-      <span class="font-semibold">Columns:</span>
-      <label v-for="col in COLUMNS" :key="col.key" class="inline-flex items-center gap-1 mr-2">
-        <input type="checkbox" :checked="columns.includes(col.key)" :disabled="col.required" @change="toggleColumn(col.key)" />
-        {{ col.label }}
-      </label>
-    </div>
     <div class="flex flex-wrap items-center gap-2">
       <button class="btn btn-sm" type="button" @click="addRows(1)">Add row</button>
       <button class="btn btn-sm" type="button" @click="addRows(100)">Add 100 rows</button>
