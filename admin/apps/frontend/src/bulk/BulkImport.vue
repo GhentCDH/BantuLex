@@ -14,9 +14,14 @@ import { COLUMNS, DEFAULT_COLUMNS, MAX_ROWS, isEmptyRow, type BulkRow } from './
 import { TEMPLATE_NAME, downloadTemplate, readWorkbook } from './xlsx';
 
 const DRAFT_KEY = 'bantulex-bulk-draft';
+const pad = (n: number) => String(n).padStart(2, '0');
+/** Name of an import: the local date and time it is processed, e.g. "2027 10 12 - 13h 14". */
+function importName(d = new Date()) {
+  return `${d.getFullYear()} ${pad(d.getMonth() + 1)} ${pad(d.getDate())} - ${pad(d.getHours())}h ${pad(d.getMinutes())}`;
+}
 interface Draft {
   step: number; templateDone: boolean;
-  label: string; note: string; role: 'primary' | 'cited';
+  role: 'primary' | 'cited';
   sourceMode: 'pick' | 'new'; source: PickedRecord | null; newSource: { author_year: string; title: string; year_uncertain: boolean };
   varietyMode: 'pick' | 'new' | 'none'; variety: PickedRecord | null; newVariety: { name_english: string; name_french: string; guthrie_index: string; branch: string };
   location: PickedRecord | null; fieldwork: PickedRecord | null;
@@ -26,7 +31,7 @@ interface Draft {
 }
 const blank = (): Draft => ({
   step: 1, templateDone: false,
-  label: '', note: '', role: 'primary',
+  role: 'primary',
   sourceMode: 'pick', source: null, newSource: { author_year: '', title: '', year_uncertain: false },
   varietyMode: 'pick', variety: null, newVariety: { name_english: '', name_french: '', guthrie_index: '', branch: '' },
   location: null, fieldwork: null,
@@ -49,12 +54,12 @@ watch(draft, () => {
 // ── Step 2: links ───────────────────────────────────────────────────────────
 const sourceOk = computed(() => (draft.sourceMode === 'pick' ? !!draft.source : !!draft.newSource.author_year.trim()));
 const varietyOk = computed(() => draft.varietyMode !== 'new' || !!draft.newVariety.name_english.trim());
-const linksOk = computed(() => !!draft.label.trim() && sourceOk.value && varietyOk.value);
-const linksTouched = computed(() => !!(draft.label || draft.source || draft.newSource.author_year || draft.variety || draft.location || draft.fieldwork));
+const linksOk = computed(() => sourceOk.value && varietyOk.value);
+const linksTouched = computed(() => !!(draft.source || draft.newSource.author_year || draft.variety || draft.location || draft.fieldwork));
 const sourceName = computed(() => (draft.sourceMode === 'pick' ? draft.source?.label : draft.newSource.author_year && `${draft.newSource.author_year} (new)`));
 const varietyName = computed(() => draft.varietyMode === 'none' ? 'no variety'
   : draft.varietyMode === 'pick' ? draft.variety?.label : draft.newVariety.name_english && `${draft.newVariety.name_english} (new)`);
-const linksSummary = computed(() => [draft.label, sourceName.value, varietyName.value, draft.location?.label, draft.fieldwork?.label].filter(Boolean).join(' · '));
+const linksSummary = computed(() => [sourceName.value, varietyName.value, draft.location?.label, draft.fieldwork?.label].filter(Boolean).join(' · '));
 
 // ── Step 3: upload and check ────────────────────────────────────────────────
 const filled = computed(() => draft.rows.map((row, index) => ({ row, index })).filter(({ row }) => !isEmptyRow(row)));
@@ -115,7 +120,7 @@ watch(() => [draft.rows, draft.columns, draft.sourceMode, draft.source, draft.ne
 
 function body() {
   return {
-    label: draft.label, note: draft.note || null, role: draft.role,
+    label: importName(), note: null, role: draft.role,
     source: draft.sourceMode === 'pick' ? { id: draft.source?.id } : { create: { ...draft.newSource, title: draft.newSource.title || null } },
     variety: draft.varietyMode === 'none' ? null : draft.varietyMode === 'pick' ? (draft.variety ? { id: draft.variety.id } : null)
       : { create: Object.fromEntries(Object.entries(draft.newVariety).map(([k, v]) => [k, v || null])) },
@@ -159,25 +164,39 @@ async function send(dryRun: boolean) {
 
 // ── Step 4: process ─────────────────────────────────────────────────────────
 const result = ref<any>(null);
-const ready = computed(() => linksOk.value && uploadOk.value);
+const ready = computed(() => linksOk.value && uploadOk.value && !!check.value);
 function processImport() {
   ModalService.showConfirm({
     title: 'Process bulk import',
-    message: `Add ${filled.value.length.toLocaleString()} reflexes from ${draft.file} as “${draft.label}”, linked to ${sourceName.value}? Everything is saved in one transaction and can be undone later.`,
+    message: `Add ${filled.value.length.toLocaleString()} reflexes from ${draft.file}, linked to ${sourceName.value}? Everything is saved in one transaction and can be undone later.`,
     confirmLabel: 'Process import',
     onClose: ({ confirmed }) => { if (confirmed) void send(false); },
   });
 }
 
 // ── Wizard ──────────────────────────────────────────────────────────────────
+// A step is complete when its own work is done; the next step opens only then.
+// Step 3 needs a passed database check (any later change to rows or links undoes it).
+const complete = computed<Record<number, boolean>>(() => ({
+  1: draft.templateDone || !!draft.file,
+  2: linksOk.value,
+  3: uploadOk.value && !!check.value,
+  4: !!result.value,
+}));
+/** Steps before n are all complete. */
+const reachable = (n: number) => [1, 2, 3].filter(k => k < n).every(k => complete.value[k]);
 const statuses = computed<Record<number, StepStatus>>(() => ({
-  1: draft.templateDone || !!draft.file ? 'done' : 'todo',
+  1: complete.value[1] ? 'done' : 'todo',
   2: linksOk.value ? 'done' : linksTouched.value ? 'attention' : 'todo',
-  3: uploadOk.value ? 'done' : draft.file || uploadError.value ? 'attention' : 'todo',
+  3: complete.value[3] ? 'done' : draft.file || uploadError.value ? 'attention' : 'todo',
   4: result.value ? 'done' : ready.value ? 'todo' : 'todo',
 }));
-const toggle = (n: number) => { draft.step = draft.step === n ? 0 : n; };
-const go = (n: number) => { draft.step = n; };
+const toggle = (n: number) => { if (reachable(n)) draft.step = draft.step === n ? 0 : n; };
+const go = (n: number) => { if (reachable(n)) draft.step = n; };
+// If a change makes the open step unreachable (e.g. new links undo the check), go back to the first open step.
+watch(() => [1, 2, 3, 4].map(reachable), () => {
+  if (draft.step && !reachable(draft.step)) draft.step = [1, 2, 3, 4].find(n => !complete.value[n]) ?? 1;
+}, { immediate: true });
 
 async function template() {
   try {
@@ -244,31 +263,29 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
     <!-- 1. Template -->
     <WizardStep :n="1" title="Download the template" :status="statuses[1]" :summary="draft.templateDone ? TEMPLATE_NAME : ''" :open="draft.step === 1" @toggle="toggle(1)">
       <p class="text-sm mb-3">Download the Excel template and fill in one word per row on the “Reflexes” sheet. Only <strong>Term</strong> is required. Hover over a column header in Excel for its explanation; the “Instructions” sheet has an example. One import can hold up to {{ MAX_ROWS.toLocaleString() }} rows.</p>
-      <button class="btn btn-sm btn-primary" type="button" @click="template">Download template (.xlsx)</button>
+      <div class="flex flex-wrap gap-2">
+        <button class="btn btn-sm btn-primary" type="button" @click="template">Download template (.xlsx)</button>
+        <button v-if="!complete[1]" class="btn btn-sm" type="button" @click="draft.templateDone = true">I already have a filled-in template</button>
+      </div>
       <table class="table text-sm mt-3">
         <thead><tr><th>Column</th><th>Required</th><th>Description</th><th>Example</th></tr></thead>
         <tbody>
           <tr v-for="c in COLUMNS" :key="c.key"><td class="font-semibold">{{ c.label }}</td><td>{{ c.required ? 'yes' : 'no' }}</td><td>{{ c.help }}</td><td class="opacity-70">{{ c.example }}</td></tr>
         </tbody>
       </table>
-      <div class="flex justify-end mt-3"><button class="btn btn-sm" type="button" @click="go(2)">Next: links ›</button></div>
+      <div class="flex justify-end items-center gap-3 mt-3">
+        <span v-if="!complete[1]" class="text-sm opacity-70">Download the template first.</span>
+        <button class="btn btn-sm" type="button" :disabled="!complete[1]" @click="go(2)">Next: links ›</button>
+      </div>
     </WizardStep>
 
     <!-- 2. Links -->
-    <WizardStep :n="2" title="Link or create the related records" :status="statuses[2]" :summary="linksSummary" :open="draft.step === 2" @toggle="toggle(2)">
+    <WizardStep :n="2" title="Link or create the related records" :status="statuses[2]" :summary="linksSummary" :open="draft.step === 2" :locked="!reachable(2)" @toggle="toggle(2)">
       <p class="text-sm mb-3">These links are the same for every row of the import.</p>
       <div v-if="linkErrors.length" class="alert alert-error text-sm mb-3" role="alert"><ul><li v-for="e in linkErrors" :key="e">{{ e }}</li></ul></div>
-      <div class="grid gap-4 lg:grid-cols-2">
+      <div class="grid gap-4 lg:grid-cols-3">
         <fieldset class="border rounded p-3 flex flex-col gap-2">
-          <legend class="px-1 font-semibold">a. Import</legend>
-          <p class="text-xs opacity-70">A name to recognise this import later, e.g. in the list of imports.</p>
-          <label class="text-sm font-semibold" for="bulk-label">Label *</label>
-          <input id="bulk-label" v-model="draft.label" :class="field" placeholder="e.g. Delorme 1877, full dictionary" />
-          <label class="text-sm font-semibold" for="bulk-note">Note</label>
-          <textarea id="bulk-note" v-model="draft.note" :class="field" rows="2" placeholder="Where the data comes from, who prepared it, …" />
-        </fieldset>
-        <fieldset class="border rounded p-3 flex flex-col gap-2">
-          <legend class="px-1 font-semibold">b. Source *</legend>
+          <legend class="px-1 font-semibold">a. Source *</legend>
           <p class="text-xs opacity-70">The publication the words come from. Every reflex gets a link to it.</p>
           <div class="text-sm flex gap-4">
             <label><input v-model="draft.sourceMode" type="radio" value="pick" /> Existing source</label>
@@ -288,7 +305,7 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
           </select>
         </fieldset>
         <fieldset class="border rounded p-3 flex flex-col gap-2">
-          <legend class="px-1 font-semibold">c. Variety</legend>
+          <legend class="px-1 font-semibold">b. Variety</legend>
           <p class="text-xs opacity-70">The language variety of all words in the file.</p>
           <div class="text-sm flex gap-4">
             <label><input v-model="draft.varietyMode" type="radio" value="pick" /> Existing</label>
@@ -306,7 +323,7 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
           </div>
         </fieldset>
         <fieldset class="border rounded p-3 flex flex-col gap-2">
-          <legend class="px-1 font-semibold">d. Location and fieldwork</legend>
+          <legend class="px-1 font-semibold">c. Location and fieldwork</legend>
           <p class="text-xs opacity-70">Optional: where and during which fieldwork the words were recorded.</p>
           <RecordPicker v-model="draft.location" resource="location" label="Location" placeholder="Search place, region, country…"
                         :fields="['place.name', 'region.name', 'country.name']" />
@@ -317,13 +334,13 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
       </div>
       <div class="flex justify-between mt-3">
         <button class="btn btn-sm" type="button" @click="go(1)">‹ Back</button>
-        <span v-if="!linksOk" class="text-sm text-amber-700 self-center">Fill in the label and the source{{ varietyOk ? '' : ', and the name of the new variety' }}.</span>
-        <button class="btn btn-sm" type="button" @click="go(3)">Next: upload ›</button>
+        <span v-if="!linksOk" class="text-sm text-amber-700 self-center">Choose or create the source{{ varietyOk ? '' : ', and give the new variety a name' }}.</span>
+        <button class="btn btn-sm" type="button" :disabled="!complete[2]" @click="go(3)">Next: upload ›</button>
       </div>
     </WizardStep>
 
     <!-- 3. Upload and check -->
-    <WizardStep :n="3" title="Upload and check the file" :status="statuses[3]" :summary="uploadSummary" :open="draft.step === 3" @toggle="toggle(3)">
+    <WizardStep :n="3" title="Upload and check the file" :status="statuses[3]" :summary="uploadSummary" :open="draft.step === 3" :locked="!reachable(3)" @toggle="toggle(3)">
       <label class="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded p-6 cursor-pointer text-sm"
              :class="dragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
              @dragover.prevent="dragging = true" @dragleave="dragging = false"
@@ -368,26 +385,28 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
       </template>
       <div class="flex justify-between mt-3">
         <button class="btn btn-sm" type="button" @click="go(2)">‹ Back</button>
-        <button class="btn btn-sm" type="button" @click="go(4)">Next: process ›</button>
+        <span v-if="!complete[3]" class="text-sm opacity-70 self-center">{{ !draft.file ? 'Upload the filled-in template.' : termErrors.length ? 'Give every row a term.' : 'Run “Check against the database”.' }}</span>
+        <button class="btn btn-sm" type="button" :disabled="!complete[3]" @click="go(4)">Next: process ›</button>
       </div>
     </WizardStep>
 
     <!-- 4. Process -->
-    <WizardStep :n="4" title="Process the import" :status="statuses[4]" :open="draft.step === 4" @toggle="toggle(4)">
+    <WizardStep :n="4" title="Process the import" :status="statuses[4]" :open="draft.step === 4" :locked="!reachable(4)" @toggle="toggle(4)">
       <dl class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm mb-3">
-        <dt class="opacity-70">Label</dt><dd>{{ draft.label || '—' }}</dd>
+        <dt class="opacity-70">Import name</dt><dd>date and time of processing, e.g. {{ importName() }}</dd>
         <dt class="opacity-70">Source</dt><dd>{{ sourceName || '—' }} ({{ draft.role }})</dd>
         <dt class="opacity-70">Variety</dt><dd>{{ varietyName || '—' }}</dd>
         <dt class="opacity-70">Location</dt><dd>{{ draft.location?.label ?? '—' }}</dd>
         <dt class="opacity-70">Fieldwork</dt><dd>{{ draft.fieldwork?.label ?? '—' }}</dd>
         <dt class="opacity-70">Rows</dt><dd>{{ filled.length.toLocaleString() }} from {{ draft.file ?? 'no file yet' }}</dd>
         <dt class="opacity-70">BLR</dt>
-        <dd>{{ check ? `${check.blr_linked.toLocaleString()} linked, ${check.blr_text.toLocaleString()} kept as notes, ${check.blr_unknown.length} unknown` : 'not checked yet (optional, step 3)' }}</dd>
+        <dd>{{ check ? `${check.blr_linked.toLocaleString()} linked, ${check.blr_text.toLocaleString()} kept as notes, ${check.blr_unknown.length} unknown` : 'not checked yet' }}</dd>
       </dl>
       <ul v-if="!ready" class="text-sm text-amber-700 list-disc ml-5 mb-3">
-        <li v-if="!linksOk">Step 2: fill in the label and the source.</li>
+        <li v-if="!linksOk">Step 2: choose or create the source.</li>
         <li v-if="!draft.file">Step 3: upload the filled-in template.</li>
         <li v-else-if="termErrors.length">Step 3: {{ termErrors.length }} row(s) have no term.</li>
+        <li v-else-if="!check">Step 3: run “Check against the database”.</li>
       </ul>
       <div class="flex justify-between">
         <button class="btn btn-sm" type="button" @click="go(3)">‹ Back</button>

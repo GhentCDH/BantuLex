@@ -55,6 +55,10 @@ test('bulk import: 5000 rows in one transaction, dry run, rollback and undo',asy
   // The batch is visible (read-only) as a Crouton resource as well.
   assert.equal((await request(s.base,`/bulkimport/${id}`)).status,200);
 
+  // Without a label the import is named after the date and time.
+  const unnamed=await request(s.base,'/bulk/reflex?dryRun=1','POST',{...body,label:undefined,rows:rows(2)});
+  assert.equal(unnamed.status,200,JSON.stringify(unnamed));
+
   // Undo removes the reflexes, their source links and the source it created.
   const undo=await request(s.base,`/bulk/imports/${id}/undo`,'POST');
   assert.equal(undo.status,200,JSON.stringify(undo));

@@ -21,7 +21,8 @@ export const BulkRow = z.object({
 export type BulkRow = z.infer<typeof BulkRow>;
 
 export const BulkRequest = z.object({
-  label: z.string().trim().min(1, 'Give the import a label').max(200),
+  // Name of the import; the admin sends the local date and time ("2027 10 12 - 13h 14").
+  label: z.string().trim().max(200).nullish(),
   note: text,
   role: z.enum(['primary', 'cited']).default('primary'),
   source: z.union([

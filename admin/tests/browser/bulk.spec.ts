@@ -32,7 +32,6 @@ test('bulk import wizard: template, links, upload, check, process and undo',asyn
  await page.getByRole('button',{name:'Next: links ›'}).click();
 
  // 2. Links.
- await page.getByLabel('Label *').fill('Browser test import');
  const source=page.getByLabel('Source',{exact:true});
  await source.fill('Bastin');
  await page.getByRole('button',{name:/Bastin/}).first().click();
@@ -58,7 +57,7 @@ test('bulk import wizard: template, links, upload, check, process and undo',asyn
  expect(sql(db,'select count(*) n from reflex')[0].n).toBe(before+3);
 
  const row=page.locator('table.table').last().locator('tbody tr').first();
- await expect(row).toContainText('Browser test import');
+ await expect(row).toContainText(/\d{4} \d{2} \d{2} - \d{2}h \d{2}/);
  await row.getByRole('button',{name:'Undo'}).click();
  await page.getByRole('button',{name:'Undo import'}).click();
  await expect(row).toContainText('undone');

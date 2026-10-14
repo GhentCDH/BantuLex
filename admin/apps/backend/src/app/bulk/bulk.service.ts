@@ -14,6 +14,10 @@ const CHUNK = 500;
 // The whole import runs in one SQLite transaction; 5000 rows take a few seconds.
 const TRANSACTION = { timeout: 120_000, maxWait: 10_000 };
 const now = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
+const pad = (n: number) => String(n).padStart(2, '0');
+/** Fallback import name in the admin's format, e.g. "2027 10 12 - 13h 14" (server time). */
+const importName = (d = new Date()) =>
+  `${d.getFullYear()} ${pad(d.getMonth() + 1)} ${pad(d.getDate())} - ${pad(d.getHours())}h ${pad(d.getMinutes())}`;
 
 export class BulkValidationError extends Error {
   constructor(readonly errors: RowError[]) { super(`${errors.length} problem(s) in the import`); }
@@ -73,7 +77,7 @@ export async function importReflexes(body: BulkRequest, dryRun: boolean): Promis
 
       const batch = await tx.bulkimport.create({
         data: {
-          label: body.label, note: body.note, rows: body.rows.length, status: 'saved', role: body.role,
+          label: body.label || importName(), note: body.note, rows: body.rows.length, status: 'saved', role: body.role,
           source_id: source.id, variety_id: variety.id,
           location_id: body.location_id ?? null, fieldwork_id: body.fieldwork_id ?? null,
           source_created: source.created, variety_created: variety.created,
