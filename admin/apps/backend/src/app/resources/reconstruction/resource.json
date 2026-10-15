@@ -583,8 +583,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrcontributor",
+          "idKey": "contributor_id"
         }
       }
     },
@@ -600,8 +602,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrreliability",
+          "idKey": "reliability_id"
         }
       }
     },
@@ -617,8 +621,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrconsonantstructure",
+          "idKey": "consonant_structure_id"
         }
       }
     },
@@ -634,8 +640,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrvowelstructure",
+          "idKey": "vowel_structure_id"
         }
       }
     },
@@ -651,8 +659,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrtonestructure",
+          "idKey": "tone_structure_id"
         }
       }
     }

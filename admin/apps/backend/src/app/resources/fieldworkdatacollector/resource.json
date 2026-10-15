@@ -192,8 +192,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "fieldwork",
+          "idKey": "fieldwork_id"
         }
       }
     },
@@ -209,8 +211,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "datacollector",
+          "idKey": "data_collector_id"
         }
       }
     }

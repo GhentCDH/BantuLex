@@ -177,8 +177,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "region",
+          "idKey": "region_id"
         }
       }
     }

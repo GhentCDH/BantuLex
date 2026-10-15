@@ -683,8 +683,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "variety",
+          "idKey": "variety_id"
         }
       }
     },
@@ -700,8 +702,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "location",
+          "idKey": "location_id"
         }
       }
     },
@@ -717,8 +721,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "fieldwork",
+          "idKey": "fieldwork_id"
         }
       }
     },
@@ -734,8 +740,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "reconstruction",
+          "idKey": "blr_entry_id"
         }
       }
     },
@@ -751,8 +759,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "bulkimport",
+          "idKey": "bulkimport_id"
         }
       }
     }

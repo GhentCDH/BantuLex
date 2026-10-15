@@ -270,8 +270,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "reflex",
+          "idKey": "entry_id"
         }
       }
     },
@@ -287,8 +289,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "source",
+          "idKey": "source_id"
         }
       }
     }

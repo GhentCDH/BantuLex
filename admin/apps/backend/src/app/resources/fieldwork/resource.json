@@ -246,8 +246,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "project",
+          "idKey": "project_id"
         }
       }
     },
@@ -263,8 +265,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "collectionyear",
+          "idKey": "collection_year_id"
         }
       }
     }
