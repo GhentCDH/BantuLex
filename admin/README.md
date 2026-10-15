@@ -105,6 +105,12 @@ Every import is a batch named after the local date and time it was processed (e.
 
 API: `POST /api/bulk/reflex[?dryRun=1]` (up to 20,000 rows, JSON body up to 25 MB), `GET /api/bulk/imports`, `POST /api/bulk/imports/:id/undo`. While a bulk transaction runs (about a second for 5,000 rows) other admin requests wait, because the admin uses one SQLite connection. The table and column come from `model.py`; an existing database gets them with `just migrate-db` in the repository root.
 
+## Bulk edit
+
+*Lexical data → Bulk edit* (`/admin/crouton/bulk-edit`) edits the text fields of existing reflexes (term, translation, meaning, part of speech, morphology, semantic field, scientific name, IPA and its notes, BLR index and note, notes) in the bulk grid, 100 rows per page (the API's maximum page size). Search uses Crouton's `q`; a variety or a bulk import batch narrows the rows. Id and variety are shown read-only; relations and the integer ids are edited in the reflex form.
+
+Editing goes through Crouton: rows are loaded with the resource's list operation, and a row is saved when the focus leaves it (or with *Save all*, Ctrl/Cmd+S) as one `PATCH /api/reflex/:id` with only the changed fields, after checking them with the zod schema of Crouton's reflex form. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked, and changing page or leaving asks before dropping them. Changing `blr_index` here does not relink the BLR entry (only the bulk import does).
+
 ## Relations in the detail view
 
 The API returns flat records; the detail (View) modal shows the relations between them through two read-only renderers, registered in `apps/frontend/src/main.ts` and selected by a calculated column's `fieldInput.options.format`:
