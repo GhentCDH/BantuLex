@@ -14,12 +14,11 @@ const id = computed(() => (formValues as Record<string, any>)?.[options.value.id
   <!-- Same row layout as Crouton's read-only fields: label cell, then the value. -->
   <div class="flex flex-row h-full relation-link" :data-resource="options.linkResource">
     <div class="text-xs bg-base-200 p-2 h-full border-b border-gray-200 max-w-96 text-left font-semibold text-text-accent flex items-center" style="min-width: 150px;"><span>{{ wrapper.label }}</span></div>
-    <div class="h-full p-1.5 min-w-0 text-sm flex items-center">
+    <div class="h-full p-2 min-w-0 text-sm flex items-center">
       <span v-if="id == null" class="opacity-60 px-0.5">—</span>
-      <span v-else class="inline-flex items-center gap-1 max-w-full rounded-full border border-primary/40 bg-primary/5 pl-3 pr-1 py-0.5">
-        <span aria-hidden="true" class="text-primary">↗</span>
-        <router-link :to="recordRoute(options.linkResource, id, 'view')" class="link link-primary truncate" :title="`View ${wrapper.label}`">{{ value }}</router-link>
-        <router-link :to="recordRoute(options.linkResource, id, 'update')" class="btn btn-ghost btn-xs" :aria-label="`Edit ${wrapper.label}`">Edit</router-link>
+      <span v-else class="inline-flex items-center gap-2 min-w-0 px-0.5">
+        <router-link :to="recordRoute(options.linkResource, id, 'view')" class="text-primary no-underline hover:underline truncate" :title="`View ${wrapper.label}`">{{ value }}</router-link>
+        <router-link :to="recordRoute(options.linkResource, id, 'update')" class="text-xs opacity-70 no-underline hover:underline" :aria-label="`Edit ${wrapper.label}`">Edit</router-link>
       </span>
     </div>
   </div>
