@@ -79,3 +79,19 @@ test('bulk import: 5000 rows in one transaction, dry run, rollback and undo',asy
   assert.deepEqual(sql(db,'pragma foreign_key_check'),[]);assert.equal(sql(db,'pragma integrity_check')[0].integrity_check,'ok');
  } finally {await stopServer(s.child);}
 });
+
+test('bulk edit: a partial PATCH changes only its fields, null clears, wrong types are rejected',async()=>{
+ const {dir,db}=copyDatabase();const s=await startServer(db,dir,14449);
+ try {
+  const before=sql(db,'select * from reflex where translation is not null and meaning is not null limit 1')[0];
+  const r=await request(s.base,`/reflex/${before.id}`,'PATCH',{translation:'edited ɓá',meaning:null});
+  assert.equal(r.status,200,JSON.stringify(r));
+  const after=sql(db,'select * from reflex where id=?',[before.id])[0];
+  assert.equal(after.translation,'edited ɓá');assert.equal(after.meaning,null);
+  for(const k of ['term','notes','variety_id','fieldwork_id','blr_entry_id']) assert.equal(after[k],before[k],k);
+  // The grid shows Crouton's field errors per cell: a 400 with message[] {field, message}.
+  const bad=await request(s.base,`/reflex/${before.id}`,'PATCH',{translation:12});
+  assert.equal(bad.status,400);assert.equal(bad.body.message[0].field,'translation');
+  assert.equal(sql(db,'select translation from reflex where id=?',[before.id])[0].translation,'edited ɓá');
+ } finally {await stopServer(s.child);}
+});
