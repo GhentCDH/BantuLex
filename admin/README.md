@@ -54,7 +54,7 @@ The default datasource adapter only bounds page sizes and sorts lists by `id` by
 When the importer's schema changes (`utils/utilities/src/utilities/model.py`):
 
 1. Print the introspected schema with `docker compose run --rm dev pnpm exec prisma db pull --print --config prisma/default/prisma.config.ts` and copy it into `prisma/default/schema.prisma`. Keep `created_at`/`updated_at` as `String @default(dbgenerated("CURRENT_TIMESTAMP"))`, so Prisma keeps the importer's `YYYY-MM-DD HH:MM:SS` text instead of writing ISO timestamps.
-2. Edit the affected `resource.json` files by hand, following an existing resource: lookups for foreign keys, a `display_label` and `<name>_label` calculated columns, and form controls.
+2. Edit the affected `resource.json` files by hand, following an existing resource: lookups for foreign keys, a `display_label` and `<name>_label` calculated columns (as relation links), the parent's related-records table, and form controls (see [Relations in the detail view](#relations-in-the-detail-view)).
 3. Regenerate `tests/inventory.json` with `docker compose run --rm --no-deps utils python3 /app/admin/scripts/inventory.py` (from the repository root) and run the tests.
 
 `pnpm crouton update resources` is not used: it does nothing for this custom datasource, and with a generic one it would rename every model and field to PascalCase/camelCase.
@@ -104,6 +104,17 @@ BLR indexes follow the importer: a number, or "X ipv Y" (X is used); other text 
 Every import is a batch named after the local date and time it was processed (e.g. `2027 10 12 - 13h 14`; `bulkimport`, listed under *Sources → Bulk imports*); its reflexes carry `bulkimport_id`. *Undo* in "Previous imports" deletes the batch's reflexes and source links in one transaction, and the source or variety the batch created if nothing else uses them; the batch stays listed as `undone`. The wizard's choices and uploaded rows are kept in the browser until the import is processed.
 
 API: `POST /api/bulk/reflex[?dryRun=1]` (up to 20,000 rows, JSON body up to 25 MB), `GET /api/bulk/imports`, `POST /api/bulk/imports/:id/undo`. While a bulk transaction runs (about a second for 5,000 rows) other admin requests wait, because the admin uses one SQLite connection. The table and column come from `model.py`; an existing database gets them with `just migrate-db` in the repository root.
+
+## Relations in the detail view
+
+The API returns flat records; the detail (View) modal shows the relations between them through two read-only renderers, registered in `apps/frontend/src/main.ts` and selected by a calculated column's `fieldInput.options.format`:
+
+- `relation-link` on a `<name>_label` column: the related record's label as a link to its view, with an *Edit* link, e.g. a reflex's variety, location, fieldwork and BLR entry. Options: `linkResource` (the related resource) and `idKey` (the foreign key column of this record). Tables and forms are unchanged: tables show the plain label, forms the autocomplete.
+- `related-table` on a column `<child>_by_<foreign key>` (`sqlExpression: SELECT CAST(main.id AS TEXT)`, hidden in tables): a paged table of the records that point to this one, with view and edit links, e.g. the reflexes of a fieldwork. Options: `childResource`, `foreignKey` and `columns` (`[{key, label}]`, shown after the record's `display_label`).
+
+Every `relation-link` has its reverse `related-table` (checked by `tests/relations.test.mjs`). Crouton's own relation columns (`format: relation`) are not used: their labels come from a single field of the related row instead of the composite `display_label`, and a visible one-to-many relation loads all children (thousands of reflexes) with the record. The table queries the list API with `filter=<fk>:<id-1>:gt&filter=<fk>:<id+1>:lt`, because Crouton's `equals` filter is not cast to a number for integer columns.
+
+Crouton opens a record's modal from `?id=&event=` only when its resource view mounts, and its modals are global, so the frontend keys the resource view by resource and closes open modals when navigation changes resource; browser back and forward follow the links.
 
 ## Coordinate maps
 
