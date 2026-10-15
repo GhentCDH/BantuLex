@@ -282,11 +282,12 @@
       "label": { "en": "Reflexes", "nl": "Reflexen" },
       "table": "reflex_search",
       "materialize": true,
-      "query": "SELECT r.id, r.term, r.translation, r.meaning, r.semantic_field, r.part_of_speech, r.ipa, r.blr_index, rc.word AS blr_word, rc.english AS blr_english, CASE WHEN NULLIF(r.blr_index, '') IS NOT NULL THEN r.blr_index || COALESCE(' · ' || NULLIF(rc.english, ''), '') END AS blr_label, COALESCE(v.name_english, v.name_bantu, v.name_french) || COALESCE(' (' || NULLIF(v.guthrie_index, '') || ')', '') AS variety, v.guthrie_index AS guthrie, CASE WHEN v.guthrie_index GLOB '[A-Z]*' THEN substr(v.guthrie_index, 1, 1) END AS zone, c.latitude, c.longitude FROM reflex r LEFT JOIN variety v ON v.id = r.variety_id LEFT JOIN (SELECT location_id, min(id) AS id FROM coordinate WHERE description = 'default' GROUP BY location_id) d ON d.location_id = r.location_id LEFT JOIN coordinate c ON c.id = d.id LEFT JOIN reconstruction rc ON rc.blr_index = r.blr_index",
+      "query": "SELECT r.id, r.term, r.translation, r.meaning, r.semantic_field, r.part_of_speech, r.ipa, r.blr_index, rc.word AS blr_word, rc.english AS blr_english, CASE WHEN NULLIF(r.blr_index, '') IS NOT NULL THEN r.blr_index || COALESCE(' · ' || NULLIF(rc.english, ''), '') END AS blr_label, COALESCE(v.name_english, v.name_bantu, v.name_french) AS variety, v.guthrie_index AS guthrie, CASE WHEN v.guthrie_index GLOB '[A-Z]*' THEN substr(v.guthrie_index, 1, 1) END AS zone, c.latitude, c.longitude FROM reflex r LEFT JOIN variety v ON v.id = r.variety_id LEFT JOIN (SELECT location_id, min(id) AS id FROM coordinate WHERE description = 'default' GROUP BY location_id) d ON d.location_id = r.location_id LEFT JOIN coordinate c ON c.id = d.id LEFT JOIN reconstruction rc ON rc.blr_index = r.blr_index",
       "default_sort": "term",
       "facets": [
         { "field": "blr_label", "type": "dropdown" },
         { "field": "zone", "type": "dropdown" },
+        { "field": "meaning", "type": "values" },
         { "field": "variety", "type": "dropdown" },
         { "field": "semantic_field", "type": "dropdown" },
         { "field": "part_of_speech", "type": "dropdown" }
