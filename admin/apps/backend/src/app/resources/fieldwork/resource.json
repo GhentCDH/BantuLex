@@ -271,6 +271,109 @@
           "idKey": "collection_year_id"
         }
       }
+    },
+    {
+      "id": "bulkimport_by_fieldwork_id",
+      "alias": "bulkimport_by_fieldwork_id",
+      "label": "Bulk imports",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1003,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "bulkimport",
+          "foreignKey": "fieldwork_id",
+          "columns": []
+        }
+      }
+    },
+    {
+      "id": "fieldworkconsultant_by_fieldwork_id",
+      "alias": "fieldworkconsultant_by_fieldwork_id",
+      "label": "Fieldwork consultants",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1007,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "fieldworkconsultant",
+          "foreignKey": "fieldwork_id",
+          "columns": [
+            {
+              "key": "consultant_label",
+              "label": "Consultant"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fieldworkdatacollector_by_fieldwork_id",
+      "alias": "fieldworkdatacollector_by_fieldwork_id",
+      "label": "Fieldwork data collectors",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1009,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "fieldworkdatacollector",
+          "foreignKey": "fieldwork_id",
+          "columns": [
+            {
+              "key": "data_collector_label",
+              "label": "Data collector"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "reflex_by_fieldwork_id",
+      "alias": "reflex_by_fieldwork_id",
+      "label": "Reflexes",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1022,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "fieldwork_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            },
+            {
+              "key": "variety_label",
+              "label": "Variety"
+            }
+          ]
+        }
+      }
     }
   ]
 }

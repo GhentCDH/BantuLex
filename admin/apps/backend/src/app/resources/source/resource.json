@@ -172,6 +172,59 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "bulkimport_by_source_id",
+      "alias": "bulkimport_by_source_id",
+      "label": "Bulk imports",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1000,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "bulkimport",
+          "foreignKey": "source_id",
+          "columns": []
+        }
+      }
+    },
+    {
+      "id": "sourceentries_by_source_id",
+      "alias": "sourceentries_by_source_id",
+      "label": "Source entries",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1027,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "sourceentries",
+          "foreignKey": "source_id",
+          "columns": [
+            {
+              "key": "role",
+              "label": "Role"
+            },
+            {
+              "key": "pages",
+              "label": "Pages"
+            },
+            {
+              "key": "entry_label",
+              "label": "Reflex"
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -225,6 +225,26 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.c1, x.c2, x.c3, x.c4), ''), '#' || x.id) FROM \"blrconsonantstructure\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "reconstruction_by_consonant_structure_id",
+      "alias": "reconstruction_by_consonant_structure_id",
+      "label": "Reconstructions",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1017,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reconstruction",
+          "foreignKey": "consonant_structure_id",
+          "columns": []
+        }
+      }
     }
   ]
 }

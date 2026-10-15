@@ -121,6 +121,31 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"consultant\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "fieldworkconsultant_by_consultant_id",
+      "alias": "fieldworkconsultant_by_consultant_id",
+      "label": "Fieldwork consultants",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1008,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "fieldworkconsultant",
+          "foreignKey": "consultant_id",
+          "columns": [
+            {
+              "key": "fieldwork_label",
+              "label": "Fieldwork"
+            }
+          ]
+        }
+      }
     }
   ]
 }

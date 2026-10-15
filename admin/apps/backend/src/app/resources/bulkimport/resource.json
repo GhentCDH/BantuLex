@@ -564,6 +564,39 @@
           "colspan": 12
         }
       }
+    },
+    {
+      "id": "reflex_by_bulkimport_id",
+      "alias": "reflex_by_bulkimport_id",
+      "label": "Reflexes",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1024,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "bulkimport_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            },
+            {
+              "key": "variety_label",
+              "label": "Variety"
+            }
+          ]
+        }
+      }
     }
   ]
 }

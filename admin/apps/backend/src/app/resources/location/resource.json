@@ -281,6 +281,88 @@
           "idKey": "country_id"
         }
       }
+    },
+    {
+      "id": "bulkimport_by_location_id",
+      "alias": "bulkimport_by_location_id",
+      "label": "Bulk imports",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1002,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "bulkimport",
+          "foreignKey": "location_id",
+          "columns": []
+        }
+      }
+    },
+    {
+      "id": "coordinate_by_location_id",
+      "alias": "coordinate_by_location_id",
+      "label": "Coordinates",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1004,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "coordinate",
+          "foreignKey": "location_id",
+          "columns": [
+            {
+              "key": "latitude",
+              "label": "Latitude"
+            },
+            {
+              "key": "longitude",
+              "label": "Longitude"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "reflex_by_location_id",
+      "alias": "reflex_by_location_id",
+      "label": "Reflexes",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1021,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "location_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            },
+            {
+              "key": "variety_label",
+              "label": "Variety"
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -121,6 +121,46 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"country\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "location_by_country_id",
+      "alias": "location_by_country_id",
+      "label": "Locations",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1013,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "location",
+          "foreignKey": "country_id",
+          "columns": []
+        }
+      }
+    },
+    {
+      "id": "region_by_country_id",
+      "alias": "region_by_country_id",
+      "label": "Regions",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1025,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "region",
+          "foreignKey": "country_id",
+          "columns": []
+        }
+      }
     }
   ]
 }

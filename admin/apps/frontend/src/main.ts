@@ -10,6 +10,7 @@ import CoordinateDetail from './maps/CoordinateDetail.vue';
 import mapConfig from './maps/config.json';
 import BulkImport from './bulk/BulkImport.vue';
 import RelationLink from './relations/RelationLink.vue';
+import RelatedTable from './relations/RelatedTable.vue';
 // Custom pages under /admin/crouton/<id>: Crouton has no extension point for them, so the
 // sidebar entry is added to its layout response and the route wrapper renders the page.
 // Relation links lead to another resource's record. Crouton reads ?id=&event= only when its resource view mounts,
@@ -30,6 +31,6 @@ api.interceptors.response.use((response) => {
   return response;
 });
 // Read-only renderers for the detail view, selected by a calculated column's options.format.
-const readonlyFormats: Record<string, any> = { 'coordinate-map': CoordinateDetail, 'relation-link': RelationLink };
+const readonlyFormats: Record<string, any> = { 'coordinate-map': CoordinateDetail, 'relation-link': RelationLink, 'related-table': RelatedTable };
 const readonlyRenderers = Object.entries(readonlyFormats).map(([format, renderer]) => ({ tester: (ui: any) => ui.options?.format === format ? 30 : -1, renderer: markRaw(renderer) }));
 createApp(App).use(CroutonPlugin(api, { readonlyRenderers })).use(router).mount('#app');
