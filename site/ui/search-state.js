@@ -6,7 +6,8 @@
  *   s.<segment>  repeated, e.g. s.c1=m&s.c1=b                         sound structure
  *   v.<column>   repeated, "" is the empty value                      column value filter
  *   t.<column>                                                       column text filter
- *   sort (column, "-column" descending), page (1-based), view (table|map), color (blr|zone)
+ *   sort (column, "-column" descending), page (1-based), view (table|map|words), color (blr|zone)
+ *   words (term|blr)                                                  text of the word map
  */
 import { SEGMENT_FIELDS } from "../engine/filters.js";
 
@@ -59,8 +60,9 @@ export function readState(params) {
         texts,
         sort: COLUMN_NAMES.has(sortColumn) ? { column: sortColumn, direction: sort.startsWith("-") ? "DESC" : "ASC" } : null,
         page: Math.max(0, (parseInt(params.get("page") ?? "1", 10) || 1) - 1),
-        view: pick(params.get("view"), ["table", "map"]),
+        view: pick(params.get("view"), ["table", "map", "words"]),
         colorBy: pick(params.get("color"), ["blr", "zone"]),
+        wordsOf: pick(params.get("words"), ["term", "blr"]),
     };
 }
 
@@ -78,6 +80,7 @@ export function writeState(state) {
     if (state.page > 0) params.set("page", String(state.page + 1));
     if (state.view !== "table") params.set("view", state.view);
     if (state.colorBy !== "blr") params.set("color", state.colorBy);
+    if (state.wordsOf !== "term") params.set("words", state.wordsOf);
     return params;
 }
 

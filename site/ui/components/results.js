@@ -1,7 +1,8 @@
 // @ts-check
 /**
- * Reflex results as a table (paginated, sortable, a filter per column) or
- * as a map (all matching reflexes, coloured by BLR index or Guthrie zone).
+ * Reflex results as a table (paginated, sortable, a filter per column), as a
+ * map of pins or as a map of words (all matching reflexes, coloured by BLR
+ * index or Guthrie zone).
  */
 import { h } from "preact";
 import { useMemo } from "preact/hooks";
@@ -12,8 +13,22 @@ import { useQuery } from "../use-query.js";
 import { PAGE_SIZE, RESULT_COLUMNS, RESULTS_TABLE, toFilters } from "../search-state.js";
 import { ColumnFilter } from "./column-filter.js";
 import { PointMap, toPoints } from "./point-map.js";
+import { WordMap } from "./word-map.js";
 
 const DEFAULT_SORT = { column: "term", direction: "ASC" };
+const VIEWS = ["table", "map", "words"];
+
+// Both maps read every matching row; keep the last set so that switching
+// between them does not query again.
+let allRows = { key: "", rows: /** @type {Promise<any[]> | null} */ (null) };
+function loadAllRows(store, filters, key) {
+    if (allRows.key !== key || !allRows.rows) {
+        const rows = store.queryTable(RESULTS_TABLE, { filters, pageSize: null }).then((r) => r.rows);
+        rows.catch(() => allRows.rows === rows && (allRows = { key: "", rows: null }));
+        allRows = { key, rows };
+    }
+    return allRows.rows;
+}
 
 /**
  * @param {{ state: any, update: (changes: object, options?: object) => void,
@@ -23,25 +38,26 @@ export function Results({ state, update, baseFilters = {}, hiddenColumns = [], o
     const t = useT();
     const filters = { ...toFilters(state), ...baseFilters };
     const columns = RESULT_COLUMNS.filter((column) => !hiddenColumns.includes(column.name));
-    const view = state.view === "map"
-        ? h(MapResults, { filters, colorBy: state.colorBy })
-        : h(TableResults, { state, update, filters, columns });
+    const view = state.view === "table"
+        ? h(TableResults, { state, update, filters, columns })
+        : h(MapResults, { filters, colorBy: state.colorBy, wordsOf: state.view === "words" ? state.wordsOf : null });
+    const select = (key, label, options) =>
+        h("label", { class: "inline-field" },
+            label,
+            h("select", {
+                value: state[key],
+                onChange: (event) => update({ [key]: event.currentTarget.value }, { replace: true }),
+            }, options.map(([value, text]) => h("option", { value }, text))));
 
     return h("section", { class: "results" },
         h("div", { class: "results-toolbar" },
             h(ResultCount, { filters }),
             onClear && h("button", { type: "button", class: "link-button", onClick: onClear }, t("clearAll")),
             h("span", { class: "spacer" }),
-            state.view === "map" && h("label", { class: "inline-field" },
-                t("colorBy"),
-                h("select", {
-                    value: state.colorBy,
-                    onChange: (event) => update({ colorBy: event.currentTarget.value }, { replace: true }),
-                },
-                    h("option", { value: "blr" }, t("colorBlr")),
-                    h("option", { value: "zone" }, t("colorZone")))),
+            state.view === "words" && select("wordsOf", t("wordsOf"), [["term", t("wordTerm")], ["blr", t("wordBlr")]]),
+            state.view !== "table" && select("colorBy", t("colorBy"), [["blr", t("colorBlr")], ["zone", t("colorZone")]]),
             h("div", { class: "segmented", role: "group" },
-                ["table", "map"].map((name) =>
+                VIEWS.map((name) =>
                     h("button", {
                         type: "button",
                         "aria-pressed": state.view === name,
@@ -143,14 +159,12 @@ function Pager({ page, totalPages, onPage }) {
         h("button", { type: "button", disabled: page + 1 >= totalPages, onClick: () => onPage(page + 1) }, `${t("next")} →`));
 }
 
-function MapResults({ filters, colorBy }) {
+/** Pins, or with `wordsOf` the words of the reflexes ("term" or "blr"). */
+function MapResults({ filters, colorBy, wordsOf }) {
     const t = useT();
     const { store } = useApp();
     const key = JSON.stringify(filters);
-    const { data, error, loading } = useQuery(
-        () => store.queryTable(RESULTS_TABLE, { filters, pageSize: null }).then((r) => r.rows),
-        key,
-    );
+    const { data, error, loading } = useQuery(() => loadAllRows(store, filters, key), key);
     const column = colorBy === "zone" ? "zone" : "blr_label";
     const { points, legend } = useMemo(
         () => toPoints(data ?? [], column, { neutral: ["—"] }),
@@ -158,7 +172,9 @@ function MapResults({ filters, colorBy }) {
     );
     if (error) return h("p", { class: "notice notice-error" }, t("error"));
     return h("div", { class: loading ? "map-block is-loading" : "map-block" },
-        h(PointMap, { points, legend, popup: (row) => h(ReflexPopup, { row }) }),
+        wordsOf
+            ? h(WordMap, { points, legend, mode: wordsOf })
+            : h(PointMap, { points, legend, popup: (row) => h(ReflexPopup, { row }) }),
         data && points.length === 0 && h("p", { class: "map-empty" }, t("noLocation")));
 }
 
