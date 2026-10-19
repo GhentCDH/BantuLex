@@ -1,0 +1,31 @@
+{
+	auto_https off
+}
+
+:80 {
+	root * /srv/pihka
+	@revalidate path *.html *.js *.css *.json /
+	header @revalidate Cache-Control "no-cache"
+
+	# The ?v= query string in the request busts the cache on a new version.
+	@sqlite path *.db *.sqlite
+	header @sqlite Cache-Control "public, max-age=31536000, immutable"
+
+	encode {
+		zstd
+		gzip 5
+		minimum_length 1024
+		match {
+			header Content-Type text/*
+			header Content-Type application/json*
+			header Content-Type application/javascript*
+			header Content-Type application/xml*
+			header Content-Type application/wasm
+			header Content-Type application/vnd.sqlite3
+			header Content-Type image/svg+xml
+		}
+	}
+	file_server {
+		precompressed
+	}
+}

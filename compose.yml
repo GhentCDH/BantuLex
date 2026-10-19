@@ -30,10 +30,11 @@ services:
   # site/ wordt over de demo-app van Pihka gemount, zoals build-site dat doet.
   pihka:
     image: caddy:2-alpine
-    command: caddy file-server --root /srv/pihka --listen :80
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     ports:
       - "9161:80"
     volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
       - ./vendor/pihka/pihka:/srv/pihka:ro
       - ./site:/srv/pihka/app:ro
 
