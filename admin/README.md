@@ -1,6 +1,6 @@
 # BantuLex admin
 
-The `admin/` folder of the BantuLex repository: a local SQLite editor built with Crouton, NestJS, Vue 3, TypeScript, Vite and Nx. All 22 database tables have a navigation entry; all 183 physical columns are available in detail views and all business fields are editable. IDs and timestamps are managed by SQLite.
+The `admin/` folder of the BantuLex repository: a local SQLite editor built with Crouton, NestJS, Vue 3, TypeScript, Vite and Nx. Every database table has a navigation entry; every column is available in detail views and all business fields are editable. IDs and timestamps are managed by SQLite.
 
 ## Run
 
@@ -41,15 +41,23 @@ Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so b
 
 `DATABASE_PATH` (default `data/bantulex.db`) and `BACKUP_DIR` (default `backups`) resolve relative to `admin/` (the folder containing `crouton.json`), regardless of the launch directory; in the containers that is `/app`, where the root `data/` and `backups/` folders are mounted. Set `DATABASE_PATH` to use a different file and `PORT` to change the backend port. The server refuses to create a missing database. A consistent SQLite backup is saved in the backup folder on startup before any application writes; `BACKUP_DIR` overrides its location. Stop the app before restoring a backup. Backups are retained until you remove them.
 
-No migrations, seeds, resets, `db push`, or automatic schema synchronization run. Timestamp defaults and existing update triggers remain authoritative. `entry` and `reflex`, and `blrentry` and `reconstruction`, remain separate tables.
+No migrations, seeds, resets, `db push`, or automatic schema synchronization run. The database and its schema come from the importer (`just reset-db` and `just import` in the repository root). Its timestamp defaults and `update_<table>_modtime` triggers are authoritative: Prisma never writes `created_at` or `updated_at`.
 
 ## Configuration
 
 `crouton.json` configures the title, navigation groups, resource directories, and explicit saving. Each `apps/backend/src/app/resources/<table>/resource.json` configures endpoints, columns, controls, layout, lookup URLs, and visibility. Generated Prisma/Zod files are build artifacts; JSON resources are the maintained application definition.
 
-The sole data-access adaptation is in the default datasource adapter: `fieldworkdatacollector` has a compound primary key, represented by an API-only `fieldwork_id:data_collector_id` identifier. No synthetic column is added to SQLite. Ordinary CRUD, validation, search, pagination, forms, modals, and navigation are provided by Crouton.
+The default datasource adapter only bounds page sizes and sorts lists by `id` by default. Every table, including the junctions `fieldworkdatacollector` and `fieldworkconsultant`, has an integer `id`; the junctions have a unique (fieldwork, person) pair. Ordinary CRUD, validation, search, pagination, forms, modals, and navigation are provided by Crouton.
 
-`pnpm run setup` (run automatically by the dev container) generates clients and types from the committed introspected schema without modifying the database. If the database schema changes intentionally, inspect it with Prisma and use `docker compose run --rm dev pnpm crouton update resources --help`. `pnpm crouton` runs the published `@ghentcdh/crouton-cli`. Resource regeneration is an explicit maintenance step; review its diff, keep the compound-key schema extension, and preserve the `dbgenerated("CURRENT_TIMESTAMP")` defaults.
+`pnpm run setup` (run automatically by the dev container) generates clients and types from the committed introspected schema without modifying the database.
+
+When the importer's schema changes (`utils/utilities/src/utilities/model.py`):
+
+1. Print the introspected schema with `docker compose run --rm dev pnpm exec prisma db pull --print --config prisma/default/prisma.config.ts` and copy it into `prisma/default/schema.prisma`. Keep `created_at`/`updated_at` as `String @default(dbgenerated("CURRENT_TIMESTAMP"))`, so Prisma keeps the importer's `YYYY-MM-DD HH:MM:SS` text instead of writing ISO timestamps.
+2. Edit the affected `resource.json` files by hand, following an existing resource: lookups for foreign keys, a `display_label` and `<name>_label` calculated columns (as relation links), the parent's related-records table, and form controls (see [Relations in the detail view](#relations-in-the-detail-view)).
+3. Regenerate `tests/inventory.json` with `docker compose run --rm --no-deps utils python3 /app/admin/scripts/inventory.py` (from the repository root) and run the tests.
+
+`pnpm crouton update resources` is not used: it does nothing for this custom datasource, and with a generic one it would rename every model and field to PascalCase/camelCase.
 
 ## Verification
 
@@ -57,7 +65,7 @@ The sole data-access adaptation is in the default datasource adapter: `fieldwork
 docker compose run --rm dev sh -c "pnpm typecheck && pnpm build && pnpm test"
 ```
 
-The API tests (`pnpm test`) copy `data/bantulex.db` (in the container: the mounted root database, opened read-only) to the system temporary directory and run local test servers on the copy; they never write to the real database. They check every table/column, independent SQLite persistence, server restart, constraints, nulls, search, and compound keys.
+The API tests (`pnpm test`) copy `data/bantulex.db` (in the container: the mounted root database, opened read-only) to the system temporary directory and run local test servers on the copy; they never write to the real database. They check every table/column, independent SQLite persistence, server restart, constraints, nulls, search, and unique junction pairs. `tests/bulk.test.mjs` imports 5,000 rows and checks the dry run, the rollback of an invalid import and undo.
 
 The browser tests (Playwright) do not run a browser in the container: they drive a Chrome on the host over the DevTools protocol (`tests/browser/fixtures.ts`). Chrome 136+ refuses remote debugging on the default profile, so start a dedicated instance with its own profile:
 
@@ -81,6 +89,38 @@ Runtime dependencies use exact published Crouton API/Vue/core/generator **0.0.1-
 - Use SQLite placeholders for calculated-column queries (readable relation labels and map data).
 
 These are framework fixes, not replacement application forms. Since alpha.82, unique-constraint violations are returned by Crouton as field validation errors (HTTP 400, code `unique`) rather than by the application's 409 mapping.
+
+## Bulk import
+
+*Lexical data → Bulk import* (`/admin/crouton/bulk-import`) adds many reflexes at once, for example all words of a newly digitised dictionary. It is a wizard in four steps (an accordion; each step shows whether it is done):
+
+1. **Download the template** (`bantulex-bulk-import.xlsx`). The "Reflexes" sheet has one column per field: Term (required) and Translation, Meaning (English), Part of speech, Morphology, Semantic field, Scientific name, Pages, Notes, BLR index (optional). Each header has a comment explaining the column; the "Instructions" sheet has a how-to and an example.
+2. **Link or create the related records**, the same for every row: a. the source (pick or create) and its role; b. the variety (pick, create or none); c. location and fieldwork (optional). Each step opens only when the previous one is complete.
+3. **Upload and check the file** (at most 20,000 rows per import). The filled-in template is read in the browser (ExcelJS, loaded only on this page). Rows are shown for review in one scrolling grid (no pages; only the visible rows are drawn) where small corrections can be made; larger changes go through the Excel file; rows without a term must be fixed, BLR text that is not a number is kept as a note. *Check against the database* runs the whole import and rolls it back, and marks unknown BLR indexes. Messages give the Excel row number. Columns not in the template are ignored with a warning.
+4. **Process the import.** One request, one SQLite transaction: either all rows are saved or none.
+
+BLR indexes follow the importer: a number, or "X ipv Y" (X is used); other text is kept in `blr_note`.
+
+Every import is a batch named after the local date and time it was processed (e.g. `2027 10 12 - 13h 14`; `bulkimport`, listed under *Sources → Bulk imports*); its reflexes carry `bulkimport_id`. *Undo* in "Previous imports" deletes the batch's reflexes and source links in one transaction, and the source or variety the batch created if nothing else uses them; the batch stays listed as `undone`. The wizard's choices and uploaded rows are kept in the browser until the import is processed.
+
+API: `POST /api/bulk/reflex[?dryRun=1]` (up to 20,000 rows, JSON body up to 25 MB), `GET /api/bulk/imports`, `POST /api/bulk/imports/:id/undo`. While a bulk transaction runs (about a second for 5,000 rows) other admin requests wait, because the admin uses one SQLite connection. The table and column come from `model.py`; an existing database gets them with `just migrate-db` in the repository root.
+
+## Bulk edit
+
+*Lexical data → Bulk edit* (`/admin/crouton/bulk-edit`) edits the text fields of existing reflexes (term, translation, meaning, part of speech, morphology, semantic field, scientific name, IPA and its notes, BLR index and note, notes) in the bulk grid, 100 rows per page (the API's maximum page size). Search uses Crouton's `q`; a variety or a bulk import batch narrows the rows. Id and variety are shown read-only; relations and the integer ids are edited in the reflex form.
+
+Editing goes through Crouton: rows are loaded with the resource's list operation, and a row is saved when the focus leaves it (or with *Save all*, Ctrl/Cmd+S) as one `PATCH /api/reflex/:id` with only the changed fields, after checking them with the zod schema of Crouton's reflex form. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked, and changing page or leaving asks before dropping them. Changing `blr_index` here does not relink the BLR entry (only the bulk import does).
+
+## Relations in the detail view
+
+The API returns flat records; the detail (View) modal shows the relations between them through two read-only renderers, registered in `apps/frontend/src/main.ts` and selected by a calculated column's `fieldInput.options.format`:
+
+- `relation-link` on a `<name>_label` column: the related record's label as a link to its view, with an *Edit* link, e.g. a reflex's variety, location, fieldwork and BLR entry. Options: `linkResource` (the related resource) and `idKey` (the foreign key column of this record). Tables and forms are unchanged: tables show the plain label, forms the autocomplete.
+- `related-table` on a column `<child>_by_<foreign key>` (`sqlExpression: SELECT CAST(main.id AS TEXT)`, hidden in tables): a paged table of the records that point to this one, with view and edit links, e.g. the reflexes of a fieldwork. Options: `childResource`, `foreignKey` and `columns` (`[{key, label}]`, shown after the record's `display_label`).
+
+Every `relation-link` has its reverse `related-table` (checked by `tests/relations.test.mjs`). Crouton's own relation columns (`format: relation`) are not used: their labels come from a single field of the related row instead of the composite `display_label`, and a visible one-to-many relation loads all children (thousands of reflexes) with the record. The table queries the list API with `filter=<fk>:<id-1>:gt&filter=<fk>:<id+1>:lt`, because Crouton's `equals` filter is not cast to a number for integer columns.
+
+Crouton opens a record's modal from `?id=&event=` only when its resource view mounts, and its modals are global, so the frontend keys the resource view by resource and closes open modals when navigation changes resource; browser back and forward follow the links.
 
 ## Coordinate maps
 

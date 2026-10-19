@@ -16,6 +16,7 @@ build-backend = "uv_build"
 
 [project.scripts]
 importer = "importer.cli:main"
+migrate-db = "importer.migrate:main"
 
 [tool.uv.sources]
 utilities = { workspace = true }

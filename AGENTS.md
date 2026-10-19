@@ -16,10 +16,12 @@ just down         # Stop all containers
 just rebuild      # Rebuild and restart all containers (except the admin profile)
 just reinit       # Full reset: rebuild + reset DB + import
 just import       # Run data import (Excel/CSV → data/bantulex.db)
-just export-all   # Run all three exporters
+just export-all   # Run all exporters
 just export-evolex  # Export to EvoLex Excel format
 just export-map     # Export linguistic data as GeoJSON
 just export-blr     # Export BLR phonological data + catalog
+just export-tofix   # Worklist of import errors/warnings → data/to_fix.html (links to /admin)
+just migrate-db   # Add new tables/columns from model.py to an existing data/bantulex.db
 just reset-db     # Back up data/bantulex.db to backups/ and remove it
 just admin        # Build + start the Crouton admin (compose profile "admin", :4444/admin/)
 just admin-dev    # Admin with hot reload (admin/docker-compose.yml, dev profile)
@@ -55,7 +57,7 @@ Excel/CSV files
   data/ (consumed by the separate map project)
 ```
 
-Known gap: the admin's Prisma schema and resources were introspected from an older version of `data/bantulex.db`; after an import they must be regenerated before the admin works on the new file.
+The admin's Prisma schema and resources are introspected from `data/bantulex.db`; when `model.py` changes, update them as described in `admin/README.md`.
 
 ### Services (Docker Compose)
 

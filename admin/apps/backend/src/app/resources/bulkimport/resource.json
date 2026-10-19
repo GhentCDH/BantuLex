@@ -2,24 +2,24 @@
   "$schema": "https://ghentcdh.github.io/crouton/schema/v1/resource.schema.json",
   "schemaVersion": 1,
   "draft": false,
-  "name": "entry",
-  "route": "entry",
-  "model": "entry",
-  "tag": "entry",
-  "title": "Entries",
+  "name": "bulkimport",
+  "route": "bulkimport",
+  "model": "bulkimport",
+  "tag": "bulkimport",
+  "title": "Bulk imports",
   "idType": "number",
   "database": "default",
   "sidebar": {
-    "group": "lexical",
+    "group": "sources",
     "hide": false
   },
   "operations": {
     "findAll": true,
     "findOne": true,
-    "create": true,
-    "update": true,
-    "patch": true,
-    "delete": true
+    "create": false,
+    "update": false,
+    "patch": false,
+    "delete": false
   },
   "columns": {
     "id": {
@@ -41,52 +41,8 @@
       "idField": true,
       "defaultSort": true
     },
-    "original_id": {
-      "label": "Original id",
-      "type": {
-        "type": [
-          "integer",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "number"
-      }
-    },
-    "beginning_id": {
-      "label": "Beginning id",
-      "type": {
-        "type": [
-          "integer",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "number"
-      }
-    },
-    "term": {
-      "label": "Term",
+    "label": {
+      "label": "Label",
       "type": {
         "type": [
           "string",
@@ -95,8 +51,8 @@
       },
       "hiddenInView": false,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
       "filterable": true,
       "searchable": true,
@@ -107,8 +63,8 @@
         "type": "string"
       }
     },
-    "term_morph_analysis": {
-      "label": "Term morph analysis",
+    "note": {
+      "label": "Note",
       "type": {
         "type": [
           "string",
@@ -117,20 +73,62 @@
       },
       "hiddenInView": false,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
-      "filterable": false,
+      "filterable": true,
       "searchable": true,
       "hiddenInTable": true,
-      "showInLookup": false,
+      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "textarea"
       }
     },
-    "translation": {
-      "label": "Translation",
+    "rows": {
+      "label": "Rows",
+      "type": {
+        "type": [
+          "integer"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": true,
+      "fieldInput": {
+        "type": "number"
+      }
+    },
+    "status": {
+      "label": "Status",
+      "type": {
+        "type": [
+          "string"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": true,
+      "required": true,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "undone_at": {
+      "label": "Undone at",
       "type": {
         "type": [
           "string",
@@ -139,8 +137,8 @@
       },
       "hiddenInView": false,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
       "filterable": true,
       "searchable": true,
@@ -151,8 +149,8 @@
         "type": "string"
       }
     },
-    "meaning": {
-      "label": "Meaning",
+    "role": {
+      "label": "Role",
       "type": {
         "type": [
           "string",
@@ -161,148 +159,55 @@
       },
       "hiddenInView": false,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
-      "filterable": false,
+      "filterable": true,
       "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": true,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
+    "source_id": {
+      "label": "Source",
+      "type": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hiddenInView": true,
+      "hiddenInForm": false,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
       "hiddenInTable": true,
       "showInLookup": false,
       "required": false,
       "fieldInput": {
-        "type": "textarea"
-      }
-    },
-    "scientific_name": {
-      "label": "Scientific name",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
+        "type": "autocomplete",
+        "relationType": "manyToOne",
+        "resource": "../source/resource.json",
+        "options": {
+          "valueKey": "id",
+          "labelKey": "display_label",
+          "storeValue": true,
+          "resource": "/source/schemas",
+          "enableCreate": false
+        }
       },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
-    },
-    "semantic_field": {
-      "label": "Semantic field",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
+      "fieldView": {
+        "type": "number",
+        "format": "number"
       },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
-    },
-    "part_of_speech": {
-      "label": "Part of speech",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
-    },
-    "blr_index": {
-      "label": "Blr index",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
-    },
-    "ipa": {
-      "label": "Ipa",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
-    },
-    "notes": {
-      "label": "Notes",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": false,
-      "searchable": true,
-      "hiddenInTable": true,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "textarea"
+      "fieldTable": {
+        "type": "number",
+        "format": "number"
       }
     },
     "variety_id": {
@@ -315,8 +220,8 @@
       },
       "hiddenInView": true,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
       "filterable": true,
       "searchable": false,
@@ -354,8 +259,8 @@
       },
       "hiddenInView": true,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
       "filterable": true,
       "searchable": false,
@@ -393,8 +298,8 @@
       },
       "hiddenInView": true,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
       "filterable": true,
       "searchable": false,
@@ -422,43 +327,46 @@
         "format": "number"
       }
     },
-    "blr_entry_id": {
-      "label": "Blr entry",
+    "source_created": {
+      "label": "Source created",
       "type": {
         "type": [
-          "integer",
-          "null"
+          "boolean"
         ]
       },
-      "hiddenInView": true,
+      "hiddenInView": false,
       "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
+      "createable": false,
+      "updateable": false,
       "sortable": true,
       "filterable": true,
       "searchable": false,
-      "hiddenInTable": true,
+      "hiddenInTable": false,
       "showInLookup": false,
-      "required": false,
+      "required": true,
       "fieldInput": {
-        "type": "autocomplete",
-        "relationType": "manyToOne",
-        "resource": "../blrentry/resource.json",
-        "options": {
-          "valueKey": "id",
-          "labelKey": "display_label",
-          "storeValue": true,
-          "resource": "/blrentry/schemas",
-          "enableCreate": false
-        }
+        "type": "boolean"
+      }
+    },
+    "variety_created": {
+      "label": "Variety created",
+      "type": {
+        "type": [
+          "boolean"
+        ]
       },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": false,
+      "updateable": false,
+      "sortable": true,
+      "filterable": true,
+      "searchable": false,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": true,
+      "fieldInput": {
+        "type": "boolean"
       }
     },
     "created_at": {
@@ -504,52 +412,32 @@
       "columns": 12,
       "controls": [
         {
-          "id": "original_id",
+          "id": "label",
           "colspan": 6
         },
         {
-          "id": "beginning_id",
-          "colspan": 6
-        },
-        {
-          "id": "term",
-          "colspan": 6
-        },
-        {
-          "id": "term_morph_analysis",
+          "id": "note",
           "colspan": 12
         },
         {
-          "id": "translation",
+          "id": "rows",
           "colspan": 6
         },
         {
-          "id": "meaning",
-          "colspan": 12
-        },
-        {
-          "id": "scientific_name",
+          "id": "status",
           "colspan": 6
         },
         {
-          "id": "semantic_field",
+          "id": "undone_at",
           "colspan": 6
         },
         {
-          "id": "part_of_speech",
+          "id": "role",
           "colspan": 6
         },
         {
-          "id": "blr_index",
+          "id": "source_id",
           "colspan": 6
-        },
-        {
-          "id": "ipa",
-          "colspan": 6
-        },
-        {
-          "id": "notes",
-          "colspan": 12
         },
         {
           "id": "variety_id",
@@ -564,7 +452,11 @@
           "colspan": 6
         },
         {
-          "id": "blr_entry_id",
+          "id": "source_created",
+          "colspan": 6
+        },
+        {
+          "id": "variety_created",
           "colspan": 6
         }
       ]
@@ -576,9 +468,28 @@
       "alias": "display_label",
       "label": "Reference",
       "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.term, x.translation), ''), '#' || x.id) FROM \"entry\" x WHERE x.id = main.id",
+      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.label, x.created_at), ''), '#' || x.id) FROM \"bulkimport\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "source_label",
+      "alias": "source_label",
+      "label": "Source",
+      "type": "string",
+      "sqlExpression": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.\"source_id\"",
+      "position": 3,
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "source",
+          "idKey": "source_id"
+        }
+      }
     },
     {
       "id": "variety_label",
@@ -592,8 +503,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "variety",
+          "idKey": "variety_id"
         }
       }
     },
@@ -609,8 +522,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "location",
+          "idKey": "location_id"
         }
       }
     },
@@ -626,18 +541,20 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "fieldwork",
+          "idKey": "fieldwork_id"
         }
       }
     },
     {
-      "id": "blr_entry_label",
-      "alias": "blr_entry_label",
-      "label": "Blr entry",
+      "id": "reflex_count",
+      "alias": "reflex_count",
+      "label": "Reflexes now",
       "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.blr_index, x.word, x.english), ''), '#' || x.id) FROM \"blrentry\" x WHERE x.id = main.\"blr_entry_id\"",
-      "position": 10,
+      "sqlExpression": "SELECT COUNT(*) FROM \"reflex\" x WHERE x.bulkimport_id = main.id",
+      "position": 4,
       "hiddenInTable": false,
       "hiddenInView": false,
       "fieldInput": {
@@ -645,6 +562,39 @@
         "options": {
           "format": "string",
           "colspan": 12
+        }
+      }
+    },
+    {
+      "id": "reflex_by_bulkimport_id",
+      "alias": "reflex_by_bulkimport_id",
+      "label": "Reflexes",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1024,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "bulkimport_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            },
+            {
+              "key": "variety_label",
+              "label": "Variety"
+            }
+          ]
         }
       }
     }

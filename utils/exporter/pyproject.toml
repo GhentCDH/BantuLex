@@ -22,6 +22,7 @@ build-backend = "uv_build"
 export-evolex = "exporter.export_evolex:main"
 export-map = "exporter.export_map:main"
 export-blr = "exporter.export_blr:main"
+export-tofix = "exporter.export_tofix:main"
 export-evolex-google = "exporter.export_evolex:main_google_overwrite"
 
 [tool.uv.sources]

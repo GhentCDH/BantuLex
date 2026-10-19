@@ -21,3 +21,6 @@ patch('empty TEXT', 'crouton-api', 'if (out[key] === "") {', 'if (out[key] === "
 patch('SQLite placeholders', 'crouton-api', 'ids.map((_, i) => `$${i + 1}`).join(", ")', 'ids.map(() => "?").join(", ")');
 // The generic autocomplete omits its existing UI clear control and clear handler.
 patch('autocomplete clear', 'crouton-vue', '"model-value": p.value,\n\t\t\t"fetch-options": f.value.fetchOptions,', '"model-value": p.value, clearable: !0, onClear: () => g(null),\n\t\t\t"fetch-options": f.value.fetchOptions,', 'onClear: () => g(null)');
+// The detail view renders any value that `new Date()` accepts as a date, so "6641" or "1990" became "1 Jan 6641".
+// Only ISO-like YYYY-MM-DD strings are dates here.
+patch('date detection', 'crouton-vue', 't.resource ? Hs : lo(e) ? Ts', 't.resource ? Hs : typeof e == "string" && /^\\d{4}-\\d{2}-\\d{2}/.test(e) && lo(e) ? Ts');

@@ -121,6 +121,26 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(x.value, ''), '#' || x.id) FROM \"blrreliability\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "reconstruction_by_reliability_id",
+      "alias": "reconstruction_by_reliability_id",
+      "label": "Reconstructions",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1016,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reconstruction",
+          "foreignKey": "reliability_id",
+          "columns": []
+        }
+      }
     }
   ]
 }
