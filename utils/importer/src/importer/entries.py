@@ -301,6 +301,37 @@ class BlrUnresolvedLinkEntry(ReportEntry):
 
 
 @dataclass(frozen=True, slots=True)
+class BlrDuplicateIndexEntry(ReportEntry):
+    """The same BLR index appears more than once in the workbook."""
+
+    blr_index: int | None = None
+    first_seen_row: int | None = None
+
+    category: ClassVar[str] = "blr_duplicate_index"
+    level: ClassVar[str] = LEVEL_WARNING
+
+
+@dataclass(frozen=True, slots=True)
+class BlrEmptyRowEntry(ReportEntry):
+    """A row has an index but no other values; it is skipped."""
+
+    blr_index: int | None = None
+
+    category: ClassVar[str] = "blr_empty_row"
+    level: ClassVar[str] = LEVEL_ERROR
+
+
+@dataclass(frozen=True, slots=True)
+class BlrMissingWordEntry(ReportEntry):
+    """A BLR row has no Word; the reconstruction is still imported."""
+
+    blr_index: int | None = None
+
+    category: ClassVar[str] = "blr_missing_word"
+    level: ClassVar[str] = LEVEL_WARNING
+
+
+@dataclass(frozen=True, slots=True)
 class BlrIpvResolvedEntry(ReportEntry):
     blr_index_raw: Any = None
     blr_index_used: str | None = None
@@ -351,6 +382,9 @@ CATEGORY_CLASSES: dict[str, type[ReportEntry]] = {
             SourceIncompleteEntry,
             SkippedNoTermEntry,
             BlrUnresolvedLinkEntry,
+            BlrDuplicateIndexEntry,
+            BlrEmptyRowEntry,
+            BlrMissingWordEntry,
             BlrIpvResolvedEntry,
             BlrTextToNoteEntry,
             CriticalErrorEntry,
@@ -399,6 +433,7 @@ FIELD_HEADERS: dict[str, str] = {
     "title_column": "Title Column",
     "title_value": "Title Value",
     "reflex_id": "Reflex ID",
+    "blr_index": "BLR Index",
     "blr_index_raw": "BLR Index (raw)",
     "blr_index_used": "BLR Index (used)",
     "error_message": "Error Message",

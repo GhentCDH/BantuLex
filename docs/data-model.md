@@ -68,11 +68,11 @@ reflex is the present-day form that continues an older root.
 Column fill rate: `meaning` 69%, `term_morph_analysis` 39%, `blr_entry_id` 46%,
 `part_of_speech` 15%, `semantic_field` 11%, `ipa` almost never (51 rows).
 
-### `reconstruction` (10,252 rows)
+### `reconstruction` (10,232 rows)
 
 One entry of the BLR (*Bantu Lexical Reconstructions*) dataset: a reconstructed
-Proto-Bantu root. The importer reads it from `data/BLR.xlsx`; reflexes come from
-`data/bantulex.xlsx`.
+Proto-Bantu root. The importer reads it from `data/BLR_export.xlsx` (override
+with `BLR_FILE`); reflexes come from `data/bantulex.xlsx`.
 
 | Column | Excel column | Meaning |
 | --- | --- | --- |
@@ -146,9 +146,10 @@ A row is a combination of name and classification, not a unique language: the
 
 ## Storage
 
-The SQLite export from Dataflow uses only `TEXT`, `INTEGER` and `REAL`, and its
-tables are not STRICT. Booleans such as `substrate_suspect` and `year_uncertain`
-are stored as `INTEGER` 0/1.
+The database uses only `TEXT`, `INTEGER` and `REAL`, and every table is
+`STRICT`. Timestamps (`created_at`, `updated_at`) are `TEXT` in
+`YYYY-MM-DD HH:MM:SS` form; booleans such as `substrate_suspect` and
+`year_uncertain` are `INTEGER` 0/1.
 
 The design choices behind this model (normalized persons, source roles with
 order, fixed BLR slots) are explained in [ARCHITECTURE.md](../ARCHITECTURE.md#data-model--normalization).

@@ -25,6 +25,13 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
+def create_all(engine) -> None:
+    """Create all model tables as SQLite STRICT tables, then their triggers."""
+    for table in sqlmodel.SQLModel.metadata.tables.values():
+        table.dialect_options["sqlite"]["strict"] = True
+    sqlmodel.SQLModel.metadata.create_all(engine)
+
+
 def get_or_create(cache: dict, key: tuple, factory: Callable, session) -> Any:
     """Return cached ORM object for key, or create/persist/cache a new one.
     Returns None when all key components are None.

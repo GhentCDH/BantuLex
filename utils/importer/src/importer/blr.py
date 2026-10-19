@@ -1,10 +1,10 @@
 import logging
 
 from openpyxl import load_workbook
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Session, select
 
 from utilities.config import BLR_EXCEL
-from utilities.db import engine, get_or_create
+from utilities.db import create_all, engine, get_or_create
 from utilities.model import (
     BLRConsonantStructure,
     BLRContributor,
@@ -16,7 +16,11 @@ from utilities.model import (
 )
 
 from .entries import (
+    BlrDuplicateIndexEntry,
+    BlrEmptyRowEntry,
+    BlrMissingWordEntry,
     BlrUnresolvedLinkEntry,
+    MissingColumnEntry,
     RowContext,
     SourceLocation,
     build_col_index,
@@ -25,10 +29,48 @@ from .report import ImportReport
 
 logger = logging.getLogger(__name__)
 
+# BLR workbooks are read by header name, so their column order does not matter.
+BLR_EXPECTED_HEADERS = [
+    "Word\\Tone",
+    "Index",
+    "English",
+    "Added by",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "CS",
+    "Date of entry",
+    "Distr:",
+    "Fiab:",
+    "Français:",
+    "N class",
+    "Note",
+    "Proto KK",
+    "T11",
+    "T12",
+    "T21",
+    "T22",
+    "T3",
+    "T4",
+    "V11",
+    "V12",
+    "V21",
+    "V22",
+    "V3",
+    "V4",
+    "Word",
+]
+
 
 def import_blr(import_report: ImportReport | None = None) -> None:
-    """Import BLR.xlsx into the reconstruction table and link existing entries."""
-    SQLModel.metadata.create_all(engine)
+    """Import the configured BLR workbook into the reconstruction table.
+
+    Existing reconstructions are updated in place (matched on `blr_index`), so
+    a newer export can refresh a live database. Reflex links are resolved
+    afterwards.
+    """
+    create_all(engine)
 
     if not BLR_EXCEL.exists():
         logger.warning(f"BLR file not found at {BLR_EXCEL}")
@@ -58,7 +100,19 @@ def import_blr(import_report: ImportReport | None = None) -> None:
     sheet_name = ws.title
     col_index = build_col_index(headers)
 
-    blr_index_map: dict[int, int] = {}
+    present = {h for h in headers if h}
+    for missing in sorted(set(BLR_EXPECTED_HEADERS) - present):
+        report.add(
+            MissingColumnEntry(
+                loc=SourceLocation(file_name, sheet_name, None, missing, None),
+                note=f"Kolom '{missing}' ontbreekt in {file_name}; waarde blijft leeg.",
+            )
+        )
+    extra = sorted(present - set(BLR_EXPECTED_HEADERS))
+    if extra:
+        logger.warning(f"Ignoring unknown BLR columns: {', '.join(extra)}")
+
+    existing_by_index: dict[int, Reconstruction] = {}
 
     contributors_cache: dict[tuple, BLRContributor] = {}
     reliability_cache: dict[tuple, BLRReliability] = {}
@@ -69,7 +123,7 @@ def import_blr(import_report: ImportReport | None = None) -> None:
     with Session(engine, expire_on_commit=False) as session:
         for existing in session.exec(select(Reconstruction)).all():
             if existing.blr_index is not None:
-                blr_index_map[existing.blr_index] = existing.id
+                existing_by_index[existing.blr_index] = existing
         for x in session.exec(select(BLRContributor)).all():
             if x.name:
                 contributors_cache[(x.name,)] = x
@@ -84,6 +138,8 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             tone_cache[(x.t11, x.t12, x.t21, x.t22, x.t3, x.t4)] = x
 
         inserted = 0
+        updated = 0
+        seen_in_file: dict[int, int] = {}
         for excel_row, row_cells in enumerate(rows, start=2):
             row = row_to_dict(row_cells)
             ctx = RowContext(file_name, sheet_name, excel_row, col_index, report, row)
@@ -91,10 +147,41 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             idx_raw = ctx.int("Index")
             if idx_raw is None:
                 continue
-            if idx_raw in blr_index_map:
+            if idx_raw in seen_in_file:
+                report.add(
+                    BlrDuplicateIndexEntry(
+                        loc=ctx.loc("Index"),
+                        note="Dubbele BLR-index in het bestand; deze rij is overgeslagen.",
+                        blr_index=idx_raw,
+                        first_seen_row=seen_in_file[idx_raw],
+                    )
+                )
+                continue
+            seen_in_file[idx_raw] = excel_row
+
+            # Read every cell once, so NaN-coercion warnings are reported once.
+            values = {h: ctx.val(h) for h in headers if h is not None}
+
+            if all(v is None for h, v in values.items() if h != "Index"):
+                report.add(
+                    BlrEmptyRowEntry(
+                        loc=ctx.loc("Index"),
+                        note="Rij bevat alleen een index; overgeslagen.",
+                        blr_index=idx_raw,
+                    )
+                )
                 continue
 
-            contributor_name = ctx.val("Added by")
+            if values.get("Word") is None:
+                report.add(
+                    BlrMissingWordEntry(
+                        loc=ctx.loc("Word"),
+                        note="Geen Word ingevuld; reconstructie wordt toch geïmporteerd.",
+                        blr_index=idx_raw,
+                    )
+                )
+
+            contributor_name = values.get("Added by")
             contributor = (
                 get_or_create(
                     contributors_cache,
@@ -106,7 +193,7 @@ def import_blr(import_report: ImportReport | None = None) -> None:
                 else None
             )
 
-            reliability_val = ctx.val("Fiab:")
+            reliability_val = values.get("Fiab:")
             reliability = (
                 get_or_create(
                     reliability_cache,
@@ -119,11 +206,11 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             )
 
             c_key = (
-                ctx.val("C1"),
-                ctx.val("C2"),
-                ctx.val("C3"),
-                ctx.val("C4"),
-                ctx.val("CS"),
+                values.get("C1"),
+                values.get("C2"),
+                values.get("C3"),
+                values.get("C4"),
+                values.get("CS"),
             )
             consonant_structure = (
                 get_or_create(
@@ -139,12 +226,12 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             )
 
             v_key = (
-                ctx.val("V11"),
-                ctx.val("V12"),
-                ctx.val("V21"),
-                ctx.val("V22"),
-                ctx.val("V3"),
-                ctx.val("V4"),
+                values.get("V11"),
+                values.get("V12"),
+                values.get("V21"),
+                values.get("V22"),
+                values.get("V3"),
+                values.get("V4"),
             )
             vowel_structure = (
                 get_or_create(
@@ -160,12 +247,12 @@ def import_blr(import_report: ImportReport | None = None) -> None:
             )
 
             t_key = (
-                ctx.val("T11"),
-                ctx.val("T12"),
-                ctx.val("T21"),
-                ctx.val("T22"),
-                ctx.val("T3"),
-                ctx.val("T4"),
+                values.get("T11"),
+                values.get("T12"),
+                values.get("T21"),
+                values.get("T22"),
+                values.get("T3"),
+                values.get("T4"),
             )
             tone_structure = (
                 get_or_create(
@@ -180,34 +267,44 @@ def import_blr(import_report: ImportReport | None = None) -> None:
                 else None
             )
 
-            blr = Reconstruction(
-                blr_index=idx_raw,
-                word_tone=ctx.val("Word\\Tone"),
-                word=ctx.val("Word"),
-                english=ctx.val("English"),
-                french=ctx.val("Français:"),
-                noun_class=ctx.val("N class"),
-                distribution=ctx.val("Distr:"),
-                note=ctx.val("Note"),
-                proto_kk=ctx.val("Proto KK"),
-                date_of_entry=ctx.val("Date of entry"),
-                contributor_id=contributor.id if contributor else None,
-                reliability_id=reliability.id if reliability else None,
-                consonant_structure_id=consonant_structure.id
-                if consonant_structure
-                else None,
-                vowel_structure_id=vowel_structure.id if vowel_structure else None,
-                tone_structure_id=tone_structure.id if tone_structure else None,
-            )
-            session.add(blr)
-            session.flush()
-            blr_index_map[idx_raw] = blr.id
-            inserted += 1
+            fields = {
+                "word_tone": values.get("Word\\Tone"),
+                "word": values.get("Word"),
+                "english": values.get("English"),
+                "french": values.get("Français:"),
+                "noun_class": values.get("N class"),
+                "distribution": values.get("Distr:"),
+                "note": values.get("Note"),
+                "proto_kk": values.get("Proto KK"),
+                "date_of_entry": values.get("Date of entry"),
+                "contributor_id": contributor.id if contributor else None,
+                "reliability_id": reliability.id if reliability else None,
+                "consonant_structure_id": (
+                    consonant_structure.id if consonant_structure else None
+                ),
+                "vowel_structure_id": vowel_structure.id if vowel_structure else None,
+                "tone_structure_id": tone_structure.id if tone_structure else None,
+            }
+
+            blr = existing_by_index.get(idx_raw)
+            if blr is None:
+                blr = Reconstruction(blr_index=idx_raw, **fields)
+                session.add(blr)
+                session.flush()
+                existing_by_index[idx_raw] = blr
+                inserted += 1
+            else:
+                for name, value in fields.items():
+                    setattr(blr, name, value)
+                updated += 1
 
         session.commit()
-        logger.info(f"BLR import done — {inserted} new entries inserted.")
+        logger.info(
+            f"BLR import done — {inserted} new entries inserted, {updated} updated."
+        )
 
         # Link Reflex.blr_entry_id via Reflex.blr_index (integer match)
+        blr_index_map = {idx: rec.id for idx, rec in existing_by_index.items()}
         linked = 0
         unresolved = 0
         for reflex in session.exec(

@@ -18,7 +18,7 @@ from sqlmodel import SQLModel
 
 import utilities.model  # noqa: F401  (registers the tables)
 from utilities.config import DB_PATH
-from utilities.db import engine
+from utilities.db import create_all, engine
 
 handler = RichHandler(markup=True, show_time=True, show_path=False)
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[handler])
@@ -29,7 +29,7 @@ def main() -> None:
     logger.info(f"Migrating {DB_PATH}")
     before = set(inspect(engine).get_table_names())
     # New tables, and their triggers (after_create in model.py).
-    SQLModel.metadata.create_all(engine)
+    create_all(engine)
     for name in sorted(set(inspect(engine).get_table_names()) - before):
         logger.info(f"  created table {name}")
 
