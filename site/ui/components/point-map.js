@@ -9,6 +9,7 @@ import { useContext, useEffect, useRef } from "preact/hooks";
 import { loadMaplibre } from "../../extensions/point_map/js/maplibre-shim.js";
 import { ensurePmtilesProtocol } from "../../extensions/point_map/js/pmtiles-protocol.js";
 import {
+    CLUSTER_GROUPS,
     addClusterLayers,
     buildStyle,
     loadPinImages,
@@ -19,6 +20,17 @@ import { categorize, categoryOf } from "../../extensions/point_map/js/categories
 import { LangContext, useT } from "../i18n.js";
 
 const CENTRE_OF_BANTU_AREA = [22, -4];
+/** Below this many points in total every reflex is its own pin. */
+const CLUSTER_FROM = 1000;
+
+// Clustering is a per-source option, so switching it needs no new layers.
+// Pins may overlap: collision would hide reflexes that share a location.
+function setClustering(map, cluster) {
+    for (const group of CLUSTER_GROUPS) {
+        map.getSource(group.source)?.setClusterOptions({ cluster });
+        map.setLayoutProperty(group.unclustered, "icon-allow-overlap", true);
+    }
+}
 
 /**
  * @param {{ points: Array<{ lat: number, lon: number, color?: string, row: object }>,
@@ -91,7 +103,11 @@ export function PointMap({ points, popup, legend = null, class: className = "" }
             const { map, maplibregl } = ready;
             // Open popups may belong to rows the new filters removed.
             [...popups.current].forEach((instance) => instance.remove());
-            whenClusterSource(map, () => !stale && setClusterData(map, points));
+            whenClusterSource(map, () => {
+                if (stale) return;
+                setClustering(map, points.length >= CLUSTER_FROM);
+                setClusterData(map, points);
+            });
             if (points.length > 1) {
                 const bounds = new maplibregl.LngLatBounds();
                 points.forEach((p) => bounds.extend([p.lon, p.lat]));

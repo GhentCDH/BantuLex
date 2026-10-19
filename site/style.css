@@ -156,30 +156,38 @@ select:disabled, option:disabled { color: var(--muted); }
 .boot-brand { margin: 0; font: 600 2rem var(--font-forms); }
 .boot-message { margin: 0; color: var(--muted); }
 
-/* Shell */
-.workspace { display: flex; flex-direction: column; min-height: 100dvh; }
+/* Shell: header, content and footer are at least one screen high, so a short
+   page does not scroll. */
+.shell { display: flex; flex-direction: column; min-height: 100dvh; }
 
-/* On a large screen the search page is exactly one screen high: the panels,
-   toolbar and pager keep their height and the table or map takes the rest,
-   scrolling inside. The footer is below it. Smaller screens scroll the page. */
+/* On a large screen the search and BLR pages are exactly one screen high:
+   panels, toolbar, pager and footer keep their height and the table or map
+   takes the rest, scrolling inside. The BLR page puts its details in a side
+   column that scrolls on its own. Smaller screens scroll the whole page. */
 @media (min-width: 900px) and (min-height: 640px) {
-  .workspace.is-fill { height: 100dvh; }
+  :is(.fill-search, .fill-split) { height: 100dvh; }
 
-  .is-fill .site-main,
-  .is-fill .search-view,
-  .is-fill .results,
-  .is-fill .table-block,
-  .is-fill .map-block,
-  .is-fill .map-host {
+  :is(.fill-search, .fill-split) :is(.site-main, .search-view, .blr-results, .results, .table-block, .map-block, .map-host) {
     display: flex;
     flex: 1;
     flex-direction: column;
     min-height: 0;
   }
 
-  .is-fill .table-scroll { flex: 1; min-height: 10rem; max-height: none; }
-  .is-fill .map-canvas { flex: 1; height: auto; min-height: 14rem; }
-  .is-fill .site-main { padding-bottom: 1rem; }
+  :is(.fill-search, .fill-split) .table-scroll { flex: 1; min-height: 10rem; max-height: none; }
+  :is(.fill-search, .fill-split) .map-canvas { flex: 1; height: auto; min-height: 14rem; }
+
+  .fill-split .blr-layout {
+    display: grid;
+    flex: 1;
+    grid-template-columns: minmax(25rem, 30rem) minmax(0, 1fr);
+    gap: 1.5rem;
+    min-height: 0;
+  }
+
+  .fill-split .blr-side { align-content: start; min-height: 0; overflow: auto; }
+  .fill-split .blr-side .detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .fill-split .blr-results .section-title { margin-top: 0; }
 }
 
 .site-header {
@@ -256,7 +264,7 @@ select:disabled, option:disabled { color: var(--muted); }
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 1.25rem clamp(1rem, 3vw, 2rem) 2rem;
+  padding: 1.25rem clamp(1rem, 3vw, 2rem) 1rem;
 }
 
 .site-footer {
@@ -264,13 +272,14 @@ select:disabled, option:disabled { color: var(--muted); }
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.25rem clamp(1rem, 3vw, 2rem);
-  font-size: .85rem;
+  padding: .5rem clamp(1rem, 3vw, 2rem);
+  font-size: .8rem;
   color: var(--muted);
   border-top: 1px solid var(--border);
 }
 
-.site-footer p { max-width: 60ch; margin: 0; }
+.site-footer p { margin: 0; }
+.site-footer img { display: block; }
 
 /* Search: query panels */
 .query-panels {
@@ -564,7 +573,7 @@ select:disabled, option:disabled { color: var(--muted); }
   border-radius: var(--radius);
 }
 
-.map-small .map-canvas { height: 14rem; min-height: 0; margin-top: .75rem; }
+.map-small .map-canvas { height: 12rem; min-height: 0; margin-top: .75rem; }
 
 .map-empty {
   position: absolute;

@@ -33,18 +33,17 @@ function Shell({ lang, changeLang }) {
         : (reflex = match("/reflex/:id", path))
           ? h(ReflexView, { key: path, id: Number(reflex.id) })
           : h(SearchView, { params });
-    // The search page fills the screen and scrolls inside its results; the
-    // detail pages are documents that scroll as a whole.
-    const fill = !blr && !reflex;
+    // On large screens the search and BLR pages fill the screen and scroll
+    // inside their results; the reflex page is a document.
+    const fill = reflex ? "" : blr ? "fill-split" : "fill-search";
 
-    return h("div", { class: "shell" },
-        h("div", { class: fill ? "workspace is-fill" : "workspace" },
-            h(Header, { lang, changeLang }),
-            h("main", { class: "site-main" }, page)),
+    return h("div", { class: `shell ${fill}` },
+        h(Header, { lang, changeLang }),
+        h("main", { class: "site-main" }, page),
         h("footer", { class: "site-footer" },
             h("p", null, t("aboutText")),
             h("a", { href: "https://www.ghentcdh.ugent.be", target: "_blank", rel: "noopener noreferrer" },
-                h("img", { src: LOGO, alt: "Ghent Centre for Digital Humanities", width: 56, height: 56 }))),
+                h("img", { src: LOGO, alt: "Ghent Centre for Digital Humanities", width: 36, height: 36 }))),
     );
 }
 
