@@ -1,10 +1,29 @@
-from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DDL, DateTime, Float, Text, UniqueConstraint, event, func
+from sqlalchemy import (
+    DDL,
+    REAL,
+    Integer,
+    Text,
+    TypeDecorator,
+    UniqueConstraint,
+    event,
+    func,
+)
 from sqlmodel import Field, Relationship, SQLModel
 
-_TIMESTAMPTZ = DateTime(timezone=True)
+
+class _StrictBool(TypeDecorator):
+    """Boolean stored as INTEGER, as required by SQLite STRICT tables."""
+
+    impl = Integer
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return None if value is None else int(bool(value))
+
+    def process_result_value(self, value, dialect):
+        return None if value is None else bool(value)
 
 
 def _text(**kwargs):
@@ -13,15 +32,23 @@ def _text(**kwargs):
 
 
 def _float(**kwargs):
-    """Double-precision float column."""
-    return Field(sa_type=Float, **kwargs)
+    """Double-precision float column (REAL, as required by STRICT tables)."""
+    return Field(sa_type=REAL, **kwargs)
+
+
+def _bool(**kwargs):
+    """Boolean column stored as 0/1 INTEGER (STRICT-compatible)."""
+    return Field(sa_type=_StrictBool, **kwargs)
 
 
 def _ts(**col_kwargs):
-    """TIMESTAMPTZ column. col_kwargs forwarded as sa_column_kwargs."""
+    """Timestamp column. SQLite STRICT only allows TEXT, so it stays a string.
+
+    col_kwargs are forwarded as sa_column_kwargs.
+    """
     return Field(
         default=None,
-        sa_type=_TIMESTAMPTZ,  # ty: ignore[invalid-argument-type]
+        sa_type=Text,
         sa_column_kwargs=col_kwargs,
     )
 
@@ -30,8 +57,8 @@ class Table(SQLModel):
     """Base class with common fields for all tables."""
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = _ts(server_default=func.now(), nullable=False)
-    updated_at: datetime = _ts(
+    created_at: str = _ts(server_default=func.now(), nullable=False)
+    updated_at: str = _ts(
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
@@ -50,7 +77,7 @@ class Variety(Table, table=True):
     bastin_index: str | None = _text(default=None)
     guthrie_index: str | None = _text(default=None)
     guthrie_plus: str | None = _text(default=None)
-    substrate_suspect: bool | None = Field(default=None)
+    substrate_suspect: bool | None = _bool(default=None)
 
     entries: list["Reflex"] = Relationship(back_populates="variety")
 
@@ -122,7 +149,7 @@ class Source(Table, table=True):
     """Bibliographic source (author + year + title)."""
 
     author_year: str | None = _text(default=None)
-    year_uncertain: bool = Field(default=False)
+    year_uncertain: bool = _bool(default=False)
     title: str | None = _text(default=None)
 
 
@@ -347,14 +374,14 @@ class BulkImport(Table, table=True):
     note: str | None = _text(default=None)
     rows: int = Field(default=0)
     status: str = _text(default="saved")  # 'saved' or 'undone'
-    undone_at: datetime | None = _ts()
+    undone_at: str | None = _ts()
     role: str | None = _text(default=None)  # source role of the reflexes
     source_id: int | None = Field(default=None, foreign_key="source.id")
     variety_id: int | None = Field(default=None, foreign_key="variety.id")
     location_id: int | None = Field(default=None, foreign_key="location.id")
     fieldwork_id: int | None = Field(default=None, foreign_key="fieldwork.id")
-    source_created: bool = Field(default=False)
-    variety_created: bool = Field(default=False)
+    source_created: bool = _bool(default=False)
+    variety_created: bool = _bool(default=False)
 
 
 class Reflex(Table, table=True):

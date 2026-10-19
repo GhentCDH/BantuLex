@@ -17,7 +17,7 @@ own column.
 
 `blrreliability` has 29 values for what is one score: `1`, `1a`, `1A`, `1(a)`,
 `1/3`, `1/3a`, `1 ou 3`, and more. As a filter this gives many near-duplicate
-options. A fixed list of values in `BLR.xlsx` would fix this.
+options. A fixed list of values in the BLR workbook would fix this.
 
 ### One language, several `variety` rows
 

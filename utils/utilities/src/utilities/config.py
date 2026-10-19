@@ -26,6 +26,7 @@ DATA_ROOT = Path(os.getenv("DATA_ROOT") or exit(1))
 CSV = DATA_ROOT / "bantulex.csv"
 # EXCEL_FILE: optional file name in DATA_ROOT, e.g. a newly delivered version
 EXCEL = DATA_ROOT / (os.getenv("EXCEL_FILE") or "bantulex.xlsx")
-BLR_EXCEL = DATA_ROOT / "BLR.xlsx"
+# BLR_FILE: optional BLR workbook name in DATA_ROOT, e.g. a newly delivered export
+BLR_EXCEL = DATA_ROOT / (os.getenv("BLR_FILE") or "BLR_export.xlsx")
 
 EXPORT_EVOLEX_EXCEL = DATA_ROOT / "evolex_export.xlsx"

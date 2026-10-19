@@ -9,7 +9,7 @@
 ## Data flow
 
 ```
-data/bantulex.xlsx, data/BLR.xlsx
+data/bantulex.xlsx, data/BLR_export.xlsx
         │  just import (utils/importer)
         ▼
      Postgres ──── exporters (utils/exporter) ──► EvoLex Excel, to-fix worklist

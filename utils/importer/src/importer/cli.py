@@ -5,10 +5,10 @@ from typing import Any
 
 from openpyxl import load_workbook
 from rich.logging import RichHandler
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Session, select
 
 from utilities.config import DATA_ROOT, DB_STRING, EXCEL
-from utilities.db import engine, get_or_create
+from utilities.db import create_all, engine, get_or_create
 from utilities.model import (
     CollectionYear,
     Consultant,
@@ -75,7 +75,7 @@ def main() -> None:
     start_time = time.monotonic()
     logger.info(f"Using database at {DB_STRING}")
 
-    SQLModel.metadata.create_all(engine)
+    create_all(engine)
 
     if not EXCEL.exists():
         logger.warning(f"Excel file not found at {EXCEL}")

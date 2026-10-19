@@ -42,7 +42,19 @@ CATEGORIES: dict[str, tuple[str, str]] = {
     ),
     "blr_unresolved_link": (
         "BLR index without reconstruction",
-        "The BLR index is not in BLR.xlsx. Correct the index on the reflex, or add the reconstruction.",
+        "The BLR index is not in the BLR workbook. Correct the index on the reflex, or add the reconstruction.",
+    ),
+    "blr_duplicate_index": (
+        "Duplicate BLR index",
+        "The same index appears more than once; the later row was skipped. Merge or renumber it.",
+    ),
+    "blr_empty_row": (
+        "Empty BLR row (not imported)",
+        "The row has an index but no other data, so it was skipped. Complete or remove it.",
+    ),
+    "blr_missing_word": (
+        "BLR row without word",
+        "The reconstruction has no Word. It was imported anyway; add the missing form.",
     ),
     "skipped_no_term": (
         "Row without term (not imported)",
@@ -78,7 +90,7 @@ CATEGORIES: dict[str, tuple[str, str]] = {
     ),
     "nan_coercion": (
         "'NaN' read as empty",
-        "The cell said 'NaN' and was stored as empty. Check BLR.xlsx.",
+        "The cell said 'NaN' and was stored as empty. Check the BLR workbook.",
     ),
 }
 # Shown as low priority, regardless of the report level.
@@ -148,6 +160,21 @@ def build_items(report: dict, row_reflex: dict[int, int]) -> list[dict[str, Any]
         add("blr_unresolved_link", str(e["reflex_id"]), f"{r.term if r else '?'} · BLR {e['blr_index_raw']}",
             f"No reconstruction with BLR index {e['blr_index_raw']}.", "",
             [link("Reflex", "reflex", e["reflex_id"])])
+
+    for e in report.get("blr_duplicate_index", []):
+        loc = e["location"]
+        add("blr_duplicate_index", f"{e['blr_index']}:{loc['cell']}", f"BLR {e['blr_index']}",
+            f"Already seen in row {e['first_seen_row']}; this row was skipped.", loc["cell"], [])
+
+    for e in report.get("blr_empty_row", []):
+        loc = e["location"]
+        add("blr_empty_row", f"{e['blr_index']}:{loc['cell']}", f"BLR {e['blr_index']}",
+            "Row has only an index and was skipped.", loc["cell"], [])
+
+    for e in report.get("blr_missing_word", []):
+        loc = e["location"]
+        add("blr_missing_word", f"{e['blr_index']}:{loc['cell']}", f"BLR {e['blr_index']}",
+            "No Word; the reconstruction was imported without a form.", loc["cell"], [])
 
     for e in report.get("skipped_no_term", []):
         if not e.get("variety_english"):  # Excel padding: nothing but the row number
