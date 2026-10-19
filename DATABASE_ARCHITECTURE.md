@@ -13,14 +13,14 @@ The project is organized into modular directories, separating the Python import/
 ├── data/                   # Gitignored: Excel sources, exports and the SQLite database (bantulex.db)
 ├── utils/                  # Python tools (uv workspace)
 │   ├── importer/           # Excel → SQLite pipeline
-│   ├── exporter/           # SQLite → EvoLex Excel, GeoJSON and BLR catalog (JSON)
+│   ├── exporter/           # SQLite → EvoLex Excel and to-fix worklist (HTML)
 │   ├── documenter/         # Generates the data model diagram (just generate-diagram)
 │   └── utilities/          # Shared: SQLModel definitions, DB connection, config
 ├── compose.yml             # Local development services
 └── justfile                # Project command runner (automation)
 ```
 
-The map that consumes the GeoJSON and BLR catalog exports lives in a separate project.
+The map frontend lives in a separate project.
 
 ## 2 Database Engine
 
