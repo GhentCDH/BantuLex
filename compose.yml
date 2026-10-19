@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
 
   # ── Pihka (lokale publicatie) ──────────────────────────────────────────────
-  # site/ wordt over de demo-app van Pihka gemount, zoals build-site dat doet.
+  # site/ is de webroot; /core en /extensions komen uit Pihka, zoals build-site dat doet.
   pihka:
     image: caddy:2-alpine
     command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
@@ -35,8 +35,8 @@ services:
       - "9161:80"
     volumes:
       - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - ./site:/srv/site:ro
       - ./vendor/pihka/pihka:/srv/pihka:ro
-      - ./site:/srv/pihka/app:ro
 
 volumes:
   venv:

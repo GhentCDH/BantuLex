@@ -3,7 +3,10 @@
 }
 
 :80 {
-	root * /srv/pihka
+	# site/ is the web root; the Pihka engine and the map extension come from the submodule.
+	@pihka path /core/* /extensions/point_map/*
+	root @pihka /srv/pihka
+	root * /srv/site
 	@revalidate path *.html *.js *.css *.json /
 	header @revalidate Cache-Control "no-cache"
 

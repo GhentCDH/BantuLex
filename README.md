@@ -1,6 +1,6 @@
 # BantuLex
 
-Linguistic data management system for Bantu languages. Imports data from Excel into a database, exports it (EvoLex Excel and a to-fix worklist), provides a Crouton admin app for browsing and editing the data, and publishes it as a static [Pihka](https://github.com/GhentCDH/Pihka) website.
+Linguistic data management system for Bantu languages. Imports data from Excel into a database, exports it (EvoLex Excel and a to-fix worklist), provides a Crouton admin app for browsing and editing the data, and publishes it as a static website with its own UI on the [Pihka](https://github.com/GhentCDH/Pihka) engine.
 
 > The importer writes the **SQLite** file `data/bantulex.db` (`DB_PATH` in `utils/utils.env`), the same file the Crouton admin edits. When the importer's schema changes, the admin's Prisma schema and resources must follow (see [admin/README.md](admin/README.md)).
 
