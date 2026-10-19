@@ -12,7 +12,7 @@
 data/bantulex.xlsx, data/BLR.xlsx
         │  just import (utils/importer)
         ▼
-     Postgres ──── exporters (utils/exporter) ──► EvoLex Excel, GeoJSON, BLR catalog ──► local-map/
+     Postgres ──── exporters (utils/exporter) ──► EvoLex Excel, to-fix worklist
         │  Dataflow
         ▼
   SQLite export ──► just site-db ──► just publish ──► bantulex.ugent.be (Pihka)

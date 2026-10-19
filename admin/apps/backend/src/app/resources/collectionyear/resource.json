@@ -146,6 +146,26 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(x.value || CASE WHEN x.status <> 'known' THEN ' (' || x.status || ')' ELSE '' END, ''), '#' || x.id) FROM \"collectionyear\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "fieldwork_by_collection_year_id",
+      "alias": "fieldwork_by_collection_year_id",
+      "label": "Fieldworks",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1006,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "fieldwork",
+          "foreignKey": "collection_year_id",
+          "columns": []
+        }
+      }
     }
   ]
 }

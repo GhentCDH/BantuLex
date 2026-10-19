@@ -107,6 +107,28 @@
         "type": "textarea"
       }
     },
+    "coordinate_source": {
+      "label": "Coordinate source",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
     "location_id": {
       "label": "Location",
       "type": {
@@ -201,6 +223,10 @@
           "colspan": 12
         },
         {
+          "id": "coordinate_source",
+          "colspan": 6
+        },
+        {
           "id": "location_id",
           "colspan": 6
         }
@@ -245,8 +271,10 @@
       "fieldInput": {
         "type": "string",
         "options": {
-          "format": "string",
-          "colspan": 12
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "location",
+          "idKey": "location_id"
         }
       }
     }

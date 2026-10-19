@@ -13,14 +13,14 @@ The project is organized into modular directories, separating the Python import/
 ├── data/                   # Gitignored: Excel sources, exports and the SQLite database (bantulex.db)
 ├── utils/                  # Python tools (uv workspace)
 │   ├── importer/           # Excel → SQLite pipeline
-│   ├── exporter/           # SQLite → EvoLex Excel, GeoJSON and BLR catalog (JSON)
+│   ├── exporter/           # SQLite → EvoLex Excel and to-fix worklist (HTML)
 │   ├── documenter/         # Generates the data model diagram (just generate-diagram)
 │   └── utilities/          # Shared: SQLModel definitions, DB connection, config
 ├── compose.yml             # Local development services
 └── justfile                # Project command runner (automation)
 ```
 
-The map that consumes the GeoJSON and BLR catalog exports lives in a separate project.
+The map frontend lives in a separate project.
 
 ## 2 Database Engine
 
@@ -28,10 +28,10 @@ The canonical model is `utils/utilities/src/utilities/model.py`. The importer wr
 
 *   `_text`: unbounded `TEXT` columns.
 *   `_float`: double-precision `FLOAT` columns.
-*   `_ts`: timestamp columns, used for `created_at`/`updated_at` (server default `CURRENT_TIMESTAMP`; `updated_at` is refreshed by SQLAlchemy on ORM updates).
+*   `_ts`: timestamp columns, used for `created_at`/`updated_at` (server default `CURRENT_TIMESTAMP`; an `update_<table>_modtime` trigger refreshes `updated_at` on every `UPDATE`, including edits from the admin).
 *   Booleans are stored as `0`/`1` integers.
 
-The Crouton admin edits the same file. Its Prisma schema and resources were introspected from an older version of `bantulex.db` (22 STRICT tables, with separate `entry` and `blrentry` tables and no `consultant`/`fieldworkconsultant` tables), so they must be regenerated after an import.
+The Crouton admin edits the same file. Its Prisma schema (`admin/prisma/default/schema.prisma`) is introspected from it; when `model.py` changes, update the schema and the admin resources as described in `admin/README.md`.
 
 ## 3 Database Models
 
@@ -94,6 +94,11 @@ Who added a reconstruction (`name`) and its reliability score (`value`).
 Fixed-slot phonological profiles shared across reconstructions: `BLRConsonantStructure` (`c1`–`c4`, `cs`), `BLRVowelStructure` (`v11`, `v12`, `v21`, `v22`, `v3`, `v4`) and `BLRToneStructure` (`t11`, `t12`, `t21`, `t22`, `t3`, `t4`). These are kept as dedicated tables to support the **Klankzoeker** sound search in the map.
 
 ### 3.4 Joins & Ordering
+
+#### BulkImport
+A batch of reflexes added through the admin's bulk import, so the whole batch can be undone.
+*   **Fields**: `label`, `note`, `rows`, `status` (`saved` or `undone`), `undone_at`, `role`, the shared links `source_id`, `variety_id`, `location_id`, `fieldwork_id`, and `source_created`/`variety_created` (the batch created that record).
+*   `reflex.bulkimport_id` points to the batch; it is NULL for reflexes from the spreadsheet import.
 
 #### SourceEntries
 Connects `Reflex` to `Source` with roles and sequence.

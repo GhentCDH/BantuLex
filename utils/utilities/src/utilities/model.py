@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Float, Text, UniqueConstraint, func
+from sqlalchemy import DDL, DateTime, Float, Text, UniqueConstraint, event, func
 from sqlmodel import Field, Relationship, SQLModel
 
 _TIMESTAMPTZ = DateTime(timezone=True)
@@ -225,8 +225,9 @@ class SourceEntries(Table, table=True):
     order: int = Field(default=1)
     pages: str | None = _text(default=None)  # page number as printed, per Reflex
 
-    entry_id: int | None = Field(default=None, foreign_key="reflex.id")
-    source_id: int | None = Field(default=None, foreign_key="source.id")
+    # Indexed: deleting or looking up a reflex checks its source links.
+    entry_id: int | None = Field(default=None, foreign_key="reflex.id", index=True)
+    source_id: int | None = Field(default=None, foreign_key="source.id", index=True)
 
     reflex: "Reflex" = Relationship(back_populates="sources")
     source: "Source" = Relationship()
@@ -335,6 +336,27 @@ class Reconstruction(Table, table=True):
 # ---------------------------------------------------------------------------
 
 
+class BulkImport(Table, table=True):
+    """A batch of reflexes pasted into the admin's bulk import, so it can be undone.
+
+    The shared links are kept for reference; `*_created` marks a source or
+    variety that the batch itself created (undo removes it if unused).
+    """
+
+    label: str | None = _text(default=None)
+    note: str | None = _text(default=None)
+    rows: int = Field(default=0)
+    status: str = _text(default="saved")  # 'saved' or 'undone'
+    undone_at: datetime | None = _ts()
+    role: str | None = _text(default=None)  # source role of the reflexes
+    source_id: int | None = Field(default=None, foreign_key="source.id")
+    variety_id: int | None = Field(default=None, foreign_key="variety.id")
+    location_id: int | None = Field(default=None, foreign_key="location.id")
+    fieldwork_id: int | None = Field(default=None, foreign_key="fieldwork.id")
+    source_created: bool = Field(default=False)
+    variety_created: bool = Field(default=False)
+
+
 class Reflex(Table, table=True):
     """A single lexical Reflex."""
 
@@ -362,6 +384,8 @@ class Reflex(Table, table=True):
     location_id: int | None = Field(default=None, foreign_key="location.id")
     fieldwork_id: int | None = Field(default=None, foreign_key="fieldwork.id")
     blr_entry_id: int | None = Field(default=None, foreign_key="reconstruction.id")
+    # Set for reflexes added by an admin bulk import (NULL for the spreadsheet import)
+    bulkimport_id: int | None = Field(default=None, foreign_key="bulkimport.id", index=True)
 
     # Relationships
     variety: Variety | None = Relationship(back_populates="entries")
@@ -369,3 +393,23 @@ class Reflex(Table, table=True):
     fieldwork: Fieldwork | None = Relationship(back_populates="entries")
     sources: list[SourceEntries] = Relationship(back_populates="reflex")
     blr_entry: Reconstruction | None = Relationship(back_populates="linked_entries")
+
+
+# ---------------------------------------------------------------------------
+# updated_at triggers
+# ---------------------------------------------------------------------------
+
+# The admin writes through Prisma, which never sets updated_at; these triggers
+# keep it current for every UPDATE, whoever makes it.
+for _table in SQLModel.metadata.tables.values():
+    if "updated_at" in _table.c:
+        event.listen(
+            _table,
+            "after_create",
+            DDL(
+                f"CREATE TRIGGER update_{_table.name}_modtime "
+                f"AFTER UPDATE ON {_table.name} FOR EACH ROW BEGIN "
+                f"UPDATE {_table.name} SET updated_at = CURRENT_TIMESTAMP "
+                "WHERE id = NEW.id; END"
+            ).execute_if(dialect="sqlite"),
+        )

@@ -151,6 +151,28 @@
         "type": "string"
       }
     },
+    "branch_detailed": {
+      "label": "Branch detailed",
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "hiddenInView": false,
+      "hiddenInForm": false,
+      "createable": true,
+      "updateable": true,
+      "sortable": true,
+      "filterable": true,
+      "searchable": true,
+      "hiddenInTable": false,
+      "showInLookup": false,
+      "required": false,
+      "fieldInput": {
+        "type": "string"
+      }
+    },
     "bastin_index": {
       "label": "Bastin index",
       "type": {
@@ -221,7 +243,7 @@
       "label": "Substrate suspect",
       "type": {
         "type": [
-          "integer",
+          "boolean",
           "null"
         ]
       },
@@ -236,7 +258,7 @@
       "showInLookup": false,
       "required": false,
       "fieldInput": {
-        "type": "number"
+        "type": "boolean"
       }
     },
     "created_at": {
@@ -302,6 +324,10 @@
           "colspan": 6
         },
         {
+          "id": "branch_detailed",
+          "colspan": 6
+        },
+        {
           "id": "bastin_index",
           "colspan": 6
         },
@@ -329,6 +355,55 @@
       "sqlExpression": "SELECT COALESCE(NULLIF(COALESCE(x.name_english, x.name_bantu, x.name_french, x.name_bastin) || COALESCE(' (' || x.guthrie_index || ')', ''), ''), '#' || x.id) FROM \"variety\" x WHERE x.id = main.id",
       "hiddenInTable": true,
       "hiddenInView": true
+    },
+    {
+      "id": "bulkimport_by_variety_id",
+      "alias": "bulkimport_by_variety_id",
+      "label": "Bulk imports",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1001,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "bulkimport",
+          "foreignKey": "variety_id",
+          "columns": []
+        }
+      }
+    },
+    {
+      "id": "reflex_by_variety_id",
+      "alias": "reflex_by_variety_id",
+      "label": "Reflexes",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
+      "position": 1020,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "variety_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            }
+          ]
+        }
+      }
     }
   ]
 }

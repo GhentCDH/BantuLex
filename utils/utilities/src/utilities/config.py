@@ -29,5 +29,3 @@ EXCEL = DATA_ROOT / (os.getenv("EXCEL_FILE") or "bantulex.xlsx")
 BLR_EXCEL = DATA_ROOT / "BLR.xlsx"
 
 EXPORT_EVOLEX_EXCEL = DATA_ROOT / "evolex_export.xlsx"
-EXPORT_BLR_JSON = DATA_ROOT / "blr_catalog.json"
-EXPORT_GEOJSON = DATA_ROOT / "bantulex_entries.geojson"

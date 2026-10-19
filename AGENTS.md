@@ -16,10 +16,10 @@ just down         # Stop all containers
 just rebuild      # Rebuild and restart all containers (except the admin profile)
 just reinit       # Full reset: rebuild + reset DB + import
 just import       # Run data import (Excel/CSV → data/bantulex.db)
-just export-all   # Run all three exporters
+just export-all   # Run all exporters
 just export-evolex  # Export to EvoLex Excel format
-just export-map     # Export linguistic data as GeoJSON
-just export-blr     # Export BLR phonological data + catalog
+just export-tofix   # Worklist of import errors/warnings → data/to_fix.html (links to /admin)
+just migrate-db   # Add new tables/columns from model.py to an existing data/bantulex.db
 just reset-db     # Back up data/bantulex.db to backups/ and remove it
 just admin        # Build + start the Crouton admin (compose profile "admin", :4444/admin/)
 just admin-dev    # Admin with hot reload (admin/docker-compose.yml, dev profile)
@@ -31,7 +31,7 @@ Python tools can also be run directly via Docker:
 
 ```bash
 docker compose run --rm utils uv run importer
-docker compose run --rm utils uv run export-blr
+docker compose run --rm utils uv run export-evolex
 ```
 
 The Python workspace uses `uv` — there is no formal test suite.
@@ -49,13 +49,12 @@ Excel/CSV files
       ↓
   [Exporters]
   ├─ EvoLex (Excel)
-  ├─ GeoJSON (map)
-  └─ BLR catalog (JSON)
+  └─ to-fix worklist (HTML)
         ↓
-  data/ (consumed by the separate map project)
+  data/
 ```
 
-Known gap: the admin's Prisma schema and resources were introspected from an older version of `data/bantulex.db`; after an import they must be regenerated before the admin works on the new file.
+The admin's Prisma schema and resources are introspected from `data/bantulex.db`; when `model.py` changes, update them as described in `admin/README.md`.
 
 ### Services (Docker Compose)
 
@@ -69,7 +68,7 @@ Known gap: the admin's Prisma schema and resources were introspected from an old
 Managed as a `uv` workspace with four packages:
 
 - **`importer/`** — reads Excel/CSV, validates, inserts into the SQLite database (`DB_PATH`). Entry point: `src/importer/cli.py`
-- **`exporter/`** — three separate scripts (EvoLex, GeoJSON, BLR)
+- **`exporter/`** — two separate scripts (EvoLex, to-fix worklist)
 - **`utilities/`** — shared code: SQLModel ORM definitions (`model.py`), DB connection, config
 - **`documenter/`** — schema visualization tool
 

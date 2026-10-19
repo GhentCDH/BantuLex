@@ -10,13 +10,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -64,13 +64,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -84,126 +84,6 @@
     "foreignKeys": {}
   },
   {
-    "table": "blrentry",
-    "columns": [
-      {
-        "name": "id",
-        "type": "INTEGER",
-        "required": true,
-        "pk": 1
-      },
-      {
-        "name": "created_at",
-        "type": "TEXT",
-        "required": true,
-        "pk": 0
-      },
-      {
-        "name": "updated_at",
-        "type": "TEXT",
-        "required": true,
-        "pk": 0
-      },
-      {
-        "name": "blr_index",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "word_tone",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "word",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "english",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "french",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "noun_class",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "distribution",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "note",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "proto_kk",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "date_of_entry",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "contributor_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "reliability_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "consonant_structure_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "vowel_structure_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "tone_structure_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      }
-    ],
-    "foreignKeys": {
-      "tone_structure_id": "blrtonestructure",
-      "vowel_structure_id": "blrvowelstructure",
-      "consonant_structure_id": "blrconsonantstructure",
-      "reliability_id": "blrreliability",
-      "contributor_id": "blrcontributor"
-    }
-  },
-  {
     "table": "blrreliability",
     "columns": [
       {
@@ -214,13 +94,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -244,13 +124,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -304,13 +184,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -354,6 +234,107 @@
     "foreignKeys": {}
   },
   {
+    "table": "bulkimport",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "label",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "note",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "rows",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "status",
+        "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "undone_at",
+        "type": "DATETIME",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "role",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "source_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "variety_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "location_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "fieldwork_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "source_created",
+        "type": "BOOLEAN",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "variety_created",
+        "type": "BOOLEAN",
+        "required": true,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "fieldwork_id": "fieldwork",
+      "location_id": "location",
+      "variety_id": "variety",
+      "source_id": "source"
+    }
+  },
+  {
     "table": "collectionyear",
     "columns": [
       {
@@ -364,13 +345,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -390,6 +371,36 @@
     "foreignKeys": {}
   },
   {
+    "table": "consultant",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {}
+  },
+  {
     "table": "coordinate",
     "columns": [
       {
@@ -400,30 +411,36 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "latitude",
-        "type": "REAL",
+        "type": "FLOAT",
         "required": false,
         "pk": 0
       },
       {
         "name": "longitude",
-        "type": "REAL",
+        "type": "FLOAT",
         "required": false,
         "pk": 0
       },
       {
         "name": "description",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "coordinate_source",
         "type": "TEXT",
         "required": false,
         "pk": 0
@@ -450,13 +467,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -480,13 +497,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -500,131 +517,6 @@
     "foreignKeys": {}
   },
   {
-    "table": "entry",
-    "columns": [
-      {
-        "name": "id",
-        "type": "INTEGER",
-        "required": true,
-        "pk": 1
-      },
-      {
-        "name": "created_at",
-        "type": "TEXT",
-        "required": true,
-        "pk": 0
-      },
-      {
-        "name": "updated_at",
-        "type": "TEXT",
-        "required": true,
-        "pk": 0
-      },
-      {
-        "name": "original_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "beginning_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "term",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "term_morph_analysis",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "translation",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "meaning",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "scientific_name",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "semantic_field",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "part_of_speech",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "blr_index",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "ipa",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "notes",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "variety_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "location_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "fieldwork_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "blr_entry_id",
-        "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      }
-    ],
-    "foreignKeys": {
-      "blr_entry_id": "blrentry",
-      "fieldwork_id": "fieldwork",
-      "location_id": "location",
-      "variety_id": "variety"
-    }
-  },
-  {
     "table": "fieldwork",
     "columns": [
       {
@@ -635,13 +527,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -654,12 +546,6 @@
       {
         "name": "collection_year_id",
         "type": "INTEGER",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "consultants",
-        "type": "TEXT",
         "required": false,
         "pk": 0
       },
@@ -682,19 +568,76 @@
     }
   },
   {
-    "table": "fieldworkdatacollector",
+    "table": "fieldworkconsultant",
     "columns": [
       {
-        "name": "fieldwork_id",
+        "name": "id",
         "type": "INTEGER",
         "required": true,
         "pk": 1
       },
       {
+        "name": "created_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "fieldwork_id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "consultant_id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 0
+      }
+    ],
+    "foreignKeys": {
+      "consultant_id": "consultant",
+      "fieldwork_id": "fieldwork"
+    }
+  },
+  {
+    "table": "fieldworkdatacollector",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 1
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "fieldwork_id",
+        "type": "INTEGER",
+        "required": true,
+        "pk": 0
+      },
+      {
         "name": "data_collector_id",
         "type": "INTEGER",
         "required": true,
-        "pk": 2
+        "pk": 0
       }
     ],
     "foreignKeys": {
@@ -713,13 +656,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -759,13 +702,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -797,13 +740,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -827,13 +770,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -947,13 +890,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -1018,7 +961,19 @@
         "pk": 0
       },
       {
+        "name": "blr_note",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
         "name": "ipa",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
+        "name": "notes_on_ipa",
         "type": "TEXT",
         "required": false,
         "pk": 0
@@ -1052,13 +1007,20 @@
         "type": "INTEGER",
         "required": false,
         "pk": 0
+      },
+      {
+        "name": "bulkimport_id",
+        "type": "INTEGER",
+        "required": false,
+        "pk": 0
       }
     ],
     "foreignKeys": {
       "blr_entry_id": "reconstruction",
       "fieldwork_id": "fieldwork",
       "location_id": "location",
-      "variety_id": "variety"
+      "variety_id": "variety",
+      "bulkimport_id": "bulkimport"
     }
   },
   {
@@ -1072,13 +1034,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -1110,13 +1072,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -1128,7 +1090,7 @@
       },
       {
         "name": "year_uncertain",
-        "type": "INTEGER",
+        "type": "BOOLEAN",
         "required": true,
         "pk": 0
       },
@@ -1152,19 +1114,25 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "role",
         "type": "TEXT",
+        "required": true,
+        "pk": 0
+      },
+      {
+        "name": "order",
+        "type": "INTEGER",
         "required": true,
         "pk": 0
       },
@@ -1189,7 +1157,7 @@
     ],
     "foreignKeys": {
       "source_id": "source",
-      "entry_id": "entry"
+      "entry_id": "reflex"
     }
   },
   {
@@ -1203,13 +1171,13 @@
       },
       {
         "name": "created_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
       {
         "name": "updated_at",
-        "type": "TEXT",
+        "type": "DATETIME",
         "required": true,
         "pk": 0
       },
@@ -1244,6 +1212,12 @@
         "pk": 0
       },
       {
+        "name": "branch_detailed",
+        "type": "TEXT",
+        "required": false,
+        "pk": 0
+      },
+      {
         "name": "bastin_index",
         "type": "TEXT",
         "required": false,
@@ -1263,7 +1237,7 @@
       },
       {
         "name": "substrate_suspect",
-        "type": "INTEGER",
+        "type": "BOOLEAN",
         "required": false,
         "pk": 0
       }

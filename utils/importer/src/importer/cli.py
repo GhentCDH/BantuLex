@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from typing import Any
@@ -154,6 +155,8 @@ def main() -> None:
     seen_term_variety: dict[tuple[str, Any], int] = {}
 
     total_processed = 0
+    # excel_row -> reflex id, so report entries can link to the admin
+    row_reflex: dict[int, int] = {}
 
     with Session(engine, expire_on_commit=False) as session:
         # -------------------------------------------------------------------
@@ -229,6 +232,7 @@ def main() -> None:
             # Deferred per-batch buffers: avoid one flush-with-RETURNING per row.
             batch_reflexes: list[Reflex] = []
             batch_source_links: list[tuple[Reflex, list[dict]]] = []
+            batch_rows: list[int] = []
             try:
                 for i, row_cells in enumerate(batch):
                     excel_row = total_processed + i + 2
@@ -753,6 +757,7 @@ def main() -> None:
                         )
                         # Defer add/flush — done once per batch below.
                         batch_reflexes.append(reflex)
+                        batch_rows.append(excel_row)
                         batch_source_links.append((reflex, source_objects))
 
                     except Exception as e:
@@ -784,6 +789,9 @@ def main() -> None:
                             )
 
                 session.commit()
+                row_reflex.update(
+                    zip(batch_rows, (r.id for r in batch_reflexes), strict=True)
+                )
                 total_processed += len(batch)
                 logger.info(
                     f"Committed batch — total rows processed: {total_processed}"
@@ -795,6 +803,10 @@ def main() -> None:
                 continue
 
     import_blr(import_report)
+
+    rows_path = DATA_ROOT / "import_rows.json"
+    rows_path.write_text(json.dumps(row_reflex))
+    logger.info(f"Row map ({len(row_reflex)} reflexes) saved to {rows_path}")
 
     elapsed = time.monotonic() - start_time
     logger.info(f"Import complete in {elapsed:.1f}s.")

@@ -1,8 +1,8 @@
 # BantuLex
 
-Linguistic data management system for Bantu languages. Imports data from Excel into a database, exports it (EvoLex Excel, GeoJSON, BLR catalog) for the map, which lives in a separate project, provides a Crouton admin app for browsing and editing the data, and publishes it as a static website with its own UI on the [Pihka](https://github.com/GhentCDH/Pihka) engine.
+Linguistic data management system for Bantu languages. Imports data from Excel into a database, exports it (EvoLex Excel and a to-fix worklist), provides a Crouton admin app for browsing and editing the data, and publishes it as a static website with its own UI on the [Pihka](https://github.com/GhentCDH/Pihka) engine.
 
-> **Known gap:** the importer writes the **SQLite** file `data/bantulex.db` (`DB_PATH` in `utils/utils.env`), the same file the Crouton admin edits. The admin's Prisma schema and resources were introspected from an older version of that file, so they must be regenerated after an import before the admin works on it again (see [admin/README.md](admin/README.md)).
+> The importer writes the **SQLite** file `data/bantulex.db` (`DB_PATH` in `utils/utils.env`), the same file the Crouton admin edits. When the importer's schema changes, the admin's Prisma schema and resources must follow (see [admin/README.md](admin/README.md)).
 
 See [docs/](docs/README.md) for the data model, known data issues and the publishing workflow.
 
@@ -32,7 +32,9 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just rebuild` | Rebuild and restart all containers (except the admin) |
 | `just up` / `just down` | Start / stop the containers |
 | `just import` | Run the data import (into `data/bantulex.db`) |
-| `just export-all` | Run the EvoLex, map and BLR exports (into `data/`) |
+| `just export-all` | Run the EvoLex and to-fix exports (into `data/`) |
+| `just export-tofix` | Worklist of import errors and warnings with admin links: `data/to_fix.html` |
+| `just migrate-db` | Add new tables/columns from `model.py` to an existing `data/bantulex.db` (keeps admin edits) |
 | `just reset-db` | Back up `data/bantulex.db` to `backups/` and remove it |
 | `just reinit` | Rebuild + reset database + import |
 | `just admin` | Build and start the admin app (needs `data/bantulex.db`) |

@@ -16,7 +16,7 @@ graph TB
         db_dev[("./data/bantulex.db<br/><small>SQLite</small>")]
         style db_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
-        exports_dev[("./data exports<br/><small>EvoLex xlsx, GeoJSON, BLR catalog</small>")]
+        exports_dev[("./data exports<br/><small>EvoLex xlsx, to-fix worklist</small>")]
         style exports_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
         utils_dev -. "import" .-> db_dev
@@ -61,7 +61,7 @@ Notes:
 
 - Local dev has no gateway: the admin is reached directly on `127.0.0.1:4444`, and the exporters write their files to `data/`. The map that uses those exports lives in a separate project.
 - The admin has no login: in production it must sit behind an authenticating reverse proxy. Its UI base path is `/admin/` and its API `/api` (see `admin/README.md`); serving it under another sub-path requires changing that configuration.
-- The importer writes the SQLite file `bantulex.db` (`DB_PATH` in `utils/utils.env`), which the exporters read and the admin edits. Known gap: the admin's Prisma schema was introspected from an older version of that file and must be regenerated after an import.
+- The importer writes the SQLite file `bantulex.db` (`DB_PATH` in `utils/utils.env`), which the exporters read and the admin edits. When the importer's schema changes, the admin's Prisma schema and resources must follow (see `admin/README.md`).
 
 ## Legend
 
@@ -95,4 +95,4 @@ To avoid the anti-pattern of slot-based roles (e.g., `role="second_source"`), th
 
 ### 3. BLR Phonological Structures
 
-Phonological positions (C1, V11, T11, etc.) for Bantu Lexical Reconstructions are kept as fixed columns. This is a deliberate choice to support the "Sound Search" (Klankzoeker) in the map (a separate project, fed by `just export-blr`), which requires predictable structural slots.
+Phonological positions (C1, V11, T11, etc.) for Bantu Lexical Reconstructions are kept as fixed columns. This is a deliberate choice to support the "Sound Search" (Klankzoeker) in the map (a separate project), which requires predictable structural slots.
