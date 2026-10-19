@@ -52,9 +52,9 @@ export-all: export-evolex export-map export-blr
 
 # ── Publicatie (Pihka) ───────────────────────────────────────────────────────
 # vendor/pihka is een git submodule van GhentCDH/Pihka en wordt nooit lokaal aangepast.
-# Alles wat BantuLex-specifiek is staat in site/ en wordt de app/-map van Pihka.
+# site/ is de eigen BantuLex-UI; van Pihka gebruikt die alleen core/ (engine) en de kaartextensie.
 
-# Kopieert de SQLite-export naar site/database en bouwt de FTS-indexen voor HTTP VFS
+# Kopieert de SQLite-export naar site/database en materialiseert de perspectieven uit site/config.json
 site-db:
     cp {{SOURCE_DB}} site/database/bantulex.sqlite
     node --input-type=module -e "import { readFileSync } from 'node:fs'; \
@@ -65,14 +65,14 @@ site-db:
 pihka-up:
     docker compose up -d pihka
 
-# Voegt Pihka en site/ samen tot één statische map
+# Voegt site/ en de gebruikte delen van Pihka samen tot één statische map
 build-site:
     rm -rf {{DIST}}
-    mkdir -p {{DIST}}
-    cp -r vendor/pihka/pihka/. {{DIST}}/
-    rm -rf {{DIST}}/app
-    cp -r site {{DIST}}/app
-    rm -f {{DIST}}/app/database/.gitkeep
+    mkdir -p {{DIST}}/extensions
+    cp -r site/. {{DIST}}/
+    cp -r vendor/pihka/pihka/core {{DIST}}/core
+    cp -r vendor/pihka/pihka/extensions/point_map {{DIST}}/extensions/point_map
+    rm -f {{DIST}}/database/.gitkeep
 
 # Kopieert de gebouwde site naar de Caddy-server
 publish: build-site
