@@ -1,6 +1,6 @@
 # BantuLex
 
-Linguistic data management system for Bantu languages. Imports data from Excel into a database, exports it (EvoLex Excel, GeoJSON, BLR catalog) for the map, which lives in a separate project, provides a Crouton admin app for browsing and editing the data, and publishes it as a static [Pihka](https://github.com/GhentCDH/Pihka) website.
+Linguistic data management system for Bantu languages. Imports data from Excel into a database, exports it (EvoLex Excel and a to-fix worklist), provides a Crouton admin app for browsing and editing the data, and publishes it as a static [Pihka](https://github.com/GhentCDH/Pihka) website.
 
 > The importer writes the **SQLite** file `data/bantulex.db` (`DB_PATH` in `utils/utils.env`), the same file the Crouton admin edits. When the importer's schema changes, the admin's Prisma schema and resources must follow (see [admin/README.md](admin/README.md)).
 
@@ -32,7 +32,7 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just rebuild` | Rebuild and restart all containers (except the admin) |
 | `just up` / `just down` | Start / stop the containers |
 | `just import` | Run the data import (into `data/bantulex.db`) |
-| `just export-all` | Run the EvoLex, map, BLR and to-fix exports (into `data/`) |
+| `just export-all` | Run the EvoLex and to-fix exports (into `data/`) |
 | `just export-tofix` | Worklist of import errors and warnings with admin links: `data/to_fix.html` |
 | `just migrate-db` | Add new tables/columns from `model.py` to an existing `data/bantulex.db` (keeps admin edits) |
 | `just reset-db` | Back up `data/bantulex.db` to `backups/` and remove it |

@@ -43,20 +43,12 @@ export-evolex:
     docker compose run  -w /app/utils/exporter --rm utils  uv run export-evolex
     
 
-# GeoJSON-export van alle taalvariëteiten met coördinaten (voor de kaart)
-export-map:
-    docker compose run  -w /app/utils/exporter --rm utils  uv run export-map
-
-# BLR kaartdata: genereert data/bantulex_entries.geojson + data/blr_catalog.json
-export-blr:
-    docker compose run  -w /app/utils/exporter --rm utils  uv run export-blr
-
 # Werklijst van importfouten voor de admin: data/to_fix.html (na een import)
 export-tofix:
     docker compose run  -w /app/utils/exporter --rm utils  uv run export-tofix
 
 # Alle exports in één keer
-export-all: export-evolex export-map export-blr export-tofix
+export-all: export-evolex export-tofix
 
 # ── Publicatie (Pihka) ───────────────────────────────────────────────────────
 # vendor/pihka is een git submodule van GhentCDH/Pihka en wordt nooit lokaal aangepast.
