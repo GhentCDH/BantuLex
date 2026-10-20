@@ -2,6 +2,21 @@
   "database": "database/bantulex.sqlite",
   "databaseVersion": "2026.10.20.1",
   "enrichment": { "fts": false },
+  "mapTheme": {
+    "palette": ["#00418a", "#f14e29", "#3d5940", "#f2a90c", "#8f0b0c", "#98b5f1", "#786955"],
+    "other": "#c4bfb2",
+    "pin": "#f14e29",
+    "outline": "#fffdf6",
+    "clusterText": "#fffdf6",
+    "basemap": {
+      "water": "#c4d4ec",
+      "earth": "#f8f6ef",
+      "landcover": "#dfe3d3",
+      "landuse": "#efece2",
+      "boundaries": "#786955",
+      "roads": "#ddd5c3"
+    }
+  },
   "perspectives": [
     {
       "id": "reconstructions",

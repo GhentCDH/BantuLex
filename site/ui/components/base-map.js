@@ -2,15 +2,21 @@
 /**
  * The basemap shared by the pin map and the word map: Pihka's self-hosted
  * PMTiles style, created once per component and kept across data changes.
+ * Colours come from `mapTheme` in config.json (Pihka's point_map theme).
  */
 import { h, render } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 import { loadMaplibre } from "../../extensions/point_map/js/maplibre-shim.js";
 import { ensurePmtilesProtocol } from "../../extensions/point_map/js/pmtiles-protocol.js";
 import { buildStyle } from "../../extensions/point_map/js/map-layers.js";
+import { resolveTheme } from "../../extensions/point_map/js/theme.js";
+import { useApp } from "../context.js";
 import { LangContext } from "../i18n.js";
 
 const CENTRE_OF_BANTU_AREA = [22, -4];
+
+/** The map colours; the same object on every render. */
+export const useMapTheme = () => resolveTheme(useApp().config.mapTheme);
 
 /**
  * Create the map in `container` once. `prepare()` may load assets first;
@@ -23,6 +29,7 @@ const CENTRE_OF_BANTU_AREA = [22, -4];
  *   setup?: (map: any, maplibregl: any, prepared: any, isActive: () => boolean) => (() => void) | void }} hooks
  */
 export function useBaseMap(container, { prepare, setup } = {}) {
+    const theme = useMapTheme();
     const ready = useRef(/** @type {Promise<any> | null} */ (null));
     useEffect(() => {
         let active = true;
@@ -36,7 +43,7 @@ export function useBaseMap(container, { prepare, setup } = {}) {
             if (!active) return null;
             map = new maplibregl.Map({
                 container: container.current,
-                style: buildStyle(),
+                style: buildStyle(theme),
                 center: CENTRE_OF_BANTU_AREA,
                 zoom: 3,
                 attributionControl: { compact: true },

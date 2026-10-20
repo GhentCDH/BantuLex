@@ -12,6 +12,7 @@ import { href } from "../route.js";
 import { useQuery } from "../use-query.js";
 import { PAGE_SIZE, RESULT_KINDS, toFilters } from "../search-state.js";
 import { ColumnFilter } from "./column-filter.js";
+import { useMapTheme } from "./base-map.js";
 import { PointMap, toPoints } from "./point-map.js";
 import { WordMap } from "./word-map.js";
 
@@ -176,10 +177,11 @@ function MapResults({ filters, colorBy, wordsOf }) {
     const { store } = useApp();
     const key = JSON.stringify(filters);
     const { data, error, loading } = useQuery(() => loadAllRows(store, filters, key), key);
+    const theme = useMapTheme();
     const column = colorBy === "zone" ? "zone" : "blr_label";
     const { points, legend } = useMemo(
-        () => toPoints(data ?? [], column, { neutral: ["—"] }),
-        [data, column],
+        () => toPoints(data ?? [], column, { neutral: ["—"], theme }),
+        [data, column, theme],
     );
     if (error) return h("p", { class: "notice notice-error" }, t("error"));
     return h("div", { class: loading ? "map-block is-loading" : "map-block" },

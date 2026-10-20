@@ -7,23 +7,24 @@
 import { h } from "preact";
 import { useContext, useEffect, useRef } from "preact/hooks";
 import {
-    CLUSTER_GROUPS,
     addClusterLayers,
+    clusterGroups,
     loadPinImages,
     setClusterData,
     whenClusterSource,
 } from "../../extensions/point_map/js/map-layers.js";
 import { categorize, categoryOf } from "../../extensions/point_map/js/categories.js";
+import { DEFAULT_THEME } from "../../extensions/point_map/js/theme.js";
 import { LangContext, useT } from "../i18n.js";
-import { fitPoints, showPopup, useBaseMap } from "./base-map.js";
+import { fitPoints, showPopup, useBaseMap, useMapTheme } from "./base-map.js";
 
 /** Below this many points in total every reflex is its own pin. */
 const CLUSTER_FROM = 1000;
 
 // Clustering is a per-source option, so switching it needs no new layers.
 // Pins may overlap: collision would hide reflexes that share a location.
-function setClustering(map, cluster) {
-    for (const group of CLUSTER_GROUPS) {
+function setClustering(map, cluster, theme) {
+    for (const group of clusterGroups(theme)) {
         map.getSource(group.source)?.setClusterOptions({ cluster });
         map.setLayoutProperty(group.unclustered, "icon-allow-overlap", true);
     }
@@ -35,16 +36,18 @@ function setClustering(map, cluster) {
  */
 export function PointMap({ points, popup, legend = null, class: className = "" }) {
     const lang = useContext(LangContext);
+    const theme = useMapTheme();
     const container = useRef(null);
     const popups = useRef(new Set());
     const current = useRef({ points, popup, lang });
     current.current = { points, popup, lang };
 
     const ready = useBaseMap(container, {
-        prepare: loadPinImages,
+        prepare: () => loadPinImages(theme),
         setup(map, maplibregl, pins, isActive) {
             map.on("load", () =>
                 addClusterLayers(map, pins, {
+                    theme,
                     isActive,
                     onPointClick: (index) => {
                         const point = current.current.points[index];
@@ -67,8 +70,8 @@ export function PointMap({ points, popup, legend = null, class: className = "" }
             [...popups.current].forEach((instance) => instance.remove());
             whenClusterSource(map, () => {
                 if (stale) return;
-                setClustering(map, points.length >= CLUSTER_FROM);
-                setClusterData(map, points);
+                setClustering(map, points.length >= CLUSTER_FROM, theme);
+                setClusterData(map, points, theme);
             });
             fitPoints(map, maplibregl, points);
         });
@@ -98,15 +101,16 @@ export const validCoordinates = (row) =>
     Math.abs(row.latitude) <= 90 && Math.abs(row.longitude) <= 180;
 
 /**
- * Points for rows with valid coordinates, coloured by `column` when given.
- * Rows with impossible coordinates (data entry errors) are left out.
+ * Points for rows with valid coordinates, coloured by `column` with the
+ * `theme` palette when given. Rows with impossible coordinates (data entry
+ * errors) are left out.
  */
-export function toPoints(rows, column = null, { neutral = [] } = {}) {
+export function toPoints(rows, column = null, { neutral = [], theme = DEFAULT_THEME } = {}) {
     const points = rows
         .filter(validCoordinates)
         .map((row) => ({ lat: row.latitude, lon: row.longitude, row, color: undefined }));
     if (!column) return { points, legend: null };
-    const { legend, colorOf } = categorize(points, column, { neutral });
+    const { legend, colorOf } = categorize(points, column, { neutral, palette: theme.palette, other: theme.other });
     points.forEach((point) => (point.color = colorOf(categoryOf(point, column))));
     return { points, legend };
 }

@@ -17,7 +17,7 @@ import { Legend } from "./point-map.js";
 import { DOT, aggregateWords, placeWords } from "./word-layout.js";
 
 /** Font sizes from rare to frequent words, on a log scale of the count. */
-const SIZES = [12, 14, 16, 19];
+const SIZES = [15, 17, 20, 24];
 const LIST_LIMIT = 60;
 
 const WORD_OF = {
