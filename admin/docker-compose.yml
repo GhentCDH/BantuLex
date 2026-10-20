@@ -1,4 +1,4 @@
-# Run from admin/. The database lives in the repository's data/ folder and backups go to its backups/ folder.
+# Run from admin/. The database lives in the repository's data/ folder.
 x-dev: &dev
   build:
     context: .
@@ -10,7 +10,6 @@ x-dev: &dev
     - dev_node_modules:/app/node_modules
     # Overlays admin/data: data/bantulex.db resolves to the repository's data/bantulex.db.
     - ../data:/app/data
-    - ../backups:/app/backups
   init: true
 
 services:
@@ -23,7 +22,6 @@ services:
     volumes:
       # Must contain bantulex.db; the directory must be writable by uid 1000 (SQLite journal files).
       - ../data:/app/data
-      - ../backups:/app/backups
     restart: unless-stopped
 
   # Development toolchain (Node 24, pnpm, Python, go-pmtiles; no browser). Only started explicitly:

@@ -60,7 +60,7 @@ The admin's Prisma schema and resources are introspected from `data/bantulex.db`
 
 | Service           | Port | Description                                           |
 | ----------------- | ---- | ----------------------------------------------------- |
-| `admin`           | 4444 | Crouton admin app; `admin` profile, edits `data/bantulex.db`, backups in `backups/` (see `admin/README.md`) |
+| `admin`           | 4444 | Crouton admin app; `admin` profile, edits `data/bantulex.db` (see `admin/README.md`) |
 | `utils`           | —    | Python build context for import/export tools          |
 
 ### Python Workspace (`utils/`)
@@ -77,6 +77,6 @@ The canonical data model is in [utils/utilities/src/utilities/model.py](utils/ut
 ## Configuration
 
 - Python tools: `utils/utils.env` (`DB_PATH`, `DATA_ROOT`, optional `EXCEL_FILE`, optional `BLR_FILE`); `dev.env` is loaded by Docker Compose for `utils`.
-- Admin: `HOST`, `PORT`, `DATABASE_PATH`, `BACKUP_DIR` (defaults in `admin/Dockerfile`); it has no login, so only expose it on localhost or behind an authenticating proxy.
+- Admin: `HOST`, `PORT`, `DATABASE_PATH` (defaults in `admin/Dockerfile`); it has no login, so only expose it on localhost or behind an authenticating proxy.
 
 Production deployment targets Nomad (see `ARCHITECTURE.md`); Docker Compose is for local dev only.

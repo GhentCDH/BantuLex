@@ -10,7 +10,7 @@ export function copyDatabase() {
  return {dir,db};
 }
 export async function startServer(db,dir,port=14444) {
- let log='';const child=spawn(process.execPath,['dist/backend/main.js'],{cwd:resolve('.'),env:{...process.env,DATABASE_PATH:db,BACKUP_DIR:join(dir,'backups'),PORT:String(port),CROUTON_SCHEMA_EDITOR:'false'},stdio:['ignore','pipe','pipe']});
+ let log='';const child=spawn(process.execPath,['dist/backend/main.js'],{cwd:resolve('.'),env:{...process.env,DATABASE_PATH:db,PORT:String(port),CROUTON_SCHEMA_EDITOR:'false'},stdio:['ignore','pipe','pipe']});
  child.stdout.on('data',d=>log+=d);child.stderr.on('data',d=>log+=d);
  const base=`http://127.0.0.1:${port}/api`;
  for(let i=0;i<100;i++) { if(child.exitCode!==null) throw new Error(log); try {const r=await fetch(base+'/crouton/status.json');if(r.ok) return {child,base,log:()=>log};}catch{} await new Promise(r=>setTimeout(r,100)); }

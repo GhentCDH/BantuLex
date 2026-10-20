@@ -53,23 +53,22 @@ RUN pnpm run setup && pnpm build
 RUN pnpm prune --prod --ignore-scripts && node scripts/patch-crouton.mjs
 
 FROM node:24.21.0-trixie-slim AS runtime
-# python3 performs the consistent SQLite backup on startup; tini forwards signals for a clean shutdown.
+# tini forwards signals for a clean shutdown.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 tini \
+ && apt-get install -y --no-install-recommends tini \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=4444 \
     DATABASE_PATH=/app/data/bantulex.db \
-    BACKUP_DIR=/app/backups \
     CROUTON_SCHEMA_EDITOR=false
 COPY --from=build /app/package.json /app/crouton.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-RUN mkdir -p /app/data /app/backups && chown node:node /app/data /app/backups
+RUN mkdir -p /app/data && chown node:node /app/data
 USER node
-VOLUME ["/app/data", "/app/backups"]
+VOLUME ["/app/data"]
 EXPOSE 4444
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4444)+'/api/country?pageSize=1').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"

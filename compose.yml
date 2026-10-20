@@ -23,7 +23,6 @@ services:
     volumes:
       # Must contain bantulex.db and be writable by uid 1000 (SQLite journal files).
       - ./data:/app/data
-      - ./backups:/app/backups
     restart: unless-stopped
 
   # ── Pihka (lokale publicatie) ──────────────────────────────────────────────

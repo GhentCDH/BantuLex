@@ -4,12 +4,12 @@ The `admin/` folder of the BantuLex repository: a local SQLite editor built with
 
 ## Run
 
-All commands below run from `admin/`. The database is the repository's `data/bantulex.db` (the root `data/` folder, not in git) and startup backups go to the repository's `backups/` folder; both are mounted into the containers by `docker-compose.yml`.
+All commands below run from `admin/`. The database is the repository's `data/bantulex.db` (the root `data/` folder, not in git), mounted into the containers by `docker-compose.yml`. The admin makes no backups; copy the file yourself before risky changes.
 
 Everything runs in Docker; Node, pnpm and the tests are never run on the host. The only host requirement is Docker (with Compose). Two images are built from the `Dockerfile`:
 
 - **`bantulex`** (production, the default target): see [Docker](#docker).
-- **`bantulex-dev`** (`dev` target): Node 24.21.0, pnpm 11.9.0, Python 3 and the `pmtiles` CLI; no browser. It is used by the compose `dev` and `e2e` services, which mount `admin/` at `/app`, the root `data/` at `/app/data` and the root `backups/` at `/app/backups`, and keep a Linux-only `node_modules` in the `dev_node_modules` volume. On every start it runs `pnpm install --frozen-lockfile` and `pnpm run setup` (Crouton patches, Prisma client) and downloads the basemap if it is missing (see [Coordinate maps](#coordinate-maps)), so a lockfile change only needs a new run.
+- **`bantulex-dev`** (`dev` target): Node 24.21.0, pnpm 11.9.0, Python 3 and the `pmtiles` CLI; no browser. It is used by the compose `dev` and `e2e` services, which mount `admin/` at `/app`, the root `data/` at `/app/data`, and keep a Linux-only `node_modules` in the `dev_node_modules` volume. On every start it runs `pnpm install --frozen-lockfile` and `pnpm run setup` (Crouton patches, Prisma client) and downloads the basemap if it is missing (see [Coordinate maps](#coordinate-maps)), so a lockfile change only needs a new run.
 
 Development with hot reload:
 
@@ -25,21 +25,21 @@ Normal operation edits the repository's **data/bantulex.db**. Use Create or Save
 
 ## Docker
 
-The `Dockerfile` builds one self-contained image on `node:24.21.0-trixie-slim`. It serves the UI on `/admin/` and the API on `/api`, and the runtime image includes `python3` for the startup backup. The database is **not** in the image. Mount a directory containing `bantulex.db` at `/app/data`; without it the container exits with "Database does not exist". Startup backups go to `/app/backups`.
+The `Dockerfile` builds one self-contained image on `node:24.21.0-trixie-slim`. It serves the UI on `/admin/` and the API on `/api`. The database is **not** in the image. Mount a directory containing `bantulex.db` at `/app/data`; without it the container exits with "Database does not exist".
 
 ```sh
 docker build -t bantulex .
-docker run -d -p 127.0.0.1:4444:4444 -v "$PWD/../data:/app/data" -v "$PWD/../backups:/app/backups" bantulex
+docker run -d -p 127.0.0.1:4444:4444 -v "$PWD/../data:/app/data" bantulex
 # or: docker compose up -d   (same mounts)
 ```
 
 The build downloads the basemap from the newest Protomaps daily build; `--build-arg PMTILES_BUILD=YYYYMMDD` pins one (old builds are deleted upstream).
 
-Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so both mounted directories must be writable by that uid; SQLite also writes journal files next to the database. `HOST`, `PORT`, `DATABASE_PATH` and `BACKUP_DIR` can be overridden with `-e`. There is no login, so publish the port only on localhost or behind an authenticating reverse proxy. The build stage needs about 2 GB of free Docker disk.
+Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so the mounted data directory must be writable by that uid; SQLite also writes journal files next to the database. `HOST`, `PORT` and `DATABASE_PATH` can be overridden with `-e`. There is no login, so publish the port only on localhost or behind an authenticating reverse proxy. The build stage needs about 2 GB of free Docker disk.
 
 ## Database
 
-`DATABASE_PATH` (default `data/bantulex.db`) and `BACKUP_DIR` (default `backups`) resolve relative to `admin/` (the folder containing `crouton.json`), regardless of the launch directory; in the containers that is `/app`, where the root `data/` and `backups/` folders are mounted. Set `DATABASE_PATH` to use a different file and `PORT` to change the backend port. The server refuses to create a missing database. A consistent SQLite backup is saved in the backup folder on startup before any application writes; `BACKUP_DIR` overrides its location. Stop the app before restoring a backup. Backups are retained until you remove them.
+`DATABASE_PATH` (default `data/bantulex.db`) resolves relative to `admin/` (the folder containing `crouton.json`), regardless of the launch directory; in the containers that is `/app`, where the root `data/` folder is mounted. Set `DATABASE_PATH` to use a different file and `PORT` to change the backend port. The server refuses to create a missing database. The admin does not back up the database; stop the app before replacing `bantulex.db` with a copy.
 
 No migrations, seeds, resets, `db push`, or automatic schema synchronization run. The database and its schema come from the importer (`just reset-db` and `just import` in the repository root). Its timestamp defaults and `update_<table>_modtime` triggers are authoritative: Prisma never writes `created_at` or `updated_at`.
 
