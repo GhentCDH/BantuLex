@@ -6,6 +6,8 @@ import { CroutonApiModule, DataSourceRegistry, ResourceConfigRegistry } from '@g
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { BulkController } from './app/bulk/bulk.controller.js';
 import { setPrismaClient } from './app/bulk/bulk.service.js';
+import { BlrController } from './app/blr/blr.controller.js';
+import { setPrismaClient as setBlrPrismaClient } from './app/blr/blr.service.js';
 import express from 'express';
 import { Prisma } from '@prisma/client';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -36,13 +38,15 @@ class DatabaseErrors implements ExceptionFilter {
   }
 }
 const here=dirname(fileURLToPath(import.meta.url));
-@Module({imports:[await CroutonApiModule.forResourceDir(resolve(here,'app/resources'),resolve(here,'app/data-sources'),{baseUrl:'',prefix:'api'})],controllers:[BulkController]})
+@Module({imports:[await CroutonApiModule.forResourceDir(resolve(here,'app/resources'),resolve(here,'app/data-sources'),{baseUrl:'',prefix:'api'})],controllers:[BulkController,BlrController]})
 class AppModule {}
 const app=await NestFactory.create<NestExpressApplication>(AppModule,{logger:['error','warn','log']});
 // Bulk imports post thousands of rows; the default JSON limit is 100 kB.
 app.useBodyParser('json',{limit:'25mb'});
 // The bulk API uses the same PrismaClient (and SQLite connection) as Crouton.
-setPrismaClient(app.get(DataSourceRegistry,{strict:false}).resolveClient('default'));
+const prismaClient=app.get(DataSourceRegistry,{strict:false}).resolveClient('default');
+setPrismaClient(prismaClient);
+setBlrPrismaClient(prismaClient);
 app.useGlobalFilters(new DatabaseErrors());
 app.enableShutdownHooks();
 const configs=await app.get(ResourceConfigRegistry).getAll();
