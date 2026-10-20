@@ -32,9 +32,10 @@ function setClustering(map, cluster, theme) {
 
 /**
  * @param {{ points: Array<{ lat: number, lon: number, color?: string, row: object }>,
- *   popup: (row: object) => any, legend?: Array<object> | null, class?: string }} props
+ *   popup: (row: object) => any, legend?: Array<object> | null, class?: string,
+ *   zones?: Record<string, string> | null }} props
  */
-export function PointMap({ points, popup, legend = null, class: className = "" }) {
+export function PointMap({ points, popup, legend = null, class: className = "", zones = null }) {
     const lang = useContext(LangContext);
     const theme = useMapTheme();
     const container = useRef(null);
@@ -43,6 +44,7 @@ export function PointMap({ points, popup, legend = null, class: className = "" }
     current.current = { points, popup, lang };
 
     const ready = useBaseMap(container, {
+        zones,
         prepare: () => loadPinImages(theme),
         setup(map, maplibregl, pins, isActive) {
             map.on("load", () =>

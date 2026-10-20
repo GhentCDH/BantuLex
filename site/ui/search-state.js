@@ -8,6 +8,7 @@
  *   t.<column>                                                       column text filter
  *   sort (column, "-column" descending), page (1-based), view (table|map|words), color (blr|zone)
  *   words (term|blr)                                                  text of the word map
+ *   zones (1)                                                         Guthrie zones on the maps
  *   show (reflex|blr)                                                 what the results are
  *
  * Column filters and sort belong to the columns of the `show` mode.
@@ -88,6 +89,7 @@ export function readState(params, show = pick(params.get("show"), ["reflex", "bl
         view: pick(params.get("view"), ["table", "map", "words"]),
         colorBy: pick(params.get("color"), ["blr", "zone"]),
         wordsOf: pick(params.get("words"), ["term", "blr"]),
+        zones: params.get("zones") === "1",
     };
 }
 
@@ -106,6 +108,7 @@ export function writeState(state) {
     if (state.view !== "table") params.set("view", state.view);
     if (state.colorBy !== "blr") params.set("color", state.colorBy);
     if (state.wordsOf !== "term") params.set("words", state.wordsOf);
+    if (state.zones) params.set("zones", "1");
     if (state.show !== "reflex") params.set("show", state.show);
     return params;
 }

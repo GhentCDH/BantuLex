@@ -45,7 +45,7 @@ export function Results({ state, update, baseFilters = {}, hiddenColumns = [], o
     const shown = state.show === "blr" ? "table" : state.view;
     const view = shown === "table"
         ? h(TableResults, { state, update, filters, columns, kind })
-        : h(MapResults, { filters, colorBy: state.colorBy, wordsOf: shown === "words" ? state.wordsOf : null });
+        : h(MapResults, { filters, colorBy: state.colorBy, wordsOf: shown === "words" ? state.wordsOf : null, showZones: state.zones });
     const select = (key, label, options) =>
         h("label", { class: "inline-field" },
             label,
@@ -68,6 +68,13 @@ export function Results({ state, update, baseFilters = {}, hiddenColumns = [], o
             h("span", { class: "spacer" }),
             shown === "words" && select("wordsOf", t("wordsOf"), [["term", t("wordTerm")], ["blr", t("wordBlr")]]),
             shown !== "table" && select("colorBy", t("colorBy"), [["blr", t("colorBlr")], ["zone", t("colorZone")]]),
+            shown !== "table" && h("label", { class: "inline-field" },
+                h("input", {
+                    type: "checkbox",
+                    checked: state.zones,
+                    onChange: (event) => update({ zones: event.currentTarget.checked }, { replace: true }),
+                }),
+                t("guthrieZones")),
             state.show === "reflex" && h("div", { class: "segmented", role: "group" },
                 VIEWS.map((name) =>
                     h("button", {
@@ -172,7 +179,7 @@ function Pager({ page, totalPages, onPage }) {
 }
 
 /** Pins, or with `wordsOf` the words of the reflexes ("term" or "blr"). */
-function MapResults({ filters, colorBy, wordsOf }) {
+function MapResults({ filters, colorBy, wordsOf, showZones }) {
     const t = useT();
     const { store } = useApp();
     const key = JSON.stringify(filters);
@@ -183,11 +190,17 @@ function MapResults({ filters, colorBy, wordsOf }) {
         () => toPoints(data ?? [], column, { neutral: ["—"], theme }),
         [data, column, theme],
     );
+    // Coloured by zone, each zone gets the colour of its pins.
+    const zones = useMemo(() => {
+        if (!showZones) return null;
+        if (column !== "zone") return {};
+        return Object.fromEntries(points.filter((point) => point.row.zone).map((point) => [point.row.zone, point.color]));
+    }, [showZones, column, points]);
     if (error) return h("p", { class: "notice notice-error" }, t("error"));
     return h("div", { class: loading ? "map-block is-loading" : "map-block" },
         wordsOf
-            ? h(WordMap, { points, legend, mode: wordsOf })
-            : h(PointMap, { points, legend, popup: (row) => h(ReflexPopup, { row }) }),
+            ? h(WordMap, { points, legend, mode: wordsOf, zones })
+            : h(PointMap, { points, legend, zones, popup: (row) => h(ReflexPopup, { row }) }),
         data && points.length === 0 && h("p", { class: "map-empty" }, t("noLocation")));
 }
 

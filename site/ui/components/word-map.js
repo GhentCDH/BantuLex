@@ -27,9 +27,9 @@ const WORD_OF = {
 
 /**
  * @param {{ points: Array<{ lat: number, lon: number, color?: string, row: any }>,
- *   mode: "term" | "blr", legend?: Array<object> | null }} props
+ *   mode: "term" | "blr", legend?: Array<object> | null, zones?: Record<string, string> | null }} props
  */
-export function WordMap({ points, mode, legend = null }) {
+export function WordMap({ points, mode, legend = null, zones = null }) {
     const lang = useContext(LangContext);
     const container = useRef(null);
     const words = useMemo(() => aggregateWords(points, WORD_OF[mode]), [points, mode]);
@@ -39,6 +39,7 @@ export function WordMap({ points, mode, legend = null }) {
     const popups = useRef(new Set());
 
     const ready = useBaseMap(container, {
+        zones,
         setup(map, maplibregl) {
             const openGroup = (group) => {
                 const { mode: shown, lang: language } = current.current;
