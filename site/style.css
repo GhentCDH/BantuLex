@@ -1,5 +1,14 @@
 /* BantuLex UI. No framework stylesheet: tokens, layout and components. */
 
+/* Noto Serif, bundled: weights 400–700, Latin, IPA, combining marks, Greek and Cyrillic. */
+@font-face {
+  font-family: "Noto Serif";
+  src: url(./assets/fonts/noto-serif/NotoSerif.woff2) format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
   --bg: #f6f4ef;
@@ -20,7 +29,7 @@
   --radius-small: 5px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
   /* Forms and reconstructions need wide IPA and diacritic coverage. */
-  --font-forms: "Charis SIL", "Gentium Plus", "Noto Serif", "DejaVu Serif", Georgia, serif;
+  --font-forms: "Noto Serif", "Charis SIL", "Gentium Plus", "DejaVu Serif", Georgia, serif;
   --font-mono: ui-monospace, "SFMono-Regular", "DejaVu Sans Mono", monospace;
 }
 
