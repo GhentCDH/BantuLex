@@ -28,14 +28,19 @@ export const ReconstructionInput = z.object({
 });
 export type ReconstructionInput = z.infer<typeof ReconstructionInput>;
 
+const reflexIds = z.array(z.number().int().positive()).max(20000, 'At most 20000 reflexes can be linked at once');
+
+/** A new reconstruction needs at least one reflex. */
 export const BlrRequest = z.object({
   reconstruction: ReconstructionInput,
   structure: Structure,
-  reflex_ids: z.array(z.number().int().positive())
-    .min(1, 'Select at least one reflex')
-    .max(20000, 'At most 20000 reflexes can be linked at once'),
+  reflex_ids: reflexIds.min(1, 'Select at least one reflex'),
 });
 export type BlrRequest = z.infer<typeof BlrRequest>;
+
+/** An update sends the complete set of linked reflexes; most existing reconstructions have none. */
+export const BlrUpdateRequest = BlrRequest.extend({ reflex_ids: reflexIds });
+export type BlrUpdateRequest = z.infer<typeof BlrUpdateRequest>;
 
 /** One problem with the request, in the format the admin shows per field. */
 export interface FieldError { field: string; message: string }
