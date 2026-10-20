@@ -77,6 +77,6 @@ The canonical data model is in [utils/utilities/src/utilities/model.py](utils/ut
 ## Configuration
 
 - Python tools: `utils/utils.env` (`DB_PATH`, `DATA_ROOT`, optional `EXCEL_FILE`, optional `BLR_FILE`); `dev.env` is loaded by Docker Compose for `utils`.
-- Admin: `HOST`, `PORT`, `DATABASE_PATH`, `BACKUP_DIR` (defaults in `admin/Dockerfile`); it has no login, so only expose it on localhost or behind an authenticating proxy.
+- Admin: `HOST`, `PORT`, `DATABASE_PATH`, `BACKUP_DIR`, `SITE_URL` (public site for viewer links; defaults in `admin/Dockerfile`); it has no login, so only expose it on localhost or behind an authenticating proxy.
 
 Production deployment targets Nomad (see `ARCHITECTURE.md`); Docker Compose is for local dev only.

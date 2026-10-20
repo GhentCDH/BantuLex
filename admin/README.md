@@ -35,7 +35,7 @@ docker run -d -p 127.0.0.1:4444:4444 -v "$PWD/../data:/app/data" -v "$PWD/../bac
 
 The build downloads the basemap from the newest Protomaps daily build; `--build-arg PMTILES_BUILD=YYYYMMDD` pins one (old builds are deleted upstream).
 
-Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so both mounted directories must be writable by that uid; SQLite also writes journal files next to the database. `HOST`, `PORT`, `DATABASE_PATH` and `BACKUP_DIR` can be overridden with `-e`. There is no login, so publish the port only on localhost or behind an authenticating reverse proxy. The build stage needs about 2 GB of free Docker disk.
+Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so both mounted directories must be writable by that uid; SQLite also writes journal files next to the database. `HOST`, `PORT`, `DATABASE_PATH`, `BACKUP_DIR` and `SITE_URL` (the public site, for viewer links) can be overridden with `-e`. There is no login, so publish the port only on localhost or behind an authenticating reverse proxy. The build stage needs about 2 GB of free Docker disk.
 
 ## Database
 
@@ -115,17 +115,32 @@ Editing goes through Crouton: rows are loaded with the resource's list operation
 
 `Blr index` is a reference to the BLR, not a free field: the API resolves it to a reconstruction and sets `blr_entry_id` in the same update. An index without a reconstruction (or a non-numeric value) is rejected with a field error and the row is not saved; clearing the cell clears the link. Dirty rows get an amber marker, saved rows flash green, and rows that could not be saved flash red and are listed by row number in the status line. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked (a red left border and tooltip), and changing sort, page size, page or leaving asks before dropping them.
 
-## New reconstruction
+## Reconstruction form
 
-*Lexical data → New reconstruction* (`/admin/crouton/new-reconstruction`) mirrors the public BLR detail page (`/#/blr/<index>`) as a creation form. It saves a BLR reconstruction, its sound structures and the selected reflexes **in one transaction** through `POST /api/blr`; any failed check rolls all of it back.
+*Lexical data → Reconstruction form* (`/admin/crouton/reconstruction-form`) creates a BLR reconstruction or edits an existing one, laid out like the public BLR viewer (`/#/blr/<index>`). On the left are the live heading (`BLR n`, `*word_tone`, the glosses) and the *Sound structure* and *Reconstruction* cards. On the right are the linked reflexes and a picker to add more. Each save is **one transaction**; any failed check rolls all of it back.
 
-- The BLR index is not entered: the API shows `MAX(blr_index) + 1` and assigns it inside the transaction.
-- Reconstruction fields follow the viewer: word (required), word tone, English, French, noun class, Proto KK, date of entry, note, contributor and reliability. Contributor (via the `blrcontributor` resource) and reliability are **dropdowns only**; new contributors are created in their own admin resource.
-- Distribution is a set of **Guthrie zone checkboxes (A–S)**, stored as the space-separated format used in the data.
-- The **sound structure** grid uses the viewer's `C₁ V₁₁ V₁₂ C₂ V₂₁ V₂₂ C₃ V₃ C₄ V₄ CS` order with the tone row under the vowels. C/V/T slots are dropdowns of existing values; CS is a searchable list of existing values. Empty slots are stored as NULL. An identical consonant/vowel/tone tuple is **reused** instead of duplicated.
-- The **reflexes** panel filters candidates (`q`, variety, and “only reflexes without a reconstruction” by default), pages through them and keeps the selection across pages. Already-linked reflexes cannot be selected.
-- At least one reflex is required. If a selected reflex was linked meanwhile, or a contributor/reliability is invalid, nothing is saved and the field error is shown.
-- On success the admin opens the new reconstruction's Crouton detail modal.
+- **Open** a reconstruction with the *BLR index* field, `?blr=<index>`, `?id=<id>`, or *Open in → Reconstruction form* in Crouton's reconstruction view. Without a query the form is empty, for a new reconstruction.
+- **New** (`POST /api/blr`): the BLR index is not entered. The API shows `MAX(blr_index) + 1` and assigns it inside the transaction. At least one reflex is required.
+- **Edit** (`PUT /api/blr/:id`):
+  - The request sends the complete set of reflexes. Reflexes removed from the list (shown struck through until saving, and restorable) are **unlinked**: `blr_entry_id` and `blr_index` become NULL. New ones are linked.
+  - A reconstruction may be left without reflexes (most imported ones have none).
+  - The BLR index and the date of entry are not changed.
+- **Fields** follow the viewer: word (required), word tone, English, French, noun class, Proto-KK, reliability, contributor and note.
+  - Contributor (via the `blrcontributor` resource) and reliability are **dropdowns only**. New contributors are created in their own admin resource.
+  - Distribution is a set of **Guthrie zone checkboxes (A–S)**, stored in the space-separated format used in the data.
+- **Sound structure:** the grid uses the viewer's `C₁ V₁₁ V₁₂ C₂ V₂₁ V₂₂ C₃ V₃ C₄ V₄ CS` order, with the tone row under the vowels.
+  - C/V/T slots are dropdowns of existing values. CS is a searchable list of existing values. Empty slots (∅) are stored as NULL.
+  - An identical consonant/vowel/tone tuple is **reused** instead of duplicated. Editing never changes a structure row that other reconstructions share: a changed structure points to a matching or new tuple.
+- **The picker** filters candidates by `q`, by variety, and by default to reflexes without a reconstruction (plus those of the reconstruction being edited). It pages through them and keeps the selection across pages.
+- **Errors:** if a selected reflex belongs to another reconstruction, or a contributor or reliability is invalid, nothing is saved and the error is shown.
+- **Public viewer links:** `SITE_URL` (default `https://tst.bantulex.ugent.be` in the image and the dev container; empty hides the links) adds *View on public site ↗* to the form and to the reconstruction view. The public site never links back to the admin.
+
+Code: `apps/backend/src/app/blr/` (controller, zod schema, service). The frontend lives in `apps/frontend/src/blr/`:
+
+- `api.ts` holds the requests.
+- `useReconstruction.ts` and `useBlrOptions.ts` hold the state and the choices.
+- `ReconstructionPage.vue` connects the route to the components.
+- The components (`ReconstructionHeader`, `ReconstructionFields`, `SoundStructureForm`, `LinkedReflexes`, `ReflexPicker`, …) only render.
 
 ## Relations in the detail view
 
