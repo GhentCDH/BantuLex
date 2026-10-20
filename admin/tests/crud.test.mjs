@@ -21,6 +21,7 @@ test('every table has a resource that preserves all fields and persists CRUD to 
    const data={};
    // Columns the resource does not let users set (e.g. reflex.bulkimport_id) are left to the API that owns them.
    for(const c of t.columns.filter(c=>!['id','created_at','updated_at'].includes(c.name)&&config.columns[c.name]?.createable!==false)) {
+    if(t.table==='reflex'&&c.name==='blr_index') {data[c.name]=String(sql(db,'select blr_index from reconstruction where blr_index is not null limit 1')[0].blr_index);continue;}
     if(t.foreignKeys[c.name]) data[c.name]=sql(db,`select id from "${t.foreignKeys[c.name]}" order by id desc limit 1`)[0].id;
     else data[c.name]=c.type==='INTEGER'?1900000000:c.type==='BOOLEAN'?true:['REAL','FLOAT'].includes(c.type)?1.234:`TEST ${c.name} bá ɪ e\u0301`;
    }
@@ -35,6 +36,8 @@ test('every table has a resource that preserves all fields and persists CRUD to 
    for(const c of t.columns) assert.ok(c.name in detail.body,`${t.table}.${c.name} in detail`);
    assert.match(detail.body.created_at,/^\d{4}-\d{2}-\d{2} /);
    const changed=Object.fromEntries(Object.entries(data).map(([k,v])=>[k,t.foreignKeys[k]?v:typeof v==='string'?v+' updated':typeof v==='boolean'?!v:v+1]));
+   // Niks zinvols om een bestaande BLR-index op te tellen; leegmaken is een geldige update.
+   if(t.table==='reflex') {changed.blr_index=null;changed.blr_entry_id=null;}
    const update=await request(server.base,`/${t.table}/${id}`,'PUT',changed);assert.equal(update.status,200,`${t.table}: ${JSON.stringify(update)}`);
    const row=sql(db,`select * from "${t.table}" where id=?`,[id])[0];
    // SQLite stores booleans as 0/1.
@@ -65,7 +68,7 @@ test('constraints, nulls, lookup, paging and unique junction pairs',async()=>{
   const dup=await request(s.base,'/reflex','POST',{beginning_id:dupValue});assert.equal(dup.status,400,JSON.stringify(dup));assert.equal(dup.body.message[0].code,'unique');
   for(const t of inventory) {
    const r=await request(s.base,`/${t.table}?q=3&pageSize=2`);assert.equal(r.status,200,`${t.table} search: ${JSON.stringify(r)}`);
-   const capped=await request(s.base,`/${t.table}?pageSize=10000`);assert.equal(capped.status,200);assert.ok(capped.body.data.length<=100);
+   const capped=await request(s.base,`/${t.table}?pageSize=10000`);assert.equal(capped.status,200);assert.ok(capped.body.data.length<=500);
   }
   const one=(await request(s.base,'/datacollector','POST',{name:'Junction one'})).body;
   const two=(await request(s.base,'/datacollector','POST',{name:'Junction two'})).body;

@@ -4,7 +4,8 @@
 // height). Meant for small corrections; larger changes go through the Excel
 // file. Arrows/Enter move between cells; Delete clears a selected block.
 // Bulk edit uses it on a fixed set of existing rows (`growable: false`).
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import type { RouteLocationRaw } from 'vue-router';
 import { COLUMNS, columnForHeader, emptyRow, isEmptyRow, type BulkColumn, type BulkRow } from './columns';
 import { parseTsv, toTsv } from './tsv';
 
@@ -15,25 +16,110 @@ const props = withDefaults(defineProps<{
   defs?: Pick<BulkColumn, 'key' | 'label' | 'width' | 'required'>[];
   /** Rows can be added and deleted, and a pasted header row reorders the columns. */
   growable?: boolean;
+  /** Fill the height of the parent instead of the fixed review height. */
+  fill?: boolean;
+  /** Show the row-number gutter (needed for row selection in the import wizard). */
+  showRowNumbers?: boolean;
+  /** Show the drag-to-fill handle on the focused cell. */
+  fillHandle?: boolean;
+  /** Column widths can be dragged; double-click a handle resets its column. */
+  resizable?: boolean;
+  /** localStorage key for the dragged column widths (optional). */
+  widthsKey?: string;
+  /** Columns edited through a server-backed relation search. */
+  relationColumns?: string[];
+  /** Search existing records for a relation column; never creates records. */
+  searchRelation?: (column: string, query: string) => Promise<{ id: number; label: string; option: string }[]>;
+  /** Column headers can be dragged to reorder the grid. */
+  reorderable?: boolean;
+  /** Columns rendered as links instead of inputs (e.g. the record id). */
+  linkColumns?: Record<string, (value: string) => RouteLocationRaw>;
+  /** Current server-side sort column, and whether it is ascending. */
+  sort?: string;
+  sortDir?: 'asc' | 'desc';
+  /** Columns whose header can be clicked to sort; the rest are plain labels. */
+  sortable?: string[];
   readonly?: string[];
   /** Edited cells, as `${row index}:${key}`. */
   changed?: Set<string>;
   rowStatus?: Map<number, 'saving' | 'saved' | 'error'>;
-}>(), { growable: true });
+}>(), { growable: true, fill: false, showRowNumbers: true, fillHandle: false, resizable: false, reorderable: false });
 const rows = defineModel<BulkRow[]>('rows', { required: true });
 const emit = defineEmits<{
   (e: 'update:columns', value: string[]): void;
   /** Focus left row `left` for another row (`current`) or for outside the grid (null). */
   (e: 'row-leave', left: number, current: number | null): void;
+  /** A sortable header was clicked; the parent applies the server-side sort. */
+  (e: 'sort-change', key: string): void;
+  /** A header was dropped on another: move `from` before `to`. */
+  (e: 'reorder', from: string, to: string): void;
 }>();
 
-const ROW_H = 30, VIEW_H = 480, OVERSCAN = 8;
+const ROW_H = 30, FIXED_H = 480, OVERSCAN = 8;
 const scrollTop = ref(0);
+/** Height of the scrolling viewport; measured when `fill` is set. */
+const viewportH = ref(FIXED_H);
 const viewport = ref<HTMLElement>();
+let resizeObserver: ResizeObserver | undefined;
 const cols = computed(() => props.columns.map(k => (props.defs ?? COLUMNS).find(c => c.key === k)!).filter(Boolean));
 const isReadonly = (key: string) => !!props.readonly?.includes(key);
+
+// Column widths: the definitions provide defaults, a drag can override them.
+const widths = ref<Record<string, number>>({});
+const widthFor = (col: Pick<BulkColumn, 'key' | 'width'>) => widths.value[col.key] ?? col.width;
+function readWidths() {
+  if (!props.widthsKey) return;
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(props.widthsKey) ?? '{}');
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      widths.value = Object.fromEntries(
+        Object.entries(parsed).filter(([, v]) => typeof v === 'number' && v >= 60),
+      );
+    }
+  } catch {
+    // Ignore corrupt storage.
+  }
+}
+function persistWidths() {
+  if (!props.widthsKey) return;
+  try { localStorage.setItem(props.widthsKey, JSON.stringify(widths.value)); } catch { /* unavailable */ }
+}
+watch(() => props.widthsKey, readWidths, { immediate: true });
+
+interface WidthDrag { key: string; startX: number; startWidth: number }
+let widthDrag: WidthDrag | null = null;
+function startResize(e: PointerEvent, col: Pick<BulkColumn, 'key' | 'width'>) {
+  if (!props.resizable) return;
+  e.preventDefault();
+  e.stopPropagation();
+  widthDrag = { key: col.key, startX: e.clientX, startWidth: widthFor(col) };
+  window.addEventListener('pointermove', onResize);
+  window.addEventListener('pointerup', endResize);
+}
+function onResize(e: PointerEvent) {
+  if (!widthDrag) return;
+  widths.value = { ...widths.value, [widthDrag.key]: Math.max(60, Math.round(widthDrag.startWidth + e.clientX - widthDrag.startX)) };
+}
+function endResize() {
+  window.removeEventListener('pointermove', onResize);
+  window.removeEventListener('pointerup', endResize);
+  if (widthDrag) { widthDrag = null; persistWidths(); }
+}
+function resetWidth(e: MouseEvent, key: string) {
+  if (!props.resizable) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const next = { ...widths.value };
+  delete next[key];
+  widths.value = next;
+  persistWidths();
+}
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', onResize);
+  window.removeEventListener('pointerup', endResize);
+});
 const first = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN));
-const last = computed(() => Math.min(rows.value.length, Math.ceil((scrollTop.value + VIEW_H) / ROW_H) + OVERSCAN));
+const last = computed(() => Math.min(rows.value.length, Math.ceil((scrollTop.value + viewportH.value) / ROW_H) + OVERSCAN));
 const visible = computed(() => rows.value.slice(first.value, last.value).map((row, i) => ({ row, index: first.value + i })));
 
 // Selection: anchor and focus cell (row index, column index).
@@ -51,12 +137,25 @@ const selectedRows = ref(new Set<number>());
 // A new row array (after save or clear) starts without a selection.
 watch(() => rows.value, () => { anchor.value = [0, 0]; focus.value = [0, 0]; selectedRows.value = new Set(); activeRow = null; });
 
+// With `fill` the viewport takes the parent's height; measure it for virtualization.
+onMounted(() => {
+  if (!props.fill || !viewport.value) return;
+  viewportH.value = viewport.value.clientHeight || FIXED_H;
+  resizeObserver = new ResizeObserver(([entry]) => {
+    const h = Math.floor(entry.contentRect.height);
+    if (h > 0) viewportH.value = h;
+  });
+  resizeObserver.observe(viewport.value);
+});
+onBeforeUnmount(() => resizeObserver?.disconnect());
+
 function cellId(r: number, c: number) { return `bulk-cell-${r}-${c}`; }
 // Set while focusCell() moves focus to extend a selection, so onFocus keeps the anchor.
 let extending = false;
 // Row that has the focus (null: outside the grid), for the row-leave event.
 let activeRow: number | null = null;
 function onFocusOut(e: FocusEvent) {
+  openRelation.value = null;
   if (viewport.value?.contains(e.relatedTarget as Node | null) || activeRow === null) return;
   const left = activeRow;
   activeRow = null;
@@ -76,17 +175,152 @@ async function focusCell(r: number, c: number, extend = false) {
   if (!extend) anchor.value = [r, c];
   const el = viewport.value!;
   if (r * ROW_H < el.scrollTop) el.scrollTop = r * ROW_H;
-  else if ((r + 1) * ROW_H > el.scrollTop + VIEW_H - ROW_H) el.scrollTop = (r + 2) * ROW_H - VIEW_H;
+  else if ((r + 1) * ROW_H > el.scrollTop + viewportH.value - ROW_H) el.scrollTop = (r + 2) * ROW_H - viewportH.value;
   await nextTick();
   extending = extend;
   (document.getElementById(cellId(r, c)) as HTMLInputElement | null)?.focus({ preventScroll: true });
+}
+
+// Drag-to-fill: the handle repeats the selected block into the rows below (or above).
+interface FillDrag { top: number; bottom: number; left: number; right: number; targetTop: number; targetBottom: number }
+const fillDrag = ref<FillDrag | null>(null);
+const isFocusedCell = (r: number, c: number) => focus.value[0] === r && focus.value[1] === c;
+const showFillHandle = (r: number, c: number) => props.fillHandle && isFocusedCell(r, c) && !isReadonly(cols.value[c]?.key ?? '');
+function inFillPreview(r: number, c: number) {
+  const d = fillDrag.value;
+  return !!d && d.targetTop <= d.targetBottom && r >= d.targetTop && r <= d.targetBottom && c >= d.left && c <= d.right;
+}
+/** Row under the pointer; the header takes the first ROW_H of the scrolled content. */
+function rowAt(clientY: number) {
+  const el = viewport.value!;
+  const y = clientY - el.getBoundingClientRect().top + el.scrollTop - ROW_H;
+  return Math.max(0, Math.min(rows.value.length - 1, Math.floor(y / ROW_H)));
+}
+function startFill(e: PointerEvent, r: number, c: number) {
+  if (!showFillHandle(r, c)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  // The relation menu may sit over the handle; it must not intercept the drag.
+  openRelation.value = null;
+  const g = range.value;
+  fillDrag.value = { top: g.top, bottom: g.bottom, left: g.left, right: g.right, targetTop: g.bottom + 1, targetBottom: g.bottom };
+  window.addEventListener('pointermove', onFillMove);
+  window.addEventListener('pointerup', endFill);
+}
+function onFillMove(e: PointerEvent) {
+  const el = viewport.value, d = fillDrag.value;
+  if (!el || !d) return;
+  const rect = el.getBoundingClientRect();
+  if (e.clientY < rect.top + 20) el.scrollTop -= ROW_H;
+  else if (e.clientY > rect.bottom - 20) el.scrollTop += ROW_H;
+  const target = rowAt(e.clientY);
+  if (target < d.top) { d.targetTop = target; d.targetBottom = d.top - 1; }
+  else if (target > d.bottom) { d.targetTop = d.bottom + 1; d.targetBottom = target; }
+  else { d.targetTop = d.bottom + 1; d.targetBottom = d.bottom; }
+}
+function endFill() {
+  window.removeEventListener('pointermove', onFillMove);
+  window.removeEventListener('pointerup', endFill);
+  const d = fillDrag.value;
+  fillDrag.value = null;
+  if (!d || d.targetTop > d.targetBottom) return;
+
+  const down = d.targetTop > d.bottom;
+  for (let c = d.left; c <= d.right; c++) {
+    const key = cols.value[c]?.key;
+    if (!key || isReadonly(key)) continue;
+    const block = [];
+    const relation = isRelation(key);
+    const idKey = relation ? relationIdKey(key) : '';
+    const ids = [];
+    for (let r = d.top; r <= d.bottom; r++) {
+      block.push(rows.value[r][key]);
+      if (relation) ids.push(rows.value[r][idKey] ?? '');
+    }
+    let i = 0;
+    if (down) {
+      for (let r = d.targetTop; r <= d.targetBottom; r++) {
+        const at = i++ % block.length;
+        rows.value[r][key] = block[at];
+        // Keep the resolved record id with its label, so duplicates stay unambiguous.
+        if (relation) rows.value[r][idKey] = ids[at] ?? '';
+      }
+    } else {
+      for (let r = d.targetBottom; r >= d.targetTop; r--) {
+        const at = block.length - 1 - (i++ % block.length);
+        rows.value[r][key] = block[at];
+        if (relation) rows.value[r][idKey] = ids[at] ?? '';
+      }
+    }
+  }
+  anchor.value = [Math.min(d.top, d.targetTop), d.left];
+  focus.value = [Math.max(d.bottom, d.targetBottom), d.right];
+  // The focus stays on the source cell; this is what normally saves an edited row.
+  emit('row-leave', d.bottom, null);
 }
 
 function ensureRows(n: number) {
   while (rows.value.length < n) rows.value.push(emptyRow());
 }
 
+// Server-backed relation autocomplete: one dropdown at a time, no creation.
+interface RelationOption { id: number; label: string; option: string }
+interface OpenRelation { row: number; col: number; options: RelationOption[]; active: number; loading: boolean; seq: number }
+const openRelation = ref<OpenRelation | null>(null);
+let relationTimer: ReturnType<typeof setTimeout> | undefined;
+let relationSeq = 0;
+const relationIdKey = (key: string) => key.replace(/_label$/, '_id');
+const isRelation = (key: string) => !!props.relationColumns?.includes(key);
+
+function onRelationInput(r: number, c: number, text: string) {
+  const col = cols.value[c];
+  if (!col || !isRelation(col.key)) return;
+  // Any manual change invalidates a previously picked record.
+  rows.value[r][relationIdKey(col.key)] = '';
+  clearTimeout(relationTimer);
+  const query = text.trim();
+  if (!query || !props.searchRelation) { openRelation.value = null; return; }
+  const seq = ++relationSeq;
+  openRelation.value = { row: r, col: c, options: [], active: 0, loading: true, seq };
+  relationTimer = setTimeout(async () => {
+    try {
+      const options = await props.searchRelation!(col.key, query);
+      if (openRelation.value?.seq === seq) {
+        openRelation.value = { ...openRelation.value, options, active: 0, loading: false };
+      }
+    } catch {
+      if (openRelation.value?.seq === seq) openRelation.value = { ...openRelation.value, options: [], loading: false };
+    }
+  }, 250);
+}
+
+function chooseRelation(option: RelationOption) {
+  const open = openRelation.value;
+  if (!open) return;
+  const col = cols.value[open.col];
+  rows.value[open.row][col.key] = option.label;
+  rows.value[open.row][relationIdKey(col.key)] = String(option.id);
+  openRelation.value = null;
+}
+
+/** Handle keys while the relation menu is open; returns true when consumed. */
+function relationKey(e: KeyboardEvent, r: number, c: number) {
+  const open = openRelation.value;
+  if (!open || open.row !== r || open.col !== c) return false;
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (open.options.length) open.active = Math.min(open.options.length - 1, open.active + 1); return true; }
+  if (e.key === 'ArrowUp') { e.preventDefault(); if (open.options.length) open.active = Math.max(0, open.active - 1); return true; }
+  if (e.key === 'Enter') {
+    if (!open.options.length) { openRelation.value = null; return false; }
+    e.preventDefault();
+    chooseRelation(open.options[open.active] ?? open.options[0]);
+    return true;
+  }
+  if (e.key === 'Escape') { e.preventDefault(); openRelation.value = null; return true; }
+  return false;
+}
+
 function onKey(e: KeyboardEvent, r: number, c: number) {
+  if (relationKey(e, r, c)) return;
   const input = e.target as HTMLInputElement;
   const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
   const atEnd = input.selectionStart === input.value.length;
@@ -118,18 +352,21 @@ function onPaste(e: ClipboardEvent, r: number, c: number) {
     emit('update:columns', [...new Set([...(header as string[]), ...props.columns.filter(k => !header.includes(k))])]);
     data = data.slice(1);
     c = 0;
-    nextTick(() => fill(data, r, 0));
+    nextTick(() => fillCells(data, r, 0));
     return;
   }
-  fill(data, r, c);
+  fillCells(data, r, c);
 }
 
-function fill(data: string[][], r: number, c: number) {
+function fillCells(data: string[][], r: number, c: number) {
   if (props.growable) ensureRows(r + data.length);
   else data = data.slice(0, rows.value.length - r);
   data.forEach((cells, i) => cells.forEach((v, j) => {
     const col = cols.value[c + j];
-    if (col && !isReadonly(col.key)) rows.value[r + i][col.key] = v.trim();
+    if (col && !isReadonly(col.key)) {
+      rows.value[r + i][col.key] = v.trim();
+      if (isRelation(col.key)) rows.value[r + i][relationIdKey(col.key)] = '';
+    }
   }));
   anchor.value = [r, c];
   focus.value = [r + data.length - 1, Math.min(cols.value.length - 1, c + (data[0]?.length ?? 1) - 1)];
@@ -160,7 +397,35 @@ function deleteSelected() {
 function addRow() { ensureRows(rows.value.length + 1); }
 
 const filled = computed(() => rows.value.filter(r => !isEmptyRow(r)).length);
-const width = computed(() => 56 + cols.value.reduce((n, c) => n + c.width, 0));
+const width = computed(() => (props.showRowNumbers ? 56 : 0) + cols.value.reduce((n, c) => n + widthFor(c), 0));
+const dirtyRows = computed(() => new Set([...(props.changed ?? [])].map(k => Number(k.split(':')[0]))));
+const isSortable = (key: string) => !!props.sortable?.includes(key);
+const ariaSort = (key: string) => props.sort === key ? (props.sortDir === 'asc' ? 'ascending' : 'descending') : (isSortable(key) ? 'none' : undefined);
+function sortBy(key: string) { if (isSortable(key)) emit('sort-change', key); }
+
+// Header drag and drop for column order.
+const dragKey = ref<string | null>(null);
+const dragOverKey = ref<string | null>(null);
+function onDragStart(e: DragEvent, key: string) {
+  if (!props.reorderable) return;
+  dragKey.value = key;
+  e.dataTransfer?.setData('text/plain', key);
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+}
+function onDragOver(e: DragEvent, key: string) {
+  if (!props.reorderable || !dragKey.value) return;
+  e.preventDefault();
+  dragOverKey.value = key;
+}
+function onDrop(e: DragEvent, key: string) {
+  if (!props.reorderable) return;
+  e.preventDefault();
+  const from = dragKey.value ?? e.dataTransfer?.getData('text/plain') ?? '';
+  dragKey.value = null;
+  dragOverKey.value = null;
+  if (from && from !== key) emit('reorder', from, key);
+}
+function onDragEnd() { dragKey.value = null; dragOverKey.value = null; }
 const rowError = (i: number) => props.errors.get(i);
 const status = (i: number) => props.rowStatus?.get(i);
 const rowTitle = (i: number) => rowError(i) ? Object.values(rowError(i)!).join('; ')
@@ -171,7 +436,7 @@ defineExpose({ focusCell, currentRow });
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2" :class="{ 'h-full min-h-0': fill }">
     <div v-if="growable" class="flex flex-wrap items-center gap-2">
       <button class="btn btn-sm" type="button" @click="addRow">Add row</button>
       <button class="btn btn-sm btn-error" type="button" :disabled="!selectedRows.size" @click="deleteSelected">
@@ -179,28 +444,61 @@ defineExpose({ focusCell, currentRow });
       </button>
       <span class="text-sm opacity-70 ml-auto">{{ filled.toLocaleString() }} rows</span>
     </div>
-    <div ref="viewport" class="bulk-viewport border rounded" :style="{ height: VIEW_H + 'px' }" @focusout="onFocusOut" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
+    <div ref="viewport" class="bulk-viewport border rounded" :class="{ 'flex-1 min-h-0': fill }"
+         :style="fill ? undefined : { height: FIXED_H + 'px' }"
+         @focusout="onFocusOut" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
       <div :style="{ width: width + 'px' }">
         <div class="bulk-row bulk-head" :style="{ height: ROW_H + 'px' }">
-          <div class="bulk-num">#</div>
-          <div v-for="col in cols" :key="col.key" class="bulk-cell bulk-th" :style="{ width: col.width + 'px' }">
-            {{ col.label }}<span v-if="col.required" class="text-red-600"> *</span>
+          <div v-if="showRowNumbers" class="bulk-num">#</div>
+          <div v-for="col in cols" :key="col.key" class="bulk-cell bulk-th" :data-key="col.key"
+               :class="{ 'bulk-th-sortable': isSortable(col.key), 'bulk-th-active': sort === col.key, 'bulk-th-reorder': reorderable, 'bulk-th-drop': dragOverKey === col.key }"
+               :style="{ width: widthFor(col) + 'px' }" :aria-sort="ariaSort(col.key)"
+               @dragover="onDragOver($event, col.key)" @drop="onDrop($event, col.key)">
+            <span v-if="reorderable" class="bulk-drag" draggable="true" :data-key="col.key" title="Drag to reorder"
+                  @dragstart="onDragStart($event, col.key)" @dragend="onDragEnd">⋮⋮</span>
+            <button v-if="isSortable(col.key)" type="button" class="bulk-sort" @click="sortBy(col.key)">
+              {{ col.label }}<span v-if="col.required" class="text-red-600"> *</span>
+              <span class="bulk-arrow" aria-hidden="true">{{ sort === col.key ? (sortDir === 'asc' ? '▲' : '▼') : '' }}</span>
+            </button>
+            <template v-else>{{ col.label }}<span v-if="col.required" class="text-red-600"> *</span></template>
+            <div v-if="resizable" class="bulk-resize" :data-resize="col.key" title="Drag to resize; double-click to reset"
+                 @pointerdown="startResize($event, col)" @dblclick="resetWidth($event, col.key)"></div>
           </div>
         </div>
         <div :style="{ height: rows.length * ROW_H + 'px', position: 'relative' }">
-          <div v-for="{ row, index } in visible" :key="index" class="bulk-row"
-               :class="[{ 'bulk-selected': selectedRows.has(index), 'bulk-invalid': rowError(index) }, status(index) && `bulk-${status(index)}`]"
-               :style="{ position: 'absolute', top: index * ROW_H + 'px', height: ROW_H + 'px' }">
-            <button type="button" class="bulk-num" :title="rowTitle(index)" :data-status="status(index)"
+          <div v-for="{ row, index } in visible" :key="index" class="bulk-row" :data-row="index + 1"
+               :class="[{ 'bulk-selected': selectedRows.has(index), 'bulk-dirty': dirtyRows.has(index), 'bulk-invalid': rowError(index) }, status(index) && `bulk-${status(index)}`]"
+               :style="{ position: 'absolute', top: index * ROW_H + 'px', height: ROW_H + 'px' }"
+               :title="rowTitle(index) || undefined">
+            <button v-if="showRowNumbers" type="button" class="bulk-num" :data-status="status(index)"
                     @click="growable && toggleRow(index, $event)">{{ index + 1 }}</button>
-            <div v-for="(col, c) in cols" :key="col.key" class="bulk-cell" :style="{ width: col.width + 'px' }"
-                 :class="{ 'bulk-in-range': inRange(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
+            <div v-for="(col, c) in cols" :key="col.key" class="bulk-cell" :style="{ width: widthFor(col) + 'px' }"
+                 :class="{ 'bulk-in-range': inRange(index, c), 'bulk-fill-preview': inFillPreview(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
                  :title="rowError(index)?.[col.key]">
-              <input :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
+              <div v-if="linkColumns?.[col.key]" class="bulk-link">
+                <router-link :to="linkColumns[col.key](row[col.key])" :title="`Open ${col.label.toLowerCase()} ${row[col.key]}`">
+                  {{ row[col.key] }}
+                </router-link>
+              </div>
+              <input v-else :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
                      :aria-label="`${col.label} row ${index + 1}`"
                      @focus="onFocus(index, c)"
+                     @input="onRelationInput(index, c, ($event.target as HTMLInputElement).value)"
                      @mousedown.shift.prevent="focusCell(index, c, true)"
                      @keydown="onKey($event, index, c)" @paste="onPaste($event, index, c)" @copy="onCopy($event, index, c)" />
+              <div v-if="showFillHandle(index, c)" class="bulk-fill-handle" title="Drag to fill" aria-hidden="true"
+                   @pointerdown="startFill($event, index, c)"></div>
+              <div v-if="openRelation && openRelation.row === index && openRelation.col === c" class="bulk-relation-menu" @mousedown.prevent>
+                <div v-if="openRelation.loading" class="bulk-relation-empty">Searching…</div>
+                <template v-else>
+                  <button v-for="(option, i) in openRelation.options" :key="option.id" type="button"
+                          class="bulk-relation-option" :class="{ active: i === openRelation.active }"
+                          @mousedown.prevent="chooseRelation(option)" @mouseenter="openRelation.active = i">
+                    {{ option.option }}
+                  </button>
+                  <div v-if="!openRelation.options.length" class="bulk-relation-empty">No matches</div>
+                </template>
+              </div>
             </div>
           </div>
         </div>
@@ -214,13 +512,38 @@ defineExpose({ focusCell, currentRow });
 .bulk-row { display: flex; width: 100%; }
 .bulk-head { position: sticky; top: 0; z-index: 2; background: #f3f4f6; }
 .bulk-num { width: 56px; flex: none; text-align: right; padding: 0 6px; font-size: 12px; color: #6b7280; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; background: #f9fafb; line-height: 30px; }
-.bulk-cell { flex: none; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
-.bulk-th { font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
+.bulk-cell { position: relative; flex: none; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+.bulk-fill-handle { position: absolute; right: -3px; bottom: -3px; z-index: 8; width: 7px; height: 7px; border: 1px solid #fff; background: #2563eb; cursor: crosshair; touch-action: none; }
+.bulk-fill-preview { background: #dbeafe; }
+.bulk-th { position: relative; font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
+.bulk-resize { position: absolute; top: 0; right: -3px; z-index: 4; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
+.bulk-resize:hover { background: rgba(37, 99, 235, 0.25); }
+.bulk-relation-menu { position: absolute; top: 100%; left: 0; z-index: 6; min-width: 100%; max-width: 420px; max-height: 220px; overflow: auto; padding: 2px; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); pointer-events: none; }
+.bulk-relation-option { display: block; width: 100%; padding: 3px 6px; border: 0; background: none; font-size: 13px; text-align: left; white-space: nowrap; cursor: pointer; pointer-events: auto; }
+.bulk-relation-option:hover, .bulk-relation-option.active { background: #dbeafe; }
+.bulk-relation-empty { padding: 4px 6px; font-size: 12px; color: #6b7280; }
+.bulk-th-reorder { padding-left: 18px; }
+.bulk-drag { position: absolute; left: 1px; top: 0; display: flex; align-items: center; height: 100%; padding: 0 2px; font-size: 10px; letter-spacing: -2px; color: #9ca3af; cursor: grab; user-select: none; }
+.bulk-drag:active { cursor: grabbing; }
+.bulk-th-drop { background: #bfdbfe; }
+.bulk-link { display: flex; align-items: center; height: 100%; padding: 0 6px; font-size: 14px; }
+.bulk-link a { color: #2563eb; text-decoration: underline; }
+.bulk-th-sortable:hover { background: #e5e7eb; }
+.bulk-th-active { background: #e5e7eb; }
+.bulk-sort { display: flex; align-items: center; width: 100%; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.bulk-arrow { margin-left: auto; padding-left: 4px; font-size: 9px; }
 .bulk-input { width: 100%; height: 100%; border: 0; padding: 0 6px; font-size: 14px; background: transparent; outline: none; }
 .bulk-input:focus { box-shadow: inset 0 0 0 2px #2563eb; background: #fff; }
 .bulk-in-range { background: #dbeafe; }
 .bulk-selected .bulk-num { background: #bfdbfe; color: #1e3a8a; }
 .bulk-invalid .bulk-num { background: #fee2e2; color: #991b1b; font-weight: 600; }
+/* Without the row-number gutter the row itself carries the save status. */
+.bulk-row.bulk-dirty { box-shadow: inset 3px 0 0 #f59e0b; }
+.bulk-row.bulk-invalid, .bulk-row.bulk-error { box-shadow: inset 3px 0 0 #dc2626; animation: bulk-row-failed 1.2s ease-out; }
+.bulk-row.bulk-saving { box-shadow: inset 3px 0 0 #d97706; }
+.bulk-row.bulk-saved { box-shadow: inset 3px 0 0 #16a34a; animation: bulk-row-saved 1.2s ease-out; }
+@keyframes bulk-row-saved { from { background-color: #bbf7d0; } to { background-color: transparent; } }
+@keyframes bulk-row-failed { from { background-color: #fecaca; } to { background-color: transparent; } }
 .bulk-cell-error { box-shadow: inset 0 0 0 2px #dc2626; }
 .bulk-changed { background: #fef9c3; }
 .bulk-readonly { background: #f9fafb; color: #6b7280; }

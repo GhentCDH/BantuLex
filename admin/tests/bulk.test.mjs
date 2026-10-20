@@ -93,5 +93,18 @@ test('bulk edit: a partial PATCH changes only its fields, null clears, wrong typ
   const bad=await request(s.base,`/reflex/${before.id}`,'PATCH',{translation:12});
   assert.equal(bad.status,400);assert.equal(bad.body.message[0].field,'translation');
   assert.equal(sql(db,'select translation from reflex where id=?',[before.id])[0].translation,'edited ɓá');
+  // blr_index is a reference to the BLR: it is checked and linked atomically.
+  const missing=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:'99999999'});
+  assert.equal(missing.status,400);assert.equal(missing.body.message[0].field,'blr_index');
+  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[before.id])[0].blr_entry_id,before.blr_entry_id);
+  const invalid=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:'not a number'});
+  assert.equal(invalid.status,400);assert.equal(invalid.body.message[0].field,'blr_index');
+  const rec=sql(db,'select id, blr_index from reconstruction where blr_index is not null limit 1')[0];
+  const linked=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:String(rec.blr_index)});
+  assert.equal(linked.status,200,JSON.stringify(linked));
+  const linkedRow=sql(db,'select blr_index, blr_entry_id from reflex where id=?',[before.id])[0];
+  assert.equal(linkedRow.blr_index,String(rec.blr_index));assert.equal(linkedRow.blr_entry_id,rec.id);
+  const cleared=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:null});
+  assert.equal(cleared.status,200);assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[before.id])[0].blr_entry_id,null);
  } finally {await stopServer(s.child);}
 });
