@@ -667,6 +667,23 @@
       }
     },
     {
+      "id": "reconstruction_links",
+      "alias": "reconstruction_links",
+      "label": "Open in",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(main.blr_index AS TEXT)",
+      "position": 0,
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "reconstruction-links",
+          "colspan": 12
+        }
+      }
+    },
+    {
       "id": "reflex_by_blr_entry_id",
       "alias": "reflex_by_blr_entry_id",
       "label": "Reflexes",
