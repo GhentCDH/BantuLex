@@ -250,6 +250,7 @@ function addRow() { ensureRows(rows.value.length + 1); }
 
 const filled = computed(() => rows.value.filter(r => !isEmptyRow(r)).length);
 const width = computed(() => (props.showRowNumbers ? 56 : 0) + cols.value.reduce((n, c) => n + c.width, 0));
+const dirtyRows = computed(() => new Set([...(props.changed ?? [])].map(k => Number(k.split(':')[0]))));
 const isSortable = (key: string) => !!props.sortable?.includes(key);
 const ariaSort = (key: string) => props.sort === key ? (props.sortDir === 'asc' ? 'ascending' : 'descending') : (isSortable(key) ? 'none' : undefined);
 function sortBy(key: string) { if (isSortable(key)) emit('sort-change', key); }
@@ -289,7 +290,7 @@ defineExpose({ focusCell, currentRow });
         </div>
         <div :style="{ height: rows.length * ROW_H + 'px', position: 'relative' }">
           <div v-for="{ row, index } in visible" :key="index" class="bulk-row" :data-row="index + 1"
-               :class="[{ 'bulk-selected': selectedRows.has(index), 'bulk-invalid': rowError(index) }, status(index) && `bulk-${status(index)}`]"
+               :class="[{ 'bulk-selected': selectedRows.has(index), 'bulk-dirty': dirtyRows.has(index), 'bulk-invalid': rowError(index) }, status(index) && `bulk-${status(index)}`]"
                :style="{ position: 'absolute', top: index * ROW_H + 'px', height: ROW_H + 'px' }"
                :title="rowTitle(index) || undefined">
             <button v-if="showRowNumbers" type="button" class="bulk-num" :data-status="status(index)"
@@ -331,9 +332,12 @@ defineExpose({ focusCell, currentRow });
 .bulk-selected .bulk-num { background: #bfdbfe; color: #1e3a8a; }
 .bulk-invalid .bulk-num { background: #fee2e2; color: #991b1b; font-weight: 600; }
 /* Without the row-number gutter the row itself carries the save status. */
-.bulk-row.bulk-invalid, .bulk-row.bulk-error { box-shadow: inset 3px 0 0 #dc2626; }
+.bulk-row.bulk-dirty { box-shadow: inset 3px 0 0 #f59e0b; }
+.bulk-row.bulk-invalid, .bulk-row.bulk-error { box-shadow: inset 3px 0 0 #dc2626; animation: bulk-row-failed 1.2s ease-out; }
 .bulk-row.bulk-saving { box-shadow: inset 3px 0 0 #d97706; }
-.bulk-row.bulk-saved { box-shadow: inset 3px 0 0 #16a34a; }
+.bulk-row.bulk-saved { box-shadow: inset 3px 0 0 #16a34a; animation: bulk-row-saved 1.2s ease-out; }
+@keyframes bulk-row-saved { from { background-color: #bbf7d0; } to { background-color: transparent; } }
+@keyframes bulk-row-failed { from { background-color: #fecaca; } to { background-color: transparent; } }
 .bulk-cell-error { box-shadow: inset 0 0 0 2px #dc2626; }
 .bulk-changed { background: #fef9c3; }
 .bulk-readonly { background: #f9fafb; color: #6b7280; }

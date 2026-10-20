@@ -131,3 +131,22 @@ test('bulk edit fills a block by dragging the cell handle',async({page})=>{
  await page.getByLabel('Id row 1',{exact:true}).click();
  await expect(page.locator('.bulk-fill-handle')).toHaveCount(0);
 });
+
+test('bulk edit rejects a missing BLR index and flashes saved and failed rows',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const id=sql(db,'select id from reflex order by id limit 1')[0].id;
+ const before=row(id);
+ const cell=page.getByLabel('Blr index row 1',{exact:true});
+ await cell.fill('99999999');
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-error/);
+ await expect(page.getByRole('status')).toContainText('not saved (row 1)');
+ expect(row(id).blr_entry_id).toBe(before.blr_entry_id);
+
+ const rec=sql(db,'select id, blr_index from reconstruction where blr_index is not null limit 1')[0];
+ await cell.fill(String(rec.blr_index));
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-saved/);
+ await expect.poll(()=>row(id).blr_entry_id).toBe(rec.id);
+ expect(row(id).blr_index).toBe(String(rec.blr_index));
+});

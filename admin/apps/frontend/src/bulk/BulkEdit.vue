@@ -52,6 +52,8 @@ const dirtyRows = computed(() => [...new Set([...changed.value].map(c => Number(
 // A saved row that is edited again is no longer "saved".
 const shownStatus = computed(() => new Map([...status.value].filter(([i, s]) => !(s === 'saved' && dirtyRows.value.includes(i)))));
 const errorCount = computed(() => [...status.value.values()].filter(s => s === 'error').length);
+/** One-based grid row numbers that could not be saved. */
+const failedRows = computed(() => [...status.value].filter(([, s]) => s === 'error').map(([i]) => i + 1));
 
 function labelsFromUi(el: any, out: Record<string, string> = {}) {
   if (el?.scope) out[el.scope.split('/').pop()] = el.options?.label;
@@ -277,7 +279,9 @@ function fitGrid() {
         </details>
         <span class="ml-auto" role="status">
           <span v-if="dirtyRows.length">{{ dirtyRows.length }} unsaved</span>
-          <span v-if="errorCount" class="text-red-700"> · {{ errorCount }} not saved (hover the row)</span>
+          <span v-if="errorCount" class="text-red-700">
+            · {{ errorCount }} not saved{{ failedRows.length ? ` (row ${failedRows.slice(0, 5).join(', ')}${failedRows.length > 5 ? '…' : ''})` : '' }}
+          </span>
         </span>
         <button class="btn btn-sm btn-primary" type="button" :disabled="!dirtyRows.length" @click="saveAll">Save all</button>
       </div>
