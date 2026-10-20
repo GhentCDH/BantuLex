@@ -183,7 +183,6 @@ test('bulk edit saves a variety by exact label and rejects unknown labels',async
    and (select count(*) from variety w where coalesce(w.name_english,w.name_bantu,w.name_french,w.name_bastin)||coalesce(' ('||w.guthrie_index||')','')
         = coalesce(v.name_english,v.name_bantu,v.name_french,v.name_bastin)||coalesce(' ('||v.guthrie_index||')',''))=1 limit 1`,[before.variety_id])[0];
  const cell=page.getByLabel('Variety row 1',{exact:true});
- await expect(page.locator('#bulk-list-variety_label option').first()).toBeAttached();
  await cell.fill(v.label);
  await page.getByLabel('Term row 2',{exact:true}).click();
  await expect.poll(()=>row(id).variety_id).toBe(v.id);
@@ -220,4 +219,25 @@ test('bulk edit disambiguates duplicate variety labels and ignores extra spaces'
  await page.getByLabel('Term row 2',{exact:true}).click();
  await expect.poll(()=>row(id).variety_id).toBe(823);
  await expect(cell).toHaveValue('Otetela (C71)');
+});
+
+test('bulk edit searches varieties on the server and picks a duplicate',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const id=sql(db,'select id from reflex order by id limit 1')[0].id;
+ const cell=page.getByLabel('Variety row 1',{exact:true});
+ await cell.fill('Tege');
+ const menu=page.locator('.bulk-relation-option');
+ await expect(menu.filter({hasText:'Tege (B71b) [#16]'})).toBeVisible();
+ await menu.filter({hasText:'[#16]'}).click();
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect.poll(()=>row(id).variety_id).toBe(16);
+ await expect(cell).toHaveValue('Tege (B71b)');
+
+ const count=sql(db,'select count(*) n from variety')[0].n;
+ await cell.fill('Tege (B17b)');
+ await expect(page.locator('.bulk-relation-empty')).toHaveText('No matches');
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-error/);
+ expect(row(id).variety_id).toBe(16);
+ expect(sql(db,'select count(*) n from variety')[0].n).toBe(count);
 });

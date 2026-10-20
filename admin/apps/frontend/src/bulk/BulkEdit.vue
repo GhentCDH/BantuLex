@@ -59,7 +59,6 @@ const varietyByLabel = computed(() => {
   return map;
 });
 const varietyByOption = computed(() => new Map(varieties.value.map(v => [v.option, v])));
-const datalists = computed(() => ({ variety_label: varieties.value.map(v => v.option) }));
 
 type ResolvedVariety = { id: number; label: string } | { error: string };
 function resolveVariety(raw: string): ResolvedVariety {
@@ -74,8 +73,23 @@ function resolveVariety(raw: string): ResolvedVariety {
   return { error: `No variety with label “${text}”. Pick an existing one.` };
 }
 
+let varietyForm: any = null;
+
+/** Server-side relation search; results are existing varieties only. */
+async function searchVarieties(column: string, query: string) {
+  if (column !== 'variety_label' || !varietyForm) return [];
+  const { data } = await croutonApiCall(varietyForm, 'findAll', {}, { params: { q: query, pageSize: '20' } });
+  return data.data
+    .map((r: any) => ({ id: r.id, label: normLabel(r.display_label ?? '') }))
+    .filter((o: VarietyOption) => o.label)
+    .map((o: VarietyOption) => ({
+      ...o,
+      option: (varietyByLabel.value.get(o.label)?.length ?? 0) > 1 ? `${o.label} [#${o.id}]` : o.label,
+    }));
+}
+
 async function loadVarieties() {
-  const varietyForm = await crouton.getFormDefById('variety');
+  varietyForm = await crouton.getFormDefById('variety');
   const options: VarietyOption[] = [];
   let pageNo = 1, pages = 1;
   do {
@@ -92,7 +106,13 @@ async function loadVarieties() {
 }
 
 const value = (i: number, key: string) => rows.value[i]?.[key] ?? '';
-const isChanged = (i: number, key: string) => value(i, key) !== (originals.value[i]?.[key] ?? '');
+const isChanged = (i: number, key: string) => {
+  if (key === 'variety_label') {
+    return value(i, key) !== (originals.value[i]?.variety_label ?? '')
+      || (rows.value[i]?.variety_id ?? '') !== (originals.value[i]?.variety_id ?? '');
+  }
+  return value(i, key) !== (originals.value[i]?.[key] ?? '');
+};
 const changed = computed(() => {
   const s = new Set<string>();
   rows.value.forEach((_, i) => EDITABLE.forEach(k => { if (isChanged(i, k)) s.add(`${i}:${k}`); }));
@@ -123,8 +143,16 @@ async function load() {
   if (filter.length) params.filter = filter;
   try {
     const { data } = await croutonApiCall(formDef, 'findAll', {}, { params });
-    originals.value = data.data.map((r: any) => Object.fromEntries(EDITABLE.map(k => [k, r[k] ?? null])));
-    rows.value = data.data.map((r: any) => ({ id: String(r.id), variety_label: r.variety_label ?? '', ...Object.fromEntries(TEXT.map(k => [k, r[k] ?? ''])) }));
+    originals.value = data.data.map((r: any) => ({
+      ...Object.fromEntries(EDITABLE.map(k => [k, r[k] ?? null])),
+      variety_id: r.variety_id != null ? String(r.variety_id) : '',
+    }));
+    rows.value = data.data.map((r: any) => ({
+      id: String(r.id),
+      variety_label: r.variety_label ?? '',
+      variety_id: r.variety_id != null ? String(r.variety_id) : '',
+      ...Object.fromEntries(TEXT.map(k => [k, r[k] ?? ''])),
+    }));
     count.value = data.request?.count ?? 0;
     totalPages.value = data.request?.totalPages ?? 0;
     errors.value = new Map(); status.value = new Map();
@@ -157,12 +185,20 @@ async function saveRow(i: number) {
   for (const key of keys) {
     if (key === 'variety_label') {
       if (!normLabel(value(i, key))) { body.variety_id = null; schemaKeys.variety_id = true; continue; }
-      const resolved = resolveVariety(value(i, key));
-      if ('error' in resolved) issues.variety_label = resolved.error;
-      else {
-        body.variety_id = resolved.id;
+      const picked = rows.value[i]?.variety_id;
+      if (picked) {
+        const id = Number(picked);
+        body.variety_id = id;
         schemaKeys.variety_id = true;
-        canonicalLabels.variety_label = resolved.label;
+        canonicalLabels.variety_label = varieties.value.find(v => v.id === id)?.label ?? normLabel(value(i, key));
+      } else {
+        const resolved = resolveVariety(value(i, key));
+        if ('error' in resolved) issues.variety_label = resolved.error;
+        else {
+          body.variety_id = resolved.id;
+          schemaKeys.variety_id = true;
+          canonicalLabels.variety_label = resolved.label;
+        }
       }
     } else {
       body[key] = value(i, key) === '' ? null : value(i, key);
@@ -185,8 +221,11 @@ async function saveRow(i: number) {
     keys.forEach(k => {
       if (k === 'variety_label') {
         const label = data?.variety_label ?? canonicalLabels.variety_label ?? normLabel(value(i, k));
+        const savedId = body.variety_id == null ? '' : String(body.variety_id);
         originals.value[i].variety_label = label;
+        originals.value[i].variety_id = savedId;
         rows.value[i].variety_label = label;
+        rows.value[i].variety_id = savedId;
       } else {
         originals.value[i][k] = data?.[k] ?? body[k];
       }
@@ -375,7 +414,8 @@ function fitGrid() {
     </div>
     <div ref="gridArea" class="min-h-0" :style="{ height: gridH + 'px' }">
       <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="visibleKeys" :defs="defs" :errors="errors" fill
-                :show-row-numbers="false" fill-handle resizable widths-key="bantulex-bulk-edit-widths" :datalists="datalists"
+                :show-row-numbers="false" fill-handle resizable widths-key="bantulex-bulk-edit-widths"
+                :relation-columns="RELATIONS" :search-relation="searchVarieties"
                 :sort="sort" :sort-dir="sortDir" :sortable="SORTABLE"
                 :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus"
                 @sort-change="onSort" @row-leave="onRowLeave" />

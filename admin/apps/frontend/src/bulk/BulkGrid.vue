@@ -25,8 +25,10 @@ const props = withDefaults(defineProps<{
   resizable?: boolean;
   /** localStorage key for the dragged column widths (optional). */
   widthsKey?: string;
-  /** Autocomplete suggestions per column key, rendered as <datalist> options. */
-  datalists?: Record<string, string[]>;
+  /** Columns edited through a server-backed relation search. */
+  relationColumns?: string[];
+  /** Search existing records for a relation column; never creates records. */
+  searchRelation?: (column: string, query: string) => Promise<{ id: number; label: string; option: string }[]>;
   /** Current server-side sort column, and whether it is ascending. */
   sort?: string;
   sortDir?: 'asc' | 'desc';
@@ -146,6 +148,7 @@ let extending = false;
 // Row that has the focus (null: outside the grid), for the row-leave event.
 let activeRow: number | null = null;
 function onFocusOut(e: FocusEvent) {
+  openRelation.value = null;
   if (viewport.value?.contains(e.relatedTarget as Node | null) || activeRow === null) return;
   const left = activeRow;
   activeRow = null;
@@ -221,9 +224,15 @@ function endFill() {
     for (let r = d.top; r <= d.bottom; r++) block.push(rows.value[r][key]);
     let i = 0;
     if (down) {
-      for (let r = d.targetTop; r <= d.targetBottom; r++) rows.value[r][key] = block[i++ % block.length];
+      for (let r = d.targetTop; r <= d.targetBottom; r++) {
+        rows.value[r][key] = block[i++ % block.length];
+        if (isRelation(key)) rows.value[r][relationIdKey(key)] = '';
+      }
     } else {
-      for (let r = d.targetBottom; r >= d.targetTop; r--) rows.value[r][key] = block[block.length - 1 - (i++ % block.length)];
+      for (let r = d.targetBottom; r >= d.targetTop; r--) {
+        rows.value[r][key] = block[block.length - 1 - (i++ % block.length)];
+        if (isRelation(key)) rows.value[r][relationIdKey(key)] = '';
+      }
     }
   }
   anchor.value = [Math.min(d.top, d.targetTop), d.left];
@@ -236,7 +245,64 @@ function ensureRows(n: number) {
   while (rows.value.length < n) rows.value.push(emptyRow());
 }
 
+// Server-backed relation autocomplete: one dropdown at a time, no creation.
+interface RelationOption { id: number; label: string; option: string }
+interface OpenRelation { row: number; col: number; options: RelationOption[]; active: number; loading: boolean; seq: number }
+const openRelation = ref<OpenRelation | null>(null);
+let relationTimer: ReturnType<typeof setTimeout> | undefined;
+let relationSeq = 0;
+const relationIdKey = (key: string) => key.replace(/_label$/, '_id');
+const isRelation = (key: string) => !!props.relationColumns?.includes(key);
+
+function onRelationInput(r: number, c: number, text: string) {
+  const col = cols.value[c];
+  if (!col || !isRelation(col.key)) return;
+  // Any manual change invalidates a previously picked record.
+  rows.value[r][relationIdKey(col.key)] = '';
+  clearTimeout(relationTimer);
+  const query = text.trim();
+  if (!query || !props.searchRelation) { openRelation.value = null; return; }
+  const seq = ++relationSeq;
+  openRelation.value = { row: r, col: c, options: [], active: 0, loading: true, seq };
+  relationTimer = setTimeout(async () => {
+    try {
+      const options = await props.searchRelation!(col.key, query);
+      if (openRelation.value?.seq === seq) {
+        openRelation.value = { ...openRelation.value, options, active: 0, loading: false };
+      }
+    } catch {
+      if (openRelation.value?.seq === seq) openRelation.value = { ...openRelation.value, options: [], loading: false };
+    }
+  }, 250);
+}
+
+function chooseRelation(option: RelationOption) {
+  const open = openRelation.value;
+  if (!open) return;
+  const col = cols.value[open.col];
+  rows.value[open.row][col.key] = option.label;
+  rows.value[open.row][relationIdKey(col.key)] = String(option.id);
+  openRelation.value = null;
+}
+
+/** Handle keys while the relation menu is open; returns true when consumed. */
+function relationKey(e: KeyboardEvent, r: number, c: number) {
+  const open = openRelation.value;
+  if (!open || open.row !== r || open.col !== c) return false;
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (open.options.length) open.active = Math.min(open.options.length - 1, open.active + 1); return true; }
+  if (e.key === 'ArrowUp') { e.preventDefault(); if (open.options.length) open.active = Math.max(0, open.active - 1); return true; }
+  if (e.key === 'Enter') {
+    if (!open.options.length) { openRelation.value = null; return false; }
+    e.preventDefault();
+    chooseRelation(open.options[open.active] ?? open.options[0]);
+    return true;
+  }
+  if (e.key === 'Escape') { e.preventDefault(); openRelation.value = null; return true; }
+  return false;
+}
+
 function onKey(e: KeyboardEvent, r: number, c: number) {
+  if (relationKey(e, r, c)) return;
   const input = e.target as HTMLInputElement;
   const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
   const atEnd = input.selectionStart === input.value.length;
@@ -279,7 +345,10 @@ function fillCells(data: string[][], r: number, c: number) {
   else data = data.slice(0, rows.value.length - r);
   data.forEach((cells, i) => cells.forEach((v, j) => {
     const col = cols.value[c + j];
-    if (col && !isReadonly(col.key)) rows.value[r + i][col.key] = v.trim();
+    if (col && !isReadonly(col.key)) {
+      rows.value[r + i][col.key] = v.trim();
+      if (isRelation(col.key)) rows.value[r + i][relationIdKey(col.key)] = '';
+    }
   }));
   anchor.value = [r, c];
   focus.value = [r + data.length - 1, Math.min(cols.value.length - 1, c + (data[0]?.length ?? 1) - 1)];
@@ -333,9 +402,6 @@ defineExpose({ focusCell, currentRow });
       </button>
       <span class="text-sm opacity-70 ml-auto">{{ filled.toLocaleString() }} rows</span>
     </div>
-    <datalist v-for="(options, key) in datalists" :id="'bulk-list-' + key" :key="key">
-      <option v-for="option in options" :key="option" :value="option" />
-    </datalist>
     <div ref="viewport" class="bulk-viewport border rounded" :class="{ 'flex-1 min-h-0': fill }"
          :style="fill ? undefined : { height: FIXED_H + 'px' }"
          @focusout="onFocusOut" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
@@ -365,13 +431,24 @@ defineExpose({ focusCell, currentRow });
                  :class="{ 'bulk-in-range': inRange(index, c), 'bulk-fill-preview': inFillPreview(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
                  :title="rowError(index)?.[col.key]">
               <input :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
-                     :list="datalists?.[col.key] ? 'bulk-list-' + col.key : undefined"
                      :aria-label="`${col.label} row ${index + 1}`"
                      @focus="onFocus(index, c)"
+                     @input="onRelationInput(index, c, ($event.target as HTMLInputElement).value)"
                      @mousedown.shift.prevent="focusCell(index, c, true)"
                      @keydown="onKey($event, index, c)" @paste="onPaste($event, index, c)" @copy="onCopy($event, index, c)" />
               <div v-if="showFillHandle(index, c)" class="bulk-fill-handle" title="Drag to fill" aria-hidden="true"
                    @pointerdown="startFill($event, index, c)"></div>
+              <div v-if="openRelation && openRelation.row === index && openRelation.col === c" class="bulk-relation-menu" @mousedown.prevent>
+                <div v-if="openRelation.loading" class="bulk-relation-empty">Searching…</div>
+                <template v-else>
+                  <button v-for="(option, i) in openRelation.options" :key="option.id" type="button"
+                          class="bulk-relation-option" :class="{ active: i === openRelation.active }"
+                          @mousedown.prevent="chooseRelation(option)" @mouseenter="openRelation.active = i">
+                    {{ option.option }}
+                  </button>
+                  <div v-if="!openRelation.options.length" class="bulk-relation-empty">No matches</div>
+                </template>
+              </div>
             </div>
           </div>
         </div>
@@ -391,6 +468,10 @@ defineExpose({ focusCell, currentRow });
 .bulk-th { position: relative; font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
 .bulk-resize { position: absolute; top: 0; right: -3px; z-index: 4; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
 .bulk-resize:hover { background: rgba(37, 99, 235, 0.25); }
+.bulk-relation-menu { position: absolute; top: 100%; left: 0; z-index: 6; min-width: 100%; max-width: 420px; max-height: 220px; overflow: auto; padding: 2px; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); pointer-events: none; }
+.bulk-relation-option { display: block; width: 100%; padding: 3px 6px; border: 0; background: none; font-size: 13px; text-align: left; white-space: nowrap; cursor: pointer; pointer-events: auto; }
+.bulk-relation-option:hover, .bulk-relation-option.active { background: #dbeafe; }
+.bulk-relation-empty { padding: 4px 6px; font-size: 12px; color: #6b7280; }
 .bulk-th-sortable:hover { background: #e5e7eb; }
 .bulk-th-active { background: #e5e7eb; }
 .bulk-sort { display: flex; align-items: center; width: 100%; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }
