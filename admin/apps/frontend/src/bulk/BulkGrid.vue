@@ -25,6 +25,8 @@ const props = withDefaults(defineProps<{
   resizable?: boolean;
   /** localStorage key for the dragged column widths (optional). */
   widthsKey?: string;
+  /** Autocomplete suggestions per column key, rendered as <datalist> options. */
+  datalists?: Record<string, string[]>;
   /** Current server-side sort column, and whether it is ascending. */
   sort?: string;
   sortDir?: 'asc' | 'desc';
@@ -331,6 +333,9 @@ defineExpose({ focusCell, currentRow });
       </button>
       <span class="text-sm opacity-70 ml-auto">{{ filled.toLocaleString() }} rows</span>
     </div>
+    <datalist v-for="(options, key) in datalists" :id="'bulk-list-' + key" :key="key">
+      <option v-for="option in options" :key="option" :value="option" />
+    </datalist>
     <div ref="viewport" class="bulk-viewport border rounded" :class="{ 'flex-1 min-h-0': fill }"
          :style="fill ? undefined : { height: FIXED_H + 'px' }"
          @focusout="onFocusOut" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
@@ -360,6 +365,7 @@ defineExpose({ focusCell, currentRow });
                  :class="{ 'bulk-in-range': inRange(index, c), 'bulk-fill-preview': inFillPreview(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
                  :title="rowError(index)?.[col.key]">
               <input :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
+                     :list="datalists?.[col.key] ? 'bulk-list-' + col.key : undefined"
                      :aria-label="`${col.label} row ${index + 1}`"
                      @focus="onFocus(index, c)"
                      @mousedown.shift.prevent="focusCell(index, c, true)"

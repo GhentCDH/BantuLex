@@ -2,7 +2,8 @@
 // Bulk edit of the text columns of existing reflexes, 100 rows per page in the bulk grid.
 // Rows come from Crouton's list API; a row is saved when the focus leaves it (or with Save
 // all): its changed fields are checked with Crouton's form schema of the reflex resource and
-// sent as one PATCH. Relations are shown, not edited (use the reflex form for those).
+// sent as one PATCH. The variety is edited through its label and must match an
+// existing variety; other relations stay in the reflex form.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router';
 import { croutonApiCall, useCrouton } from '@ghentcdh/crouton-vue';
@@ -13,7 +14,10 @@ import { useColumnVisibility } from './useColumnVisibility';
 
 const TEXT = ['term', 'translation', 'meaning', 'part_of_speech', 'term_morph_analysis', 'semantic_field',
   'scientific_name', 'ipa', 'notes_on_ipa', 'blr_index', 'blr_note', 'notes'];
-const READONLY = ['id', 'variety_label'];
+/** Relation columns, edited through their label and resolved to an id on save. */
+const RELATIONS = ['variety_label'];
+const EDITABLE = [...TEXT, ...RELATIONS];
+const READONLY = ['id'];
 type Status = 'saving' | 'saved' | 'error';
 
 const crouton = useCrouton();
@@ -41,11 +45,38 @@ const totalPages = ref(0);
 const loading = ref(false);
 const loadError = ref('');
 
+// Relation labels offered in the grid's datalists, and the exact-match lookup.
+interface VarietyOption { id: number; label: string }
+const varieties = ref<VarietyOption[]>([]);
+const varietyByLabel = computed(() => {
+  const map = new Map<string, number[]>();
+  for (const v of varieties.value) {
+    const label = v.label.trim();
+    if (!label) continue;
+    map.set(label, [...(map.get(label) ?? []), v.id]);
+  }
+  return map;
+});
+const datalists = computed(() => ({ variety_label: varieties.value.map(v => v.label) }));
+
+async function loadVarieties() {
+  const varietyForm = await crouton.getFormDefById('variety');
+  const options: VarietyOption[] = [];
+  let pageNo = 1, pages = 1;
+  do {
+    const { data } = await croutonApiCall(varietyForm, 'findAll', {}, { params: { page: String(pageNo), pageSize: '500' } });
+    options.push(...data.data.map((r: any) => ({ id: r.id, label: r.display_label ?? '' })).filter((v: VarietyOption) => v.label));
+    pages = data.request?.totalPages ?? 1;
+    pageNo++;
+  } while (pageNo <= pages);
+  varieties.value = options;
+}
+
 const value = (i: number, key: string) => rows.value[i]?.[key] ?? '';
 const isChanged = (i: number, key: string) => value(i, key) !== (originals.value[i]?.[key] ?? '');
 const changed = computed(() => {
   const s = new Set<string>();
-  rows.value.forEach((_, i) => TEXT.forEach(k => { if (isChanged(i, k)) s.add(`${i}:${k}`); }));
+  rows.value.forEach((_, i) => EDITABLE.forEach(k => { if (isChanged(i, k)) s.add(`${i}:${k}`); }));
   return s;
 });
 const dirtyRows = computed(() => [...new Set([...changed.value].map(c => Number(c.split(':')[0])))]);
@@ -73,7 +104,7 @@ async function load() {
   if (filter.length) params.filter = filter;
   try {
     const { data } = await croutonApiCall(formDef, 'findAll', {}, { params });
-    originals.value = data.data.map((r: any) => Object.fromEntries(TEXT.map(k => [k, r[k] ?? null])));
+    originals.value = data.data.map((r: any) => Object.fromEntries(EDITABLE.map(k => [k, r[k] ?? null])));
     rows.value = data.data.map((r: any) => ({ id: String(r.id), variety_label: r.variety_label ?? '', ...Object.fromEntries(TEXT.map(k => [k, r[k] ?? ''])) }));
     count.value = data.request?.count ?? 0;
     totalPages.value = data.request?.totalPages ?? 0;
@@ -92,13 +123,34 @@ function setRowError(i: number, issues: Record<string, string> | null, s?: Statu
   if (s) status.value = new Map(status.value).set(i, s);
 }
 
-/** One PATCH with the changed fields of row i; empty cells are stored as NULL. */
+/**
+ * One PATCH with the changed fields of row i. Text cells are stored as NULL when
+ * empty; relation labels are resolved to an existing id and never create records.
+ */
 async function saveRow(i: number) {
-  const keys = TEXT.filter(k => isChanged(i, k));
+  const keys = EDITABLE.filter(k => isChanged(i, k));
   if (!keys.length) return;
-  const body = Object.fromEntries(keys.map(k => [k, value(i, k) === '' ? null : value(i, k)]));
+
+  const body: Record<string, unknown> = {};
+  const schemaKeys: Record<string, true> = {};
+  const issues: Record<string, string> = {};
+  for (const key of keys) {
+    if (key === 'variety_label') {
+      const label = value(i, key).trim();
+      if (!label) { body.variety_id = null; schemaKeys.variety_id = true; continue; }
+      const ids = varietyByLabel.value.get(label);
+      if (!ids?.length) issues.variety_label = `No variety with label “${label}”. Pick an existing one.`;
+      else if (ids.length > 1) issues.variety_label = `“${label}” matches ${ids.length} varieties; use the reflex form.`;
+      else { body.variety_id = ids[0]; schemaKeys.variety_id = true; }
+    } else {
+      body[key] = value(i, key) === '' ? null : value(i, key);
+      schemaKeys[key] = true;
+    }
+  }
+  if (Object.keys(issues).length) { setRowError(i, issues, 'error'); return; }
+
   const schema = formDef.schemas.form.zodSchema;
-  const check = typeof schema?.pick === 'function' ? schema.pick(Object.fromEntries(keys.map(k => [k, true]))).safeParse(body) : { success: true };
+  const check = typeof schema?.pick === 'function' ? schema.pick(schemaKeys).safeParse(body) : { success: true };
   if (!check.success) {
     setRowError(i, Object.fromEntries(check.error.issues.map((x: any) => [String(x.path[0]), x.message])), 'error');
     return;
@@ -108,13 +160,21 @@ async function saveRow(i: number) {
   try {
     const { data } = await croutonApiCall(formDef, 'patch', { id: rowsAtStart[i].id }, body);
     if (rows.value !== rowsAtStart) return; // another page was loaded meanwhile
-    keys.forEach(k => { originals.value[i][k] = data?.[k] ?? body[k]; });
+    keys.forEach(k => {
+      if (k === 'variety_label') {
+        const label = data?.variety_label ?? value(i, k).trim();
+        originals.value[i].variety_label = label;
+        rows.value[i].variety_label = label;
+      } else {
+        originals.value[i][k] = data?.[k] ?? body[k];
+      }
+    });
     setRowError(i, null, 'saved');
   } catch (e: any) {
     if (rows.value !== rowsAtStart) return;
     const message = e?.response?.data?.message;
     const issues = Array.isArray(message)
-      ? Object.fromEntries(message.map((m: any) => [TEXT.includes(m.field) ? m.field : '_', m.message]))
+      ? Object.fromEntries(message.map((m: any) => [m.field === 'variety_id' || EDITABLE.includes(m.field) ? (m.field === 'variety_id' ? 'variety_label' : m.field) : '_', m.message]))
       : { _: typeof message === 'string' ? message : e.message };
     setRowError(i, issues, 'error');
   }
@@ -207,6 +267,11 @@ onMounted(async () => {
     ...TEXT.map(k => ({ key: k, label: labels[k] ?? k, width: COLUMNS.find(c => c.key === k)?.width ?? 150 })),
   ];
   await load();
+  try {
+    await loadVarieties();
+  } catch (e: any) {
+    loadError.value = `Could not load varieties: ${e?.message ?? e}`;
+  }
   fitGrid();
 });
 onBeforeUnmount(() => {
@@ -243,7 +308,7 @@ function fitGrid() {
     <div ref="chrome" class="flex flex-col gap-2">
       <header class="flex flex-wrap items-baseline gap-x-3">
         <h2 class="text-xl font-semibold">Bulk edit of reflexes</h2>
-        <p class="text-sm opacity-70" title="Edit the text fields of existing reflexes. A row is saved when you leave it (or with Save all, Ctrl/Cmd+S); edited cells are yellow until saved. Clearing a cell removes the value. Relations are changed in the reflex form.">
+        <p class="text-sm opacity-70" title="Edit the text fields of existing reflexes. A row is saved when you leave it (or with Save all, Ctrl/Cmd+S); edited cells are yellow until saved. Clearing a cell removes the value. Variety is edited by its exact label; other relations are changed in the reflex form.">
           Save on leaving a row, or Ctrl/Cmd+S. Edited cells are yellow until saved.
         </p>
       </header>
@@ -288,7 +353,7 @@ function fitGrid() {
     </div>
     <div ref="gridArea" class="min-h-0" :style="{ height: gridH + 'px' }">
       <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="visibleKeys" :defs="defs" :errors="errors" fill
-                :show-row-numbers="false" fill-handle resizable widths-key="bantulex-bulk-edit-widths"
+                :show-row-numbers="false" fill-handle resizable widths-key="bantulex-bulk-edit-widths" :datalists="datalists"
                 :sort="sort" :sort-dir="sortDir" :sortable="SORTABLE"
                 :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus"
                 @sort-change="onSort" @row-leave="onRowLeave" />

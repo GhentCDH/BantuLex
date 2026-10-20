@@ -173,3 +173,27 @@ test('bulk edit resizes a column by dragging its header edge',async({page})=>{
  const reset=await page.locator('.bulk-th[data-key="term"]').boundingBox();
  expect(Math.abs(reset!.width-before!.width)).toBeLessThan(2);
 });
+
+test('bulk edit saves a variety by exact label and rejects unknown labels',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const id=sql(db,'select id from reflex order by id limit 1')[0].id;
+ const before=row(id);
+ const v=sql(db,`select v.id, coalesce(v.name_english,v.name_bantu,v.name_french,v.name_bastin)||coalesce(' ('||v.guthrie_index||')','') label
+   from variety v where v.name_english is not null and v.guthrie_index is not null and v.id<>?
+   and (select count(*) from variety w where coalesce(w.name_english,w.name_bantu,w.name_french,w.name_bastin)||coalesce(' ('||w.guthrie_index||')','')
+        = coalesce(v.name_english,v.name_bantu,v.name_french,v.name_bastin)||coalesce(' ('||v.guthrie_index||')',''))=1 limit 1`,[before.variety_id])[0];
+ const cell=page.getByLabel('Variety row 1',{exact:true});
+ await expect(page.locator('#bulk-list-variety_label option').first()).toBeAttached();
+ await cell.fill(v.label);
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect.poll(()=>row(id).variety_id).toBe(v.id);
+ await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-saved/);
+
+ const count=sql(db,'select count(*) n from variety')[0].n;
+ await cell.fill('No such variety 999');
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-error/);
+ await expect(page.getByRole('status')).toContainText('not saved (row 1)');
+ expect(row(id).variety_id).toBe(v.id);
+ expect(sql(db,'select count(*) n from variety')[0].n).toBe(count);
+});
