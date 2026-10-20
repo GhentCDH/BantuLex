@@ -92,7 +92,6 @@ pihka-update:
 
 # Productie-image bouwen en starten op :4444 (vereist data/bantulex.db, schrijfbaar voor uid 1000)
 admin:
-    mkdir -p backups
     docker compose --profile admin up -d --build admin
 
 # Dev-server met hot reload (UI :5555/admin/, API :4444/api); stop eerst `admin` (zelfde poort 4444)

@@ -10,18 +10,13 @@ import { BlrController } from './app/blr/blr.controller.js';
 import { setPrismaClient as setBlrPrismaClient } from './app/blr/blr.service.js';
 import express from 'express';
 import { Prisma } from '@prisma/client';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
 import { root, databasePath } from './paths.js';
 
 process.chdir(root);
 if (!existsSync(databasePath)) throw new Error(`Database does not exist: ${databasePath}`);
-const backupDir=resolve(root,process.env.BACKUP_DIR || 'backups');
-mkdirSync(backupDir,{recursive:true});
-const backup=resolve(backupDir,`bantulex-${Date.now()}.db`);
-execFileSync('python3',['-c', 'import sqlite3,sys; s=sqlite3.connect("file:"+sys.argv[1]+"?mode=ro",uri=True); d=sqlite3.connect(sys.argv[2]); s.backup(d); d.close(); s.close()',databasePath,backup]);
 
 @Catch(Prisma.PrismaClientKnownRequestError, Prisma.PrismaClientValidationError)
 class DatabaseErrors implements ExceptionFilter {

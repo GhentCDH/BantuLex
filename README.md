@@ -47,7 +47,7 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just pihka-up` | Preview the website locally |
 | `just publish` | Build the website and rsync it |
 
-The admin backs up `data/bantulex.db` into `backups/` on every start. Backups contain data and are gitignored. On Linux, `data/` and `backups/` must be writable by uid 1000.
+The admin does not make backups; `just reset-db` copies `data/bantulex.db` into `backups/` before removing it. Backups contain data and are gitignored. On Linux, `data/` must be writable by uid 1000.
 
 ## Credits
 
