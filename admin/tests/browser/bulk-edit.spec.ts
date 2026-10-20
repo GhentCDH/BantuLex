@@ -260,3 +260,24 @@ test('bulk edit fills a variety block by dragging the handle',async({page})=>{
  await expect(page.getByLabel('Variety row 3',{exact:true})).toHaveValue('Otetela (C71)');
  await expect.poll(()=>[row(ids[1]).variety_id,row(ids[2]).variety_id]).toEqual([823,823]);
 });
+
+test('bulk edit keeps the picked variety when filling a block down',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const ids=sql(db,'select id from reflex order by id limit 3').map((r:any)=>r.id);
+ const cell=page.getByLabel('Variety row 1',{exact:true});
+ await cell.fill('Tege');
+ await page.locator('.bulk-relation-option').filter({hasText:'[#16]'}).click();
+ await expect(cell).toHaveValue('Tege (B71b)');
+
+ const handle=page.locator('.bulk-fill-handle');
+ const hb=await handle.boundingBox();
+ const target=await page.getByLabel('Variety row 3',{exact:true}).boundingBox();
+ await page.mouse.move(hb!.x+hb!.width/2,hb!.y+hb!.height/2);
+ await page.mouse.down();
+ await page.mouse.move(target!.x+target!.width/2,target!.y+target!.height/2,{steps:10});
+ await page.mouse.up();
+
+ await expect(page.getByLabel('Variety row 2',{exact:true})).toHaveValue('Tege (B71b)');
+ await expect(page.getByLabel('Variety row 3',{exact:true})).toHaveValue('Tege (B71b)');
+ await expect.poll(()=>[row(ids[1]).variety_id,row(ids[2]).variety_id]).toEqual([16,16]);
+});

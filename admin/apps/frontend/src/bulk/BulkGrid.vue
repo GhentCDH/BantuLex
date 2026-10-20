@@ -223,17 +223,26 @@ function endFill() {
     const key = cols.value[c]?.key;
     if (!key || isReadonly(key)) continue;
     const block = [];
-    for (let r = d.top; r <= d.bottom; r++) block.push(rows.value[r][key]);
+    const relation = isRelation(key);
+    const idKey = relation ? relationIdKey(key) : '';
+    const ids = [];
+    for (let r = d.top; r <= d.bottom; r++) {
+      block.push(rows.value[r][key]);
+      if (relation) ids.push(rows.value[r][idKey] ?? '');
+    }
     let i = 0;
     if (down) {
       for (let r = d.targetTop; r <= d.targetBottom; r++) {
-        rows.value[r][key] = block[i++ % block.length];
-        if (isRelation(key)) rows.value[r][relationIdKey(key)] = '';
+        const at = i++ % block.length;
+        rows.value[r][key] = block[at];
+        // Keep the resolved record id with its label, so duplicates stay unambiguous.
+        if (relation) rows.value[r][idKey] = ids[at] ?? '';
       }
     } else {
       for (let r = d.targetBottom; r >= d.targetTop; r--) {
-        rows.value[r][key] = block[block.length - 1 - (i++ % block.length)];
-        if (isRelation(key)) rows.value[r][relationIdKey(key)] = '';
+        const at = block.length - 1 - (i++ % block.length);
+        rows.value[r][key] = block[at];
+        if (relation) rows.value[r][idKey] = ids[at] ?? '';
       }
     }
   }
