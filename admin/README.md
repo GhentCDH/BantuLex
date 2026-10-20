@@ -113,7 +113,19 @@ The grid has no row-number column; the id is a link that opens the reflex form i
 
 Editing goes through Crouton: rows are loaded with the resource's list operation, and a row is saved when the focus leaves it (or with *Save all*, Ctrl/Cmd+S) as one `PATCH /api/reflex/:id` with only the changed fields, after checking them with the zod schema of Crouton's reflex form. Drag the small blue handle at the bottom-right of the focused cell up or down to repeat the selected block in the adjacent rows; releasing saves the filled rows. Read-only cells have no handle.
 
-`Blr index` is a reference to the BLR, not a free field: the API resolves it to a reconstruction and sets `blr_entry_id` in the same update. An index without a reconstruction (or a non-numeric value) is rejected with a field error and the row is not saved; clearing the cell clears the link. Dirty rows get an amber marker, saved rows flash green, and rows that could not be saved flash red and are listed by row number in the status line. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked (a red left border and tooltip), and changing sort, page size, page or leaving asks before dropping them. Changing `blr_index` here does not relink the BLR entry (only the bulk import does).
+`Blr index` is a reference to the BLR, not a free field: the API resolves it to a reconstruction and sets `blr_entry_id` in the same update. An index without a reconstruction (or a non-numeric value) is rejected with a field error and the row is not saved; clearing the cell clears the link. Dirty rows get an amber marker, saved rows flash green, and rows that could not be saved flash red and are listed by row number in the status line. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked (a red left border and tooltip), and changing sort, page size, page or leaving asks before dropping them.
+
+## New reconstruction
+
+*Lexical data → New reconstruction* (`/admin/crouton/new-reconstruction`) mirrors the public BLR detail page (`/#/blr/<index>`) as a creation form. It saves a BLR reconstruction, its sound structures and the selected reflexes **in one transaction** through `POST /api/blr`; any failed check rolls all of it back.
+
+- The BLR index is not entered: the API shows `MAX(blr_index) + 1` and assigns it inside the transaction.
+- Reconstruction fields follow the viewer: word (required), word tone, English, French, noun class, Proto KK, date of entry, note, contributor and reliability. Contributor (via the `blrcontributor` resource) and reliability are **dropdowns only**; new contributors are created in their own admin resource.
+- Distribution is a set of **Guthrie zone checkboxes (A–S)**, stored as the space-separated format used in the data.
+- The **sound structure** grid uses the viewer's `C₁ V₁₁ V₁₂ C₂ V₂₁ V₂₂ C₃ V₃ C₄ V₄ CS` order with the tone row under the vowels. C/V/T slots are dropdowns of existing values; CS is a searchable list of existing values. Empty slots are stored as NULL. An identical consonant/vowel/tone tuple is **reused** instead of duplicated.
+- The **reflexes** panel filters candidates (`q`, variety, and “only reflexes without a reconstruction” by default), pages through them and keeps the selection across pages. Already-linked reflexes cannot be selected.
+- At least one reflex is required. If a selected reflex was linked meanwhile, or a contributor/reliability is invalid, nothing is saved and the field error is shown.
+- On success the admin opens the new reconstruction's Crouton detail modal.
 
 ## Relations in the detail view
 
