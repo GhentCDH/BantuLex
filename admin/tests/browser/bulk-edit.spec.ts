@@ -197,3 +197,27 @@ test('bulk edit saves a variety by exact label and rejects unknown labels',async
  expect(row(id).variety_id).toBe(v.id);
  expect(sql(db,'select count(*) n from variety')[0].n).toBe(count);
 });
+
+test('bulk edit disambiguates duplicate variety labels and ignores extra spaces',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const id=sql(db,'select id from reflex order by id limit 1')[0].id;
+ const cell=page.getByLabel('Variety row 1',{exact:true});
+
+ // Two varieties are both called "Tetela (C71)": the plain label cannot be saved.
+ await cell.fill('Tetela (C71)');
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-error/);
+ await expect(page.locator('.bulk-cell-error').first()).toHaveAttribute('title',/matches 2 varieties/);
+
+ // The autocomplete offers an id suffix; picking it links the exact variety.
+ await cell.fill('Tetela (C71) [#21]');
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect.poll(()=>row(id).variety_id).toBe(21);
+ await expect(cell).toHaveValue('Tetela (C71)');
+
+ // Again, but typing a single label with extra spaces is normalised.
+ await cell.fill('  Otetela   (C71) ');
+ await page.getByLabel('Term row 2',{exact:true}).click();
+ await expect.poll(()=>row(id).variety_id).toBe(823);
+ await expect(cell).toHaveValue('Otetela (C71)');
+});

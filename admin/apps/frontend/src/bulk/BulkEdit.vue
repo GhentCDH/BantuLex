@@ -46,18 +46,33 @@ const loading = ref(false);
 const loadError = ref('');
 
 // Relation labels offered in the grid's datalists, and the exact-match lookup.
-interface VarietyOption { id: number; label: string }
+interface VarietyOption { id: number; label: string; option: string }
 const varieties = ref<VarietyOption[]>([]);
+/** Labels are compared without repeated or edge whitespace. */
+const normLabel = (s: string) => s.replace(/\s+/g, ' ').trim();
+
+// Some varieties share a display label ("Tetela (C71)" is two rows). Those get a
+// stable "[#id]" suffix in the autocomplete so a picked option is unambiguous.
 const varietyByLabel = computed(() => {
   const map = new Map<string, number[]>();
-  for (const v of varieties.value) {
-    const label = v.label.trim();
-    if (!label) continue;
-    map.set(label, [...(map.get(label) ?? []), v.id]);
-  }
+  for (const v of varieties.value) map.set(v.label, [...(map.get(v.label) ?? []), v.id]);
   return map;
 });
-const datalists = computed(() => ({ variety_label: varieties.value.map(v => v.label) }));
+const varietyByOption = computed(() => new Map(varieties.value.map(v => [v.option, v])));
+const datalists = computed(() => ({ variety_label: varieties.value.map(v => v.option) }));
+
+type ResolvedVariety = { id: number; label: string } | { error: string };
+function resolveVariety(raw: string): ResolvedVariety {
+  const text = normLabel(raw);
+  const picked = varietyByOption.value.get(text);
+  if (picked) return { id: picked.id, label: picked.label };
+  const ids = varietyByLabel.value.get(text) ?? [];
+  if (ids.length === 1) return { id: ids[0], label: text };
+  if (ids.length > 1) {
+    return { error: `“${text}” matches ${ids.length} varieties (${ids.map(id => `#${id}`).join(', ')}). Pick a suggestion from the list.` };
+  }
+  return { error: `No variety with label “${text}”. Pick an existing one.` };
+}
 
 async function loadVarieties() {
   const varietyForm = await crouton.getFormDefById('variety');
@@ -65,11 +80,15 @@ async function loadVarieties() {
   let pageNo = 1, pages = 1;
   do {
     const { data } = await croutonApiCall(varietyForm, 'findAll', {}, { params: { page: String(pageNo), pageSize: '500' } });
-    options.push(...data.data.map((r: any) => ({ id: r.id, label: r.display_label ?? '' })).filter((v: VarietyOption) => v.label));
+    options.push(...data.data.map((r: any) => ({ id: r.id, label: normLabel(r.display_label ?? ''), option: '' })));
     pages = data.request?.totalPages ?? 1;
     pageNo++;
   } while (pageNo <= pages);
-  varieties.value = options;
+  const counts = new Map<string, number>();
+  for (const o of options) if (o.label) counts.set(o.label, (counts.get(o.label) ?? 0) + 1);
+  varieties.value = options
+    .filter(o => o.label)
+    .map(o => ({ ...o, option: (counts.get(o.label) ?? 0) > 1 ? `${o.label} [#${o.id}]` : o.label }));
 }
 
 const value = (i: number, key: string) => rows.value[i]?.[key] ?? '';
@@ -134,14 +153,17 @@ async function saveRow(i: number) {
   const body: Record<string, unknown> = {};
   const schemaKeys: Record<string, true> = {};
   const issues: Record<string, string> = {};
+  const canonicalLabels: Record<string, string> = {};
   for (const key of keys) {
     if (key === 'variety_label') {
-      const label = value(i, key).trim();
-      if (!label) { body.variety_id = null; schemaKeys.variety_id = true; continue; }
-      const ids = varietyByLabel.value.get(label);
-      if (!ids?.length) issues.variety_label = `No variety with label “${label}”. Pick an existing one.`;
-      else if (ids.length > 1) issues.variety_label = `“${label}” matches ${ids.length} varieties; use the reflex form.`;
-      else { body.variety_id = ids[0]; schemaKeys.variety_id = true; }
+      if (!normLabel(value(i, key))) { body.variety_id = null; schemaKeys.variety_id = true; continue; }
+      const resolved = resolveVariety(value(i, key));
+      if ('error' in resolved) issues.variety_label = resolved.error;
+      else {
+        body.variety_id = resolved.id;
+        schemaKeys.variety_id = true;
+        canonicalLabels.variety_label = resolved.label;
+      }
     } else {
       body[key] = value(i, key) === '' ? null : value(i, key);
       schemaKeys[key] = true;
@@ -162,7 +184,7 @@ async function saveRow(i: number) {
     if (rows.value !== rowsAtStart) return; // another page was loaded meanwhile
     keys.forEach(k => {
       if (k === 'variety_label') {
-        const label = data?.variety_label ?? value(i, k).trim();
+        const label = data?.variety_label ?? canonicalLabels.variety_label ?? normLabel(value(i, k));
         originals.value[i].variety_label = label;
         rows.value[i].variety_label = label;
       } else {
