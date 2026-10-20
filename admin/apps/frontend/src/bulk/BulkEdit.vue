@@ -10,7 +10,9 @@ import { croutonApiCall, useCrouton } from '@ghentcdh/crouton-vue';
 import BulkGrid from './BulkGrid.vue';
 import RecordPicker, { type PickedRecord } from './RecordPicker.vue';
 import { COLUMNS, DEFAULT_PAGE_SIZE, PAGE_SIZES, type BulkRow } from './columns';
+import { useColumnOrder } from './useColumnOrder';
 import { useColumnVisibility } from './useColumnVisibility';
+import { recordRoute } from '../relations/links';
 
 const TEXT = ['term', 'translation', 'meaning', 'part_of_speech', 'term_morph_analysis', 'semantic_field',
   'scientific_name', 'ipa', 'notes_on_ipa', 'blr_index', 'blr_note', 'notes'];
@@ -24,9 +26,12 @@ const crouton = useCrouton();
 let formDef: any = null;
 const defs = ref<{ key: string; label: string; width: number }[]>([]);
 const allKeys = computed(() => defs.value.map(d => d.key));
-const { hidden, visibleKeys, toggle: toggleHidden, showAll } = useColumnVisibility(allKeys);
+const { orderedKeys, move } = useColumnOrder(allKeys);
+const { hidden, visibleKeys, toggle: toggleHidden, showAll } = useColumnVisibility(orderedKeys);
 /** Columns the API can sort on: physical reflex fields (calculated labels cannot). */
 const SORTABLE = ['id', ...TEXT];
+/** The id cell links to the reflex form modal (Crouton opens it from the route). */
+const linkColumns = { id: (value: string) => recordRoute('reflex', value, 'update') };
 const rows = ref<BulkRow[]>([]);
 /** Stored values per row (null stays null), to find the edited cells. */
 const originals = ref<Record<string, string | null>[]>([]);
@@ -415,6 +420,7 @@ function fitGrid() {
     <div ref="gridArea" class="min-h-0" :style="{ height: gridH + 'px' }">
       <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="visibleKeys" :defs="defs" :errors="errors" fill
                 :show-row-numbers="false" fill-handle resizable widths-key="bantulex-bulk-edit-widths"
+                reorderable :link-columns="linkColumns" @reorder="move"
                 :relation-columns="RELATIONS" :search-relation="searchVarieties"
                 :sort="sort" :sort-dir="sortDir" :sortable="SORTABLE"
                 :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus"

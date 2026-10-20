@@ -29,6 +29,10 @@ const props = withDefaults(defineProps<{
   relationColumns?: string[];
   /** Search existing records for a relation column; never creates records. */
   searchRelation?: (column: string, query: string) => Promise<{ id: number; label: string; option: string }[]>;
+  /** Column headers can be dragged to reorder the grid. */
+  reorderable?: boolean;
+  /** Columns rendered as links instead of inputs (e.g. the record id). */
+  linkColumns?: Record<string, (value: string) => { path: string; query: Record<string, string> }>;
   /** Current server-side sort column, and whether it is ascending. */
   sort?: string;
   sortDir?: 'asc' | 'desc';
@@ -38,7 +42,7 @@ const props = withDefaults(defineProps<{
   /** Edited cells, as `${row index}:${key}`. */
   changed?: Set<string>;
   rowStatus?: Map<number, 'saving' | 'saved' | 'error'>;
-}>(), { growable: true, fill: false, showRowNumbers: true, fillHandle: false, resizable: false });
+}>(), { growable: true, fill: false, showRowNumbers: true, fillHandle: false, resizable: false, reorderable: false });
 const rows = defineModel<BulkRow[]>('rows', { required: true });
 const emit = defineEmits<{
   (e: 'update:columns', value: string[]): void;
@@ -46,6 +50,8 @@ const emit = defineEmits<{
   (e: 'row-leave', left: number, current: number | null): void;
   /** A sortable header was clicked; the parent applies the server-side sort. */
   (e: 'sort-change', key: string): void;
+  /** A header was dropped on another: move `from` before `to`. */
+  (e: 'reorder', from: string, to: string): void;
 }>();
 
 const ROW_H = 30, FIXED_H = 480, OVERSCAN = 8;
@@ -395,6 +401,30 @@ const dirtyRows = computed(() => new Set([...(props.changed ?? [])].map(k => Num
 const isSortable = (key: string) => !!props.sortable?.includes(key);
 const ariaSort = (key: string) => props.sort === key ? (props.sortDir === 'asc' ? 'ascending' : 'descending') : (isSortable(key) ? 'none' : undefined);
 function sortBy(key: string) { if (isSortable(key)) emit('sort-change', key); }
+
+// Header drag and drop for column order.
+const dragKey = ref<string | null>(null);
+const dragOverKey = ref<string | null>(null);
+function onDragStart(e: DragEvent, key: string) {
+  if (!props.reorderable) return;
+  dragKey.value = key;
+  e.dataTransfer?.setData('text/plain', key);
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+}
+function onDragOver(e: DragEvent, key: string) {
+  if (!props.reorderable || !dragKey.value) return;
+  e.preventDefault();
+  dragOverKey.value = key;
+}
+function onDrop(e: DragEvent, key: string) {
+  if (!props.reorderable) return;
+  e.preventDefault();
+  const from = dragKey.value ?? e.dataTransfer?.getData('text/plain') ?? '';
+  dragKey.value = null;
+  dragOverKey.value = null;
+  if (from && from !== key) emit('reorder', from, key);
+}
+function onDragEnd() { dragKey.value = null; dragOverKey.value = null; }
 const rowError = (i: number) => props.errors.get(i);
 const status = (i: number) => props.rowStatus?.get(i);
 const rowTitle = (i: number) => rowError(i) ? Object.values(rowError(i)!).join('; ')
@@ -420,8 +450,11 @@ defineExpose({ focusCell, currentRow });
         <div class="bulk-row bulk-head" :style="{ height: ROW_H + 'px' }">
           <div v-if="showRowNumbers" class="bulk-num">#</div>
           <div v-for="col in cols" :key="col.key" class="bulk-cell bulk-th" :data-key="col.key"
-               :class="{ 'bulk-th-sortable': isSortable(col.key), 'bulk-th-active': sort === col.key }"
-               :style="{ width: widthFor(col) + 'px' }" :aria-sort="ariaSort(col.key)">
+               :class="{ 'bulk-th-sortable': isSortable(col.key), 'bulk-th-active': sort === col.key, 'bulk-th-reorder': reorderable, 'bulk-th-drop': dragOverKey === col.key }"
+               :style="{ width: widthFor(col) + 'px' }" :aria-sort="ariaSort(col.key)"
+               @dragover="onDragOver($event, col.key)" @drop="onDrop($event, col.key)">
+            <span v-if="reorderable" class="bulk-drag" draggable="true" :data-key="col.key" title="Drag to reorder"
+                  @dragstart="onDragStart($event, col.key)" @dragend="onDragEnd">⋮⋮</span>
             <button v-if="isSortable(col.key)" type="button" class="bulk-sort" @click="sortBy(col.key)">
               {{ col.label }}<span v-if="col.required" class="text-red-600"> *</span>
               <span class="bulk-arrow" aria-hidden="true">{{ sort === col.key ? (sortDir === 'asc' ? '▲' : '▼') : '' }}</span>
@@ -441,7 +474,12 @@ defineExpose({ focusCell, currentRow });
             <div v-for="(col, c) in cols" :key="col.key" class="bulk-cell" :style="{ width: widthFor(col) + 'px' }"
                  :class="{ 'bulk-in-range': inRange(index, c), 'bulk-fill-preview': inFillPreview(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
                  :title="rowError(index)?.[col.key]">
-              <input :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
+              <div v-if="linkColumns?.[col.key]" class="bulk-link">
+                <router-link :to="linkColumns[col.key](row[col.key])" :title="`Open ${col.label.toLowerCase()} ${row[col.key]}`">
+                  {{ row[col.key] }}
+                </router-link>
+              </div>
+              <input v-else :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
                      :aria-label="`${col.label} row ${index + 1}`"
                      @focus="onFocus(index, c)"
                      @input="onRelationInput(index, c, ($event.target as HTMLInputElement).value)"
@@ -483,6 +521,12 @@ defineExpose({ focusCell, currentRow });
 .bulk-relation-option { display: block; width: 100%; padding: 3px 6px; border: 0; background: none; font-size: 13px; text-align: left; white-space: nowrap; cursor: pointer; pointer-events: auto; }
 .bulk-relation-option:hover, .bulk-relation-option.active { background: #dbeafe; }
 .bulk-relation-empty { padding: 4px 6px; font-size: 12px; color: #6b7280; }
+.bulk-th-reorder { padding-left: 18px; }
+.bulk-drag { position: absolute; left: 1px; top: 0; display: flex; align-items: center; height: 100%; padding: 0 2px; font-size: 10px; letter-spacing: -2px; color: #9ca3af; cursor: grab; user-select: none; }
+.bulk-drag:active { cursor: grabbing; }
+.bulk-th-drop { background: #bfdbfe; }
+.bulk-link { display: flex; align-items: center; height: 100%; padding: 0 6px; font-size: 14px; }
+.bulk-link a { color: #2563eb; text-decoration: underline; }
 .bulk-th-sortable:hover { background: #e5e7eb; }
 .bulk-th-active { background: #e5e7eb; }
 .bulk-sort { display: flex; align-items: center; width: 100%; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }

@@ -127,9 +127,8 @@ test('bulk edit fills a block by dragging the cell handle',async({page})=>{
  await expect(page.getByLabel('Term row 3',{exact:true})).toHaveValue('fill-test');
  await expect.poll(()=>[row(ids[1]).term,row(ids[2]).term]).toEqual(['fill-test','fill-test']);
 
- // Read-only cells have no handle.
- await page.getByLabel('Id row 1',{exact:true}).click();
- await expect(page.locator('.bulk-fill-handle')).toHaveCount(0);
+ // The id is a link, not an editable cell, so it cannot have a fill handle.
+ await expect(page.getByRole('link',{name:String(ids[0]),exact:true})).toBeVisible();
 });
 
 test('bulk edit rejects a missing BLR index and flashes saved and failed rows',async({page})=>{
@@ -280,4 +279,28 @@ test('bulk edit keeps the picked variety when filling a block down',async({page}
  await expect(page.getByLabel('Variety row 2',{exact:true})).toHaveValue('Tege (B71b)');
  await expect(page.getByLabel('Variety row 3',{exact:true})).toHaveValue('Tege (B71b)');
  await expect.poll(()=>[row(ids[1]).variety_id,row(ids[2]).variety_id]).toEqual([16,16]);
+});
+
+test('bulk edit reorders columns and remembers the order',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const keys=()=>page.locator('.bulk-th').evaluateAll(els=>els.map(e=>e.getAttribute('data-key')));
+ const before=await keys();
+ await page.locator('.bulk-drag[data-key="translation"]').dragTo(page.locator('.bulk-th[data-key="term"]'));
+ await expect.poll(async()=>{const k=await keys();return k.indexOf('translation')<k.indexOf('term')}).toBe(true);
+ const after=await keys();
+ expect(after.length).toBe(before.length);
+
+ await page.reload();
+ const reloaded=await keys();
+ expect(reloaded.indexOf('translation')).toBeLessThan(reloaded.indexOf('term'));
+});
+
+test('bulk edit links the id to the reflex form modal',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const id=sql(db,'select id from reflex order by id limit 1')[0].id;
+ const link=page.getByRole('link',{name:String(id),exact:true}).first();
+ await expect(link).toBeVisible();
+ await link.click();
+ await expect(page).toHaveURL(new RegExp(`/crouton/reflex\\?id=${id}&event=update$`));
+ await expect(page.locator('dialog[open]')).toBeVisible();
 });
