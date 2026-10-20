@@ -12,6 +12,25 @@ export interface ReconstructionDraft {
   reliability_id: number | null;
 }
 
+/** A reconstruction as GET /api/blr/:id returns it (text fields may be null). */
+export interface StoredReconstruction extends Record<keyof ReconstructionDraft, any> {
+  id: number;
+  blr_index: number | null;
+}
+
+export interface BlrRecord {
+  reconstruction: StoredReconstruction;
+  structure: Record<string, string | null>;
+  reflexes: ReflexRow[];
+}
+
+export interface SaveResult {
+  id: number;
+  blr_index: number | null;
+  linked: number;
+  unlinked: number;
+}
+
 export interface ReflexRow {
   id: number;
   term: string | null;
@@ -55,6 +74,16 @@ export const emptyReconstruction = (): ReconstructionDraft => ({
   contributor_id: null,
   reliability_id: null,
 });
+
+/** The editable fields of a stored reconstruction; NULL text becomes ''. */
+export function toDraft(stored: StoredReconstruction): ReconstructionDraft {
+  const draft = emptyReconstruction();
+  for (const key of Object.keys(draft) as (keyof ReconstructionDraft)[]) {
+    const value = stored[key];
+    (draft as any)[key] = key === 'contributor_id' || key === 'reliability_id' ? value ?? null : value ?? '';
+  }
+  return draft;
+}
 
 /** Guthrie zones used by BLR `distribution` (matches the existing data format). */
 export const GUTHRIE_ZONES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S'];

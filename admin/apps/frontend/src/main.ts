@@ -10,7 +10,7 @@ import CoordinateDetail from './maps/CoordinateDetail.vue';
 import mapConfig from './maps/config.json';
 import BulkImport from './bulk/BulkImport.vue';
 import BulkEdit from './bulk/BulkEdit.vue';
-import BlrEntry from './blr/BlrEntry.vue';
+import ReconstructionPage from './blr/ReconstructionPage.vue';
 import RelationLink from './relations/RelationLink.vue';
 import RelatedTable from './relations/RelatedTable.vue';
 // Custom pages under /admin/crouton/<id>: Crouton has no extension point for them, so the
@@ -20,7 +20,7 @@ import RelatedTable from './relations/RelatedTable.vue';
 const PAGES: Record<string, { label: string; component: any }> = {
   'bulk-import': { label: 'Bulk import', component: BulkImport },
   'bulk-edit': { label: 'Bulk edit', component: BulkEdit },
-  'new-reconstruction': { label: 'New reconstruction', component: BlrEntry },
+  'reconstruction-form': { label: 'Reconstruction form', component: ReconstructionPage },
 };
 const resourceRoute = CroutonRouter.flatMap((route): RouteRecordRaw[] => ('children' in route && route.children) || []).find(route => route.name === 'crouton/form')!;
 const NativeResourceView = defineAsyncComponent(resourceRoute.component as () => Promise<any>);

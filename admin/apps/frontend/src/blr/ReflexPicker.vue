@@ -1,12 +1,13 @@
 <script setup lang="ts">
-// Pick the reflexes that will belong to the new reconstruction. Candidates come
-// from the BLR API (unlinked by default) and the selection survives paging and
-// filter changes.
+// Pick the reflexes that belong to the reconstruction. Candidates come from the
+// BLR API (by default those without a reconstruction, plus the reflexes of
+// `ownerId`, the one being edited) and the selection survives paging and filter changes.
 import { computed, onMounted, ref, watch } from 'vue';
-import axios from 'axios';
 import RecordPicker, { type PickedRecord } from '../bulk/RecordPicker.vue';
+import { errorMessage, listReflexes } from './api';
 import type { ReflexRow } from './types';
 
+const props = defineProps<{ ownerId?: number | null }>();
 const model = defineModel<ReflexRow[]>({ required: true });
 
 const q = ref('');
@@ -22,27 +23,27 @@ const error = ref('');
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
 const selectedIds = computed(() => new Set(model.value.map(r => r.id)));
-const selectable = computed(() => rows.value.filter(r => r.blr_entry_id == null));
+const isSelectable = (row: ReflexRow) => row.blr_entry_id == null || row.blr_entry_id === props.ownerId;
+const selectable = computed(() => rows.value.filter(isSelectable));
 const allOnPage = computed(() => selectable.value.length > 0 && selectable.value.every(r => selectedIds.value.has(r.id)));
 
 async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const { data } = await axios.get('/api/blr/reflexes', {
-      params: {
-        q: q.value.trim() || undefined,
-        variety_id: variety.value?.id,
-        page: page.value,
-        pageSize,
-        unlinked: onlyUnlinked.value ? 1 : 0,
-      },
+    const result = await listReflexes({
+      q: q.value.trim() || undefined,
+      variety_id: variety.value?.id,
+      page: page.value,
+      pageSize,
+      unlinked: onlyUnlinked.value,
+      owner_id: props.ownerId,
     });
-    rows.value = data.data ?? [];
-    count.value = data.request?.count ?? 0;
-    totalPages.value = data.request?.totalPages ?? 1;
-  } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e.message;
+    rows.value = result.rows;
+    count.value = result.count;
+    totalPages.value = result.totalPages;
+  } catch (e) {
+    error.value = errorMessage(e);
   } finally {
     loading.value = false;
   }
@@ -53,7 +54,7 @@ function goTo(p: number) {
   load();
 }
 function toggle(row: ReflexRow) {
-  if (row.blr_entry_id != null) return;
+  if (!isSelectable(row)) return;
   const next = new Map(model.value.map(r => [r.id, r]));
   next.has(row.id) ? next.delete(row.id) : next.set(row.id, row);
   model.value = [...next.values()];
@@ -70,15 +71,15 @@ watch(q, () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { page.value = 1; load(); }, 300);
 });
-watch([variety, onlyUnlinked], () => { page.value = 1; load(); });
+watch([variety, onlyUnlinked, () => props.ownerId], () => { page.value = 1; load(); });
 onMounted(load);
 </script>
 
 <template>
-  <section class="border rounded flex flex-col min-h-0" aria-label="Reflexes">
+  <section class="border rounded flex flex-col min-h-0" aria-label="Add reflexes">
     <div class="p-3 flex flex-col gap-2 border-b">
       <div class="flex items-center gap-3">
-        <h3 class="font-semibold text-sm">Reflexes</h3>
+        <h3 class="font-semibold text-sm">Add reflexes</h3>
         <span class="text-xs opacity-60">{{ selectedIds.size.toLocaleString() }} selected</span>
         <button v-if="selectedIds.size" type="button" class="btn btn-sm ml-auto" @click="clearSelection">Clear</button>
       </div>
@@ -91,7 +92,7 @@ onMounted(load);
                       :fields="['name_english', 'name_french', 'name_bantu', 'name_bastin', 'guthrie_index']" />
         <label class="inline-flex items-center gap-2 text-sm pb-1">
           <input v-model="onlyUnlinked" type="checkbox" aria-label="Only unlinked reflexes" />
-          Only reflexes without a reconstruction
+          Only reflexes without {{ ownerId ? 'another' : 'a' }} reconstruction
         </label>
       </div>
       <p v-if="error" role="alert" class="text-sm text-red-700">{{ error }}</p>
@@ -112,9 +113,9 @@ onMounted(load);
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.id"
-              :class="{ 'bg-blue-50': selectedIds.has(row.id), 'opacity-50': row.blr_entry_id != null }">
+              :class="{ 'bg-blue-50': selectedIds.has(row.id), 'opacity-50': !isSelectable(row) }">
             <td class="p-2">
-              <input type="checkbox" :checked="selectedIds.has(row.id)" :disabled="row.blr_entry_id != null"
+              <input type="checkbox" :checked="selectedIds.has(row.id)" :disabled="!isSelectable(row)"
                      :aria-label="`Select reflex ${row.id}`" @change="toggle(row)" />
             </td>
             <td class="p-2 tabular-nums">{{ row.id }}</td>
