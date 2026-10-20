@@ -60,3 +60,25 @@ test('bulk edit shows Crouton field errors and asks before dropping unsaved rows
  // Crouton's q searches several columns: the first row contains the text in one of them.
  await expect.poll(()=>page.evaluate(()=>[...document.querySelectorAll<HTMLInputElement>('[aria-label$=" row 1"]')].map(i=>i.value).join(' '))).toContain(term);
 });
+
+test('bulk edit grid fills the remaining window height',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const grid=page.locator('.bulk-viewport');
+ await expect(grid).toBeVisible();
+ const measure=()=>page.evaluate(()=>{
+   const el=document.querySelector<HTMLElement>('.bulk-viewport')!;
+   const r=el.getBoundingClientRect();
+   return {height:r.height,bottom:r.bottom,viewport:window.innerHeight,scroll:document.scrollingElement!.scrollHeight};
+ });
+ const small=await measure();
+ expect(small.height).toBeGreaterThan(400);
+ expect(small.bottom).toBeLessThanOrEqual(small.viewport);
+ expect(small.scroll).toBeLessThanOrEqual(small.viewport+1);
+
+ await page.setViewportSize({width:1920,height:1200});
+ await page.waitForTimeout(400);
+ const large=await measure();
+ expect(large.height).toBeGreaterThan(small.height);
+ expect(large.bottom).toBeLessThanOrEqual(large.viewport);
+ expect(large.scroll).toBeLessThanOrEqual(large.viewport+1);
+});

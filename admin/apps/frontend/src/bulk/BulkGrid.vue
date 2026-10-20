@@ -4,7 +4,7 @@
 // height). Meant for small corrections; larger changes go through the Excel
 // file. Arrows/Enter move between cells; Delete clears a selected block.
 // Bulk edit uses it on a fixed set of existing rows (`growable: false`).
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { COLUMNS, columnForHeader, emptyRow, isEmptyRow, type BulkColumn, type BulkRow } from './columns';
 import { parseTsv, toTsv } from './tsv';
 
@@ -15,11 +15,13 @@ const props = withDefaults(defineProps<{
   defs?: Pick<BulkColumn, 'key' | 'label' | 'width' | 'required'>[];
   /** Rows can be added and deleted, and a pasted header row reorders the columns. */
   growable?: boolean;
+  /** Fill the height of the parent instead of the fixed review height. */
+  fill?: boolean;
   readonly?: string[];
   /** Edited cells, as `${row index}:${key}`. */
   changed?: Set<string>;
   rowStatus?: Map<number, 'saving' | 'saved' | 'error'>;
-}>(), { growable: true });
+}>(), { growable: true, fill: false });
 const rows = defineModel<BulkRow[]>('rows', { required: true });
 const emit = defineEmits<{
   (e: 'update:columns', value: string[]): void;
@@ -27,13 +29,16 @@ const emit = defineEmits<{
   (e: 'row-leave', left: number, current: number | null): void;
 }>();
 
-const ROW_H = 30, VIEW_H = 480, OVERSCAN = 8;
+const ROW_H = 30, FIXED_H = 480, OVERSCAN = 8;
 const scrollTop = ref(0);
+/** Height of the scrolling viewport; measured when `fill` is set. */
+const viewportH = ref(FIXED_H);
 const viewport = ref<HTMLElement>();
+let resizeObserver: ResizeObserver | undefined;
 const cols = computed(() => props.columns.map(k => (props.defs ?? COLUMNS).find(c => c.key === k)!).filter(Boolean));
 const isReadonly = (key: string) => !!props.readonly?.includes(key);
 const first = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN));
-const last = computed(() => Math.min(rows.value.length, Math.ceil((scrollTop.value + VIEW_H) / ROW_H) + OVERSCAN));
+const last = computed(() => Math.min(rows.value.length, Math.ceil((scrollTop.value + viewportH.value) / ROW_H) + OVERSCAN));
 const visible = computed(() => rows.value.slice(first.value, last.value).map((row, i) => ({ row, index: first.value + i })));
 
 // Selection: anchor and focus cell (row index, column index).
@@ -50,6 +55,18 @@ const inRange = (r: number, c: number) => {
 const selectedRows = ref(new Set<number>());
 // A new row array (after save or clear) starts without a selection.
 watch(() => rows.value, () => { anchor.value = [0, 0]; focus.value = [0, 0]; selectedRows.value = new Set(); activeRow = null; });
+
+// With `fill` the viewport takes the parent's height; measure it for virtualization.
+onMounted(() => {
+  if (!props.fill || !viewport.value) return;
+  viewportH.value = viewport.value.clientHeight || FIXED_H;
+  resizeObserver = new ResizeObserver(([entry]) => {
+    const h = Math.floor(entry.contentRect.height);
+    if (h > 0) viewportH.value = h;
+  });
+  resizeObserver.observe(viewport.value);
+});
+onBeforeUnmount(() => resizeObserver?.disconnect());
 
 function cellId(r: number, c: number) { return `bulk-cell-${r}-${c}`; }
 // Set while focusCell() moves focus to extend a selection, so onFocus keeps the anchor.
@@ -76,7 +93,7 @@ async function focusCell(r: number, c: number, extend = false) {
   if (!extend) anchor.value = [r, c];
   const el = viewport.value!;
   if (r * ROW_H < el.scrollTop) el.scrollTop = r * ROW_H;
-  else if ((r + 1) * ROW_H > el.scrollTop + VIEW_H - ROW_H) el.scrollTop = (r + 2) * ROW_H - VIEW_H;
+  else if ((r + 1) * ROW_H > el.scrollTop + viewportH.value - ROW_H) el.scrollTop = (r + 2) * ROW_H - viewportH.value;
   await nextTick();
   extending = extend;
   (document.getElementById(cellId(r, c)) as HTMLInputElement | null)?.focus({ preventScroll: true });
@@ -118,13 +135,13 @@ function onPaste(e: ClipboardEvent, r: number, c: number) {
     emit('update:columns', [...new Set([...(header as string[]), ...props.columns.filter(k => !header.includes(k))])]);
     data = data.slice(1);
     c = 0;
-    nextTick(() => fill(data, r, 0));
+    nextTick(() => fillCells(data, r, 0));
     return;
   }
-  fill(data, r, c);
+  fillCells(data, r, c);
 }
 
-function fill(data: string[][], r: number, c: number) {
+function fillCells(data: string[][], r: number, c: number) {
   if (props.growable) ensureRows(r + data.length);
   else data = data.slice(0, rows.value.length - r);
   data.forEach((cells, i) => cells.forEach((v, j) => {
@@ -171,7 +188,7 @@ defineExpose({ focusCell, currentRow });
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2" :class="{ 'h-full min-h-0': fill }">
     <div v-if="growable" class="flex flex-wrap items-center gap-2">
       <button class="btn btn-sm" type="button" @click="addRow">Add row</button>
       <button class="btn btn-sm btn-error" type="button" :disabled="!selectedRows.size" @click="deleteSelected">
@@ -179,7 +196,9 @@ defineExpose({ focusCell, currentRow });
       </button>
       <span class="text-sm opacity-70 ml-auto">{{ filled.toLocaleString() }} rows</span>
     </div>
-    <div ref="viewport" class="bulk-viewport border rounded" :style="{ height: VIEW_H + 'px' }" @focusout="onFocusOut" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
+    <div ref="viewport" class="bulk-viewport border rounded" :class="{ 'flex-1 min-h-0': fill }"
+         :style="fill ? undefined : { height: FIXED_H + 'px' }"
+         @focusout="onFocusOut" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
       <div :style="{ width: width + 'px' }">
         <div class="bulk-row bulk-head" :style="{ height: ROW_H + 'px' }">
           <div class="bulk-num">#</div>

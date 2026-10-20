@@ -3,7 +3,7 @@
 // Rows come from Crouton's list API; a row is saved when the focus leaves it (or with Save
 // all): its changed fields are checked with Crouton's form schema of the reflex resource and
 // sent as one PATCH. Relations are shown, not edited (use the reflex form for those).
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router';
 import { croutonApiCall, useCrouton } from '@ghentcdh/crouton-vue';
 import BulkGrid from './BulkGrid.vue';
@@ -150,6 +150,12 @@ onBeforeRouteUpdate((to) => (to.params.formId === 'bulk-edit' ? true : settle())
 const beforeUnload = (e: BeforeUnloadEvent) => { if (dirtyRows.value.length) e.preventDefault(); };
 onMounted(async () => {
   window.addEventListener('beforeunload', beforeUnload);
+  window.addEventListener('resize', fitGrid);
+  chromeObserver = new ResizeObserver(fitGrid);
+  if (chrome.value) chromeObserver.observe(chrome.value);
+  await nextTick();
+  fitGrid();
+
   formDef = await crouton.getFormDefById('reflex');
   const labels = labelsFromUi(formDef.schemas.form.ui);
   defs.value = [
@@ -158,44 +164,74 @@ onMounted(async () => {
     ...TEXT.map(k => ({ key: k, label: labels[k] ?? k, width: COLUMNS.find(c => c.key === k)?.width ?? 150 })),
   ];
   await load();
+  fitGrid();
 });
-onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', beforeUnload);
+  window.removeEventListener('resize', fitGrid);
+  chromeObserver?.disconnect();
+  cancelAnimationFrame(fitFrame);
+});
 
 const field = 'w-full border rounded px-2 py-1 text-sm';
 const firstRow = computed(() => (page.value - 1) * PAGE_SIZE + 1);
+
+// The grid fills everything below the header and toolbar, down to the bottom of
+// the window. Measuring the grid area keeps this correct whatever padding or
+// header height Crouton's layout adds.
+const chrome = ref<HTMLElement>();
+const gridArea = ref<HTMLElement>();
+const gridH = ref(480);
+let chromeObserver: ResizeObserver | undefined;
+let fitFrame = 0;
+function fitGrid() {
+  cancelAnimationFrame(fitFrame);
+  fitFrame = requestAnimationFrame(() => {
+    const el = gridArea.value;
+    if (!el) return;
+    const top = Math.max(0, el.getBoundingClientRect().top);
+    gridH.value = Math.max(240, Math.floor(window.innerHeight - top - 16));
+  });
+}
 </script>
 
 <template>
-  <section class="max-w-screen-2xl mx-auto p-4 flex flex-col gap-3" aria-label="Bulk edit" @keydown="onKey">
-    <header>
-      <h2 class="text-xl font-semibold">Bulk edit of reflexes</h2>
-      <p class="text-sm opacity-70">Edit the text fields of existing reflexes, 100 rows at a time. A row is saved when you leave it (or with Save all, Ctrl/Cmd+S); edited cells are yellow until saved. Clearing a cell removes the value. Relations are changed in the reflex form.</p>
-    </header>
-    <div class="grid gap-3 md:grid-cols-4 items-end">
-      <label class="text-sm">
-        <span class="block font-semibold mb-1">Search</span>
-        <input v-model="q" :class="field" type="search" placeholder="Term, translation, …" aria-label="Search reflexes" />
-      </label>
-      <RecordPicker v-model="variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…"
-                    :fields="['name_english', 'name_french', 'name_bantu', 'name_bastin', 'guthrie_index']" />
-      <RecordPicker v-model="batch" resource="bulkimport" label="Bulk import" placeholder="Search import…" />
-      <label class="text-sm">
-        <span class="block font-semibold mb-1">Sort by</span>
-        <select v-model="sort" :class="field" aria-label="Sort by"><option value="id">Id</option><option value="term">Term</option></select>
-      </label>
+  <section class="w-full px-3 py-2 flex flex-col gap-2" aria-label="Bulk edit" @keydown="onKey">
+    <div ref="chrome" class="flex flex-col gap-2">
+      <header class="flex flex-wrap items-baseline gap-x-3">
+        <h2 class="text-xl font-semibold">Bulk edit of reflexes</h2>
+        <p class="text-sm opacity-70" title="Edit the text fields of existing reflexes. A row is saved when you leave it (or with Save all, Ctrl/Cmd+S); edited cells are yellow until saved. Clearing a cell removes the value. Relations are changed in the reflex form.">
+          100 rows per page; save on leaving a row, or Ctrl/Cmd+S. Edited cells are yellow until saved.
+        </p>
+      </header>
+      <div class="grid gap-2 md:grid-cols-4 items-end">
+        <label class="text-sm">
+          <span class="block font-semibold mb-1">Search</span>
+          <input v-model="q" :class="field" type="search" placeholder="Term, translation, …" aria-label="Search reflexes" />
+        </label>
+        <RecordPicker v-model="variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…"
+                      :fields="['name_english', 'name_french', 'name_bantu', 'name_bastin', 'guthrie_index']" />
+        <RecordPicker v-model="batch" resource="bulkimport" label="Bulk import" placeholder="Search import…" />
+        <label class="text-sm">
+          <span class="block font-semibold mb-1">Sort by</span>
+          <select v-model="sort" :class="field" aria-label="Sort by"><option value="id">Id</option><option value="term">Term</option></select>
+        </label>
+      </div>
+      <p v-if="loadError" role="alert" class="text-sm text-red-700">{{ loadError }}</p>
+      <div class="flex flex-wrap items-center gap-3 text-sm">
+        <button class="btn btn-sm" type="button" :disabled="loading || page <= 1" @click="goTo(page - 1)">Previous</button>
+        <span>{{ loading ? 'Loading…' : count ? `Rows ${firstRow.toLocaleString()}–${(firstRow + rows.length - 1).toLocaleString()} of ${count.toLocaleString()}` : 'No reflexes' }}</span>
+        <button class="btn btn-sm" type="button" :disabled="loading || page >= totalPages" @click="goTo(page + 1)">Next</button>
+        <span class="ml-auto" role="status">
+          <span v-if="dirtyRows.length">{{ dirtyRows.length }} unsaved</span>
+          <span v-if="errorCount" class="text-red-700"> · {{ errorCount }} not saved (hover the row number)</span>
+        </span>
+        <button class="btn btn-sm btn-primary" type="button" :disabled="!dirtyRows.length" @click="saveAll">Save all</button>
+      </div>
     </div>
-    <p v-if="loadError" role="alert" class="text-sm text-red-700">{{ loadError }}</p>
-    <div class="flex flex-wrap items-center gap-3 text-sm">
-      <button class="btn btn-sm" type="button" :disabled="loading || page <= 1" @click="goTo(page - 1)">Previous</button>
-      <span>{{ loading ? 'Loading…' : count ? `Rows ${firstRow.toLocaleString()}–${(firstRow + rows.length - 1).toLocaleString()} of ${count.toLocaleString()}` : 'No reflexes' }}</span>
-      <button class="btn btn-sm" type="button" :disabled="loading || page >= totalPages" @click="goTo(page + 1)">Next</button>
-      <span class="ml-auto" role="status">
-        <span v-if="dirtyRows.length">{{ dirtyRows.length }} unsaved</span>
-        <span v-if="errorCount" class="text-red-700"> · {{ errorCount }} not saved (hover the row number)</span>
-      </span>
-      <button class="btn btn-sm btn-primary" type="button" :disabled="!dirtyRows.length" @click="saveAll">Save all</button>
+    <div ref="gridArea" class="min-h-0" :style="{ height: gridH + 'px' }">
+      <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="defs.map(d => d.key)" :defs="defs" :errors="errors" fill
+                :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus" @row-leave="onRowLeave" />
     </div>
-    <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="defs.map(d => d.key)" :defs="defs" :errors="errors"
-              :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus" @row-leave="onRowLeave" />
   </section>
 </template>
