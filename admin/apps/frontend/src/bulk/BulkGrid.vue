@@ -19,6 +19,8 @@ const props = withDefaults(defineProps<{
   fill?: boolean;
   /** Show the row-number gutter (needed for row selection in the import wizard). */
   showRowNumbers?: boolean;
+  /** Show the drag-to-fill handle on the focused cell. */
+  fillHandle?: boolean;
   /** Current server-side sort column, and whether it is ascending. */
   sort?: string;
   sortDir?: 'asc' | 'desc';
@@ -28,7 +30,7 @@ const props = withDefaults(defineProps<{
   /** Edited cells, as `${row index}:${key}`. */
   changed?: Set<string>;
   rowStatus?: Map<number, 'saving' | 'saved' | 'error'>;
-}>(), { growable: true, fill: false, showRowNumbers: true });
+}>(), { growable: true, fill: false, showRowNumbers: true, fillHandle: false });
 const rows = defineModel<BulkRow[]>('rows', { required: true });
 const emit = defineEmits<{
   (e: 'update:columns', value: string[]): void;
@@ -106,6 +108,67 @@ async function focusCell(r: number, c: number, extend = false) {
   await nextTick();
   extending = extend;
   (document.getElementById(cellId(r, c)) as HTMLInputElement | null)?.focus({ preventScroll: true });
+}
+
+// Drag-to-fill: the handle repeats the selected block into the rows below (or above).
+interface FillDrag { top: number; bottom: number; left: number; right: number; targetTop: number; targetBottom: number }
+const fillDrag = ref<FillDrag | null>(null);
+const isFocusedCell = (r: number, c: number) => focus.value[0] === r && focus.value[1] === c;
+const showFillHandle = (r: number, c: number) => props.fillHandle && isFocusedCell(r, c) && !isReadonly(cols.value[c]?.key ?? '');
+function inFillPreview(r: number, c: number) {
+  const d = fillDrag.value;
+  return !!d && d.targetTop <= d.targetBottom && r >= d.targetTop && r <= d.targetBottom && c >= d.left && c <= d.right;
+}
+/** Row under the pointer; the header takes the first ROW_H of the scrolled content. */
+function rowAt(clientY: number) {
+  const el = viewport.value!;
+  const y = clientY - el.getBoundingClientRect().top + el.scrollTop - ROW_H;
+  return Math.max(0, Math.min(rows.value.length - 1, Math.floor(y / ROW_H)));
+}
+function startFill(e: PointerEvent, r: number, c: number) {
+  if (!showFillHandle(r, c)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const g = range.value;
+  fillDrag.value = { top: g.top, bottom: g.bottom, left: g.left, right: g.right, targetTop: g.bottom + 1, targetBottom: g.bottom };
+  window.addEventListener('pointermove', onFillMove);
+  window.addEventListener('pointerup', endFill);
+}
+function onFillMove(e: PointerEvent) {
+  const el = viewport.value, d = fillDrag.value;
+  if (!el || !d) return;
+  const rect = el.getBoundingClientRect();
+  if (e.clientY < rect.top + 20) el.scrollTop -= ROW_H;
+  else if (e.clientY > rect.bottom - 20) el.scrollTop += ROW_H;
+  const target = rowAt(e.clientY);
+  if (target < d.top) { d.targetTop = target; d.targetBottom = d.top - 1; }
+  else if (target > d.bottom) { d.targetTop = d.bottom + 1; d.targetBottom = target; }
+  else { d.targetTop = d.bottom + 1; d.targetBottom = d.bottom; }
+}
+function endFill() {
+  window.removeEventListener('pointermove', onFillMove);
+  window.removeEventListener('pointerup', endFill);
+  const d = fillDrag.value;
+  fillDrag.value = null;
+  if (!d || d.targetTop > d.targetBottom) return;
+
+  const down = d.targetTop > d.bottom;
+  for (let c = d.left; c <= d.right; c++) {
+    const key = cols.value[c]?.key;
+    if (!key || isReadonly(key)) continue;
+    const block = [];
+    for (let r = d.top; r <= d.bottom; r++) block.push(rows.value[r][key]);
+    let i = 0;
+    if (down) {
+      for (let r = d.targetTop; r <= d.targetBottom; r++) rows.value[r][key] = block[i++ % block.length];
+    } else {
+      for (let r = d.targetBottom; r >= d.targetTop; r--) rows.value[r][key] = block[block.length - 1 - (i++ % block.length)];
+    }
+  }
+  anchor.value = [Math.min(d.top, d.targetTop), d.left];
+  focus.value = [Math.max(d.bottom, d.targetBottom), d.right];
+  // The focus stays on the source cell; this is what normally saves an edited row.
+  emit('row-leave', d.bottom, null);
 }
 
 function ensureRows(n: number) {
@@ -232,13 +295,15 @@ defineExpose({ focusCell, currentRow });
             <button v-if="showRowNumbers" type="button" class="bulk-num" :data-status="status(index)"
                     @click="growable && toggleRow(index, $event)">{{ index + 1 }}</button>
             <div v-for="(col, c) in cols" :key="col.key" class="bulk-cell" :style="{ width: col.width + 'px' }"
-                 :class="{ 'bulk-in-range': inRange(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
+                 :class="{ 'bulk-in-range': inRange(index, c), 'bulk-fill-preview': inFillPreview(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
                  :title="rowError(index)?.[col.key]">
               <input :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
                      :aria-label="`${col.label} row ${index + 1}`"
                      @focus="onFocus(index, c)"
                      @mousedown.shift.prevent="focusCell(index, c, true)"
                      @keydown="onKey($event, index, c)" @paste="onPaste($event, index, c)" @copy="onCopy($event, index, c)" />
+              <div v-if="showFillHandle(index, c)" class="bulk-fill-handle" title="Drag to fill" aria-hidden="true"
+                   @pointerdown="startFill($event, index, c)"></div>
             </div>
           </div>
         </div>
@@ -252,7 +317,9 @@ defineExpose({ focusCell, currentRow });
 .bulk-row { display: flex; width: 100%; }
 .bulk-head { position: sticky; top: 0; z-index: 2; background: #f3f4f6; }
 .bulk-num { width: 56px; flex: none; text-align: right; padding: 0 6px; font-size: 12px; color: #6b7280; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; background: #f9fafb; line-height: 30px; }
-.bulk-cell { flex: none; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+.bulk-cell { position: relative; flex: none; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+.bulk-fill-handle { position: absolute; right: -3px; bottom: -3px; z-index: 3; width: 7px; height: 7px; border: 1px solid #fff; background: #2563eb; cursor: crosshair; touch-action: none; }
+.bulk-fill-preview { background: #dbeafe; }
 .bulk-th { font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
 .bulk-th-sortable:hover { background: #e5e7eb; }
 .bulk-th-active { background: #e5e7eb; }

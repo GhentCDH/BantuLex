@@ -108,3 +108,26 @@ test('bulk edit removes row numbers but keeps id, columns and page size',async({
  await expect(page.getByRole('button',{name:'Notes',exact:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Id',exact:true})).toHaveCount(1);
 });
+
+test('bulk edit fills a block by dragging the cell handle',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const ids=sql(db,'select id from reflex order by id limit 3').map((r:any)=>r.id);
+ const term=page.getByLabel('Term row 1',{exact:true});
+ await term.fill('fill-test');
+ const handle=page.locator('.bulk-fill-handle');
+ await expect(handle).toHaveCount(1);
+ const hb=await handle.boundingBox();
+ const target=await page.getByLabel('Term row 3',{exact:true}).boundingBox();
+ await page.mouse.move(hb!.x+hb!.width/2,hb!.y+hb!.height/2);
+ await page.mouse.down();
+ await page.mouse.move(target!.x+target!.width/2,target!.y+target!.height/2,{steps:10});
+ await page.mouse.up();
+
+ await expect(page.getByLabel('Term row 2',{exact:true})).toHaveValue('fill-test');
+ await expect(page.getByLabel('Term row 3',{exact:true})).toHaveValue('fill-test');
+ await expect.poll(()=>[row(ids[1]).term,row(ids[2]).term]).toEqual(['fill-test','fill-test']);
+
+ // Read-only cells have no handle.
+ await page.getByLabel('Id row 1',{exact:true}).click();
+ await expect(page.locator('.bulk-fill-handle')).toHaveCount(0);
+});
