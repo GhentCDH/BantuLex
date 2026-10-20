@@ -65,7 +65,7 @@ test('constraints, nulls, lookup, paging and unique junction pairs',async()=>{
   const dup=await request(s.base,'/reflex','POST',{beginning_id:dupValue});assert.equal(dup.status,400,JSON.stringify(dup));assert.equal(dup.body.message[0].code,'unique');
   for(const t of inventory) {
    const r=await request(s.base,`/${t.table}?q=3&pageSize=2`);assert.equal(r.status,200,`${t.table} search: ${JSON.stringify(r)}`);
-   const capped=await request(s.base,`/${t.table}?pageSize=10000`);assert.equal(capped.status,200);assert.ok(capped.body.data.length<=100);
+   const capped=await request(s.base,`/${t.table}?pageSize=10000`);assert.equal(capped.status,200);assert.ok(capped.body.data.length<=500);
   }
   const one=(await request(s.base,'/datacollector','POST',{name:'Junction one'})).body;
   const two=(await request(s.base,'/datacollector','POST',{name:'Junction two'})).body;

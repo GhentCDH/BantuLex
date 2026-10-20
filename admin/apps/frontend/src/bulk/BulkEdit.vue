@@ -8,17 +8,21 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router';
 import { croutonApiCall, useCrouton } from '@ghentcdh/crouton-vue';
 import BulkGrid from './BulkGrid.vue';
 import RecordPicker, { type PickedRecord } from './RecordPicker.vue';
-import { COLUMNS, type BulkRow } from './columns';
+import { COLUMNS, DEFAULT_PAGE_SIZE, PAGE_SIZES, type BulkRow } from './columns';
+import { useColumnVisibility } from './useColumnVisibility';
 
 const TEXT = ['term', 'translation', 'meaning', 'part_of_speech', 'term_morph_analysis', 'semantic_field',
   'scientific_name', 'ipa', 'notes_on_ipa', 'blr_index', 'blr_note', 'notes'];
 const READONLY = ['id', 'variety_label'];
-const PAGE_SIZE = 100; // the API returns at most 100 rows per page
 type Status = 'saving' | 'saved' | 'error';
 
 const crouton = useCrouton();
 let formDef: any = null;
 const defs = ref<{ key: string; label: string; width: number }[]>([]);
+const allKeys = computed(() => defs.value.map(d => d.key));
+const { hidden, visibleKeys, toggle: toggleHidden, showAll } = useColumnVisibility(allKeys);
+/** Columns the API can sort on: physical reflex fields (calculated labels cannot). */
+const SORTABLE = ['id', ...TEXT];
 const rows = ref<BulkRow[]>([]);
 /** Stored values per row (null stays null), to find the edited cells. */
 const originals = ref<Record<string, string | null>[]>([]);
@@ -28,8 +32,10 @@ const status = ref(new Map<number, Status>());
 const q = ref('');
 const variety = ref<PickedRecord | null>(null);
 const batch = ref<PickedRecord | null>(null);
-const sort = ref<'id' | 'term'>('id');
+const sort = ref('id');
+const sortDir = ref<'asc' | 'desc'>('asc');
 const page = ref(1);
+const pageSize = ref<number>(DEFAULT_PAGE_SIZE);
 const count = ref(0);
 const totalPages = ref(0);
 const loading = ref(false);
@@ -55,7 +61,9 @@ function labelsFromUi(el: any, out: Record<string, string> = {}) {
 
 async function load() {
   loading.value = true; loadError.value = '';
-  const params: Record<string, string | string[]> = { page: String(page.value), pageSize: String(PAGE_SIZE), sort: sort.value, sortDir: 'asc' };
+  const params: Record<string, string | string[]> = {
+    page: String(page.value), pageSize: String(pageSize.value), sort: sort.value, sortDir: sortDir.value,
+  };
   if (q.value.trim()) params.q = q.value.trim();
   // Exact match on an integer foreign key: Crouton's `equals` is not cast to a number, gt/lt are.
   const filter = ([['variety_id', variety.value], ['bulkimport_id', batch.value]] as const)
@@ -141,9 +149,42 @@ async function goTo(p: number) {
   page.value = p;
   await load();
 }
+
+/** Header click: sort on that column, toggling direction when it is already active. */
+async function onSort(key: string) {
+  if (!SORTABLE.includes(key)) return;
+  if (!(await settle())) return;
+  if (sort.value === key) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  else { sort.value = key; sortDir.value = 'asc'; }
+  page.value = 1;
+  await load();
+}
+
+async function changePageSize(event: Event) {
+  const select = event.target as HTMLSelectElement;
+  const next = Number(select.value);
+  if (next === pageSize.value) return;
+  if (!(await settle())) { select.value = String(pageSize.value); return; }
+  pageSize.value = next;
+  page.value = 1;
+  await load();
+}
+
+/** Hide/show a column; hiding the sorted column falls back to the default id order. */
+async function toggleColumn(key: string) {
+  const hiding = visibleKeys.value.includes(key);
+  if (hiding && sort.value === key && !(await settle())) return;
+  toggleHidden(key);
+  if (hiding && !visibleKeys.value.includes(key) && sort.value === key) {
+    sort.value = 'id';
+    sortDir.value = 'asc';
+    page.value = 1;
+    await load();
+  }
+}
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 watch(q, () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => goTo(1), 300); });
-watch([variety, batch, sort], () => goTo(1));
+watch([variety, batch], () => goTo(1));
 
 onBeforeRouteLeave(settle);
 onBeforeRouteUpdate((to) => (to.params.formId === 'bulk-edit' ? true : settle()));
@@ -174,7 +215,7 @@ onBeforeUnmount(() => {
 });
 
 const field = 'w-full border rounded px-2 py-1 text-sm';
-const firstRow = computed(() => (page.value - 1) * PAGE_SIZE + 1);
+const firstRow = computed(() => (page.value - 1) * pageSize.value + 1);
 
 // The grid fills everything below the header and toolbar, down to the bottom of
 // the window. Measuring the grid area keeps this correct whatever padding or
@@ -201,10 +242,10 @@ function fitGrid() {
       <header class="flex flex-wrap items-baseline gap-x-3">
         <h2 class="text-xl font-semibold">Bulk edit of reflexes</h2>
         <p class="text-sm opacity-70" title="Edit the text fields of existing reflexes. A row is saved when you leave it (or with Save all, Ctrl/Cmd+S); edited cells are yellow until saved. Clearing a cell removes the value. Relations are changed in the reflex form.">
-          100 rows per page; save on leaving a row, or Ctrl/Cmd+S. Edited cells are yellow until saved.
+          Save on leaving a row, or Ctrl/Cmd+S. Edited cells are yellow until saved.
         </p>
       </header>
-      <div class="grid gap-2 md:grid-cols-4 items-end">
+      <div class="grid gap-2 md:grid-cols-3 items-end">
         <label class="text-sm">
           <span class="block font-semibold mb-1">Search</span>
           <input v-model="q" :class="field" type="search" placeholder="Term, translation, …" aria-label="Search reflexes" />
@@ -212,26 +253,40 @@ function fitGrid() {
         <RecordPicker v-model="variety" resource="variety" label="Variety" placeholder="Search name or Guthrie code…"
                       :fields="['name_english', 'name_french', 'name_bantu', 'name_bastin', 'guthrie_index']" />
         <RecordPicker v-model="batch" resource="bulkimport" label="Bulk import" placeholder="Search import…" />
-        <label class="text-sm">
-          <span class="block font-semibold mb-1">Sort by</span>
-          <select v-model="sort" :class="field" aria-label="Sort by"><option value="id">Id</option><option value="term">Term</option></select>
-        </label>
       </div>
       <p v-if="loadError" role="alert" class="text-sm text-red-700">{{ loadError }}</p>
       <div class="flex flex-wrap items-center gap-3 text-sm">
         <button class="btn btn-sm" type="button" :disabled="loading || page <= 1" @click="goTo(page - 1)">Previous</button>
         <span>{{ loading ? 'Loading…' : count ? `Rows ${firstRow.toLocaleString()}–${(firstRow + rows.length - 1).toLocaleString()} of ${count.toLocaleString()}` : 'No reflexes' }}</span>
         <button class="btn btn-sm" type="button" :disabled="loading || page >= totalPages" @click="goTo(page + 1)">Next</button>
+        <label class="flex items-center gap-1">
+          Rows
+          <select :value="pageSize" class="border rounded px-1 py-0.5" aria-label="Rows per page" @change="changePageSize">
+            <option v-for="n in PAGE_SIZES" :key="n" :value="n">{{ n }}</option>
+          </select>
+        </label>
+        <details class="relative">
+          <summary class="btn btn-sm cursor-pointer list-none">Columns</summary>
+          <div class="absolute left-0 z-30 mt-1 max-h-80 w-64 overflow-auto rounded border bg-white p-2 shadow-lg">
+            <label v-for="d in defs" :key="d.key" class="flex items-center gap-2 py-0.5">
+              <input type="checkbox" :checked="!hidden.has(d.key)" @change="toggleColumn(d.key)" />
+              <span>{{ d.label }}</span>
+            </label>
+            <div class="mt-1 border-t pt-1"><button class="btn btn-sm" type="button" @click="showAll">Show all</button></div>
+          </div>
+        </details>
         <span class="ml-auto" role="status">
           <span v-if="dirtyRows.length">{{ dirtyRows.length }} unsaved</span>
-          <span v-if="errorCount" class="text-red-700"> · {{ errorCount }} not saved (hover the row number)</span>
+          <span v-if="errorCount" class="text-red-700"> · {{ errorCount }} not saved (hover the row)</span>
         </span>
         <button class="btn btn-sm btn-primary" type="button" :disabled="!dirtyRows.length" @click="saveAll">Save all</button>
       </div>
     </div>
     <div ref="gridArea" class="min-h-0" :style="{ height: gridH + 'px' }">
-      <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="defs.map(d => d.key)" :defs="defs" :errors="errors" fill
-                :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus" @row-leave="onRowLeave" />
+      <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="visibleKeys" :defs="defs" :errors="errors" fill
+                :show-row-numbers="false" :sort="sort" :sort-dir="sortDir" :sortable="SORTABLE"
+                :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus"
+                @sort-change="onSort" @row-leave="onRowLeave" />
     </div>
   </section>
 </template>

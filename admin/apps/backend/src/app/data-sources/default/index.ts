@@ -9,10 +9,12 @@ if (!existsSync(databasePath)) throw new Error(`Database does not exist: ${datab
 export const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({url:`file:${databasePath}`,timeout:5000}) });
 await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON');
 await prisma.$executeRawUnsafe('PRAGMA recursive_triggers = OFF');
+/** Largest page the API serves; the bulk edit grid offers up to this. */
+export const MAX_PAGE_SIZE = 500;
 /** Bounds page sizes and gives every list a stable default order. */
 class BantuLexAdapter extends PrismaDataSourceAdapter {
   override async findAll(model:string,params:ListRequest,ctx:AdapterCrudContext) {
-    return super.findAll(model,{...params,pageSize:Math.min(Math.max(params.pageSize || 25,1),100),sort:params.sort || 'id'},ctx);
+    return super.findAll(model,{...params,pageSize:Math.min(Math.max(params.pageSize || 25,1),MAX_PAGE_SIZE),sort:params.sort || 'id'},ctx);
   }
   override async patch(model:string,id:string|number,data:unknown,ctx:AdapterCrudContext) { return this.update(model,id,data,ctx); }
 }

@@ -107,9 +107,11 @@ API: `POST /api/bulk/reflex[?dryRun=1]` (up to 20,000 rows, JSON body up to 25 M
 
 ## Bulk edit
 
-*Lexical data → Bulk edit* (`/admin/crouton/bulk-edit`) edits the text fields of existing reflexes (term, translation, meaning, part of speech, morphology, semantic field, scientific name, IPA and its notes, BLR index and note, notes) in the bulk grid, 100 rows per page (the API's maximum page size). Search uses Crouton's `q`; a variety or a bulk import batch narrows the rows. Id and variety are shown read-only; relations and the integer ids are edited in the reflex form.
+*Lexical data → Bulk edit* (`/admin/crouton/bulk-edit`) edits the text fields of existing reflexes (term, translation, meaning, part of speech, morphology, semantic field, scientific name, IPA and its notes, BLR index and note, notes) in a grid that fills the window. Search uses Crouton's `q`; a variety or a bulk import batch narrows the rows (the variety filter replaces sorting by variety).
 
-Editing goes through Crouton: rows are loaded with the resource's list operation, and a row is saved when the focus leaves it (or with *Save all*, Ctrl/Cmd+S) as one `PATCH /api/reflex/:id` with only the changed fields, after checking them with the zod schema of Crouton's reflex form. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked, and changing page or leaving asks before dropping them. Changing `blr_index` here does not relink the BLR entry (only the bulk import does).
+The grid has no row-number column; the id and variety columns are read-only. Click a column header to sort on the server (`asc`/`desc`, toggling); the API can sort only physical reflex columns, not calculated labels such as variety. The *Columns* menu hides or shows columns, remembers the selection in `localStorage`, and keeps at least one column visible. *Rows* selects 20, 50, 100 or 500 rows per page (default 50; the API caps at 500).
+
+Editing goes through Crouton: rows are loaded with the resource's list operation, and a row is saved when the focus leaves it (or with *Save all*, Ctrl/Cmd+S) as one `PATCH /api/reflex/:id` with only the changed fields, after checking them with the zod schema of Crouton's reflex form. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked (a red left border and tooltip), and changing sort, page size, page or leaving asks before dropping them. Changing `blr_index` here does not relink the BLR entry (only the bulk import does).
 
 ## Relations in the detail view
 

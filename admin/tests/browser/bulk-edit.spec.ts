@@ -23,7 +23,7 @@ test('bulk edit saves a row with one PATCH of its changed fields when the row is
  expect(patches).toEqual([{url:expect.stringMatching(new RegExp(`/api/reflex/${ids[1]}$`)),body:{translation:'edited translation'}}]);
  const after=row(ids[1]);
  for(const k of ['term','meaning','notes','variety_id','fieldwork_id']) expect(after[k]).toBe(before[k]);
- await expect(page.locator('.bulk-num[data-status=saved]')).toHaveText(['2']);
+ await expect(page.locator('.bulk-row.bulk-saved[data-row="2"]')).toHaveCount(1);
 
  // A pasted block changes several rows; each is saved when the focus moves on.
  await page.getByLabel('Notes row 4',{exact:true}).click();
@@ -81,4 +81,30 @@ test('bulk edit grid fills the remaining window height',async({page})=>{
  expect(large.height).toBeGreaterThan(small.height);
  expect(large.bottom).toBeLessThanOrEqual(large.viewport);
  expect(large.scroll).toBeLessThanOrEqual(large.viewport+1);
+});
+
+test('bulk edit removes row numbers but keeps id, columns and page size',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ await expect(page.getByRole('button',{name:'Id',exact:true})).toHaveCount(1);
+ await expect(page.locator('.bulk-th').filter({hasText:'Variety'})).toHaveCount(1);
+ await expect(page.locator('.bulk-num')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Variety'})).toHaveCount(0);
+
+ const requests:string[]=[];
+ page.on('request',r=>{if(r.url().includes('/api/reflex?'))requests.push(r.url())});
+ await page.getByLabel('Rows per page').selectOption('500');
+ await expect.poll(()=>requests.some(u=>u.includes('pageSize=500'))).toBe(true);
+ await expect(page.getByText(/Rows 1–500 of/)).toBeVisible();
+
+ await page.getByRole('button',{name:'Term',exact:true}).click();
+ await expect.poll(()=>requests.some(u=>u.includes('sort=term')&&u.includes('sortDir=asc'))).toBe(true);
+ await page.getByRole('button',{name:'Term',exact:true}).click();
+ await expect.poll(()=>requests.some(u=>u.includes('sort=term')&&u.includes('sortDir=desc'))).toBe(true);
+
+ await page.getByText('Columns',{exact:true}).click();
+ await page.getByRole('checkbox',{name:'Notes',exact:true}).uncheck();
+ await expect(page.getByRole('button',{name:'Notes',exact:true})).toHaveCount(0);
+ await page.reload();
+ await expect(page.getByRole('button',{name:'Notes',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Id',exact:true})).toHaveCount(1);
 });

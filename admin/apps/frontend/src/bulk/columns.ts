@@ -37,6 +37,10 @@ export const DEFAULT_COLUMNS = ['term', 'translation'];
 /** Rows per import, as enforced by the API (admin/apps/backend/src/app/bulk/bulk.schema.ts). */
 export const MAX_ROWS = 20000;
 
+/** Page sizes offered by the bulk edit grid; the API caps at 500. */
+export const PAGE_SIZES = [20, 50, 100, 500] as const;
+export const DEFAULT_PAGE_SIZE = 50;
+
 export type BulkRow = Record<string, string>;
 export const emptyRow = (): BulkRow => Object.fromEntries(COLUMNS.map(c => [c.key, '']));
 export const isEmptyRow = (row: BulkRow) => COLUMNS.every(c => !row[c.key]?.trim());

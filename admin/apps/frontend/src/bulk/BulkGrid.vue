@@ -17,16 +17,25 @@ const props = withDefaults(defineProps<{
   growable?: boolean;
   /** Fill the height of the parent instead of the fixed review height. */
   fill?: boolean;
+  /** Show the row-number gutter (needed for row selection in the import wizard). */
+  showRowNumbers?: boolean;
+  /** Current server-side sort column, and whether it is ascending. */
+  sort?: string;
+  sortDir?: 'asc' | 'desc';
+  /** Columns whose header can be clicked to sort; the rest are plain labels. */
+  sortable?: string[];
   readonly?: string[];
   /** Edited cells, as `${row index}:${key}`. */
   changed?: Set<string>;
   rowStatus?: Map<number, 'saving' | 'saved' | 'error'>;
-}>(), { growable: true, fill: false });
+}>(), { growable: true, fill: false, showRowNumbers: true });
 const rows = defineModel<BulkRow[]>('rows', { required: true });
 const emit = defineEmits<{
   (e: 'update:columns', value: string[]): void;
   /** Focus left row `left` for another row (`current`) or for outside the grid (null). */
   (e: 'row-leave', left: number, current: number | null): void;
+  /** A sortable header was clicked; the parent applies the server-side sort. */
+  (e: 'sort-change', key: string): void;
 }>();
 
 const ROW_H = 30, FIXED_H = 480, OVERSCAN = 8;
@@ -177,7 +186,10 @@ function deleteSelected() {
 function addRow() { ensureRows(rows.value.length + 1); }
 
 const filled = computed(() => rows.value.filter(r => !isEmptyRow(r)).length);
-const width = computed(() => 56 + cols.value.reduce((n, c) => n + c.width, 0));
+const width = computed(() => (props.showRowNumbers ? 56 : 0) + cols.value.reduce((n, c) => n + c.width, 0));
+const isSortable = (key: string) => !!props.sortable?.includes(key);
+const ariaSort = (key: string) => props.sort === key ? (props.sortDir === 'asc' ? 'ascending' : 'descending') : (isSortable(key) ? 'none' : undefined);
+function sortBy(key: string) { if (isSortable(key)) emit('sort-change', key); }
 const rowError = (i: number) => props.errors.get(i);
 const status = (i: number) => props.rowStatus?.get(i);
 const rowTitle = (i: number) => rowError(i) ? Object.values(rowError(i)!).join('; ')
@@ -201,16 +213,23 @@ defineExpose({ focusCell, currentRow });
          @focusout="onFocusOut" @scroll="scrollTop = ($event.target as HTMLElement).scrollTop">
       <div :style="{ width: width + 'px' }">
         <div class="bulk-row bulk-head" :style="{ height: ROW_H + 'px' }">
-          <div class="bulk-num">#</div>
-          <div v-for="col in cols" :key="col.key" class="bulk-cell bulk-th" :style="{ width: col.width + 'px' }">
-            {{ col.label }}<span v-if="col.required" class="text-red-600"> *</span>
+          <div v-if="showRowNumbers" class="bulk-num">#</div>
+          <div v-for="col in cols" :key="col.key" class="bulk-cell bulk-th"
+               :class="{ 'bulk-th-sortable': isSortable(col.key), 'bulk-th-active': sort === col.key }"
+               :style="{ width: col.width + 'px' }" :aria-sort="ariaSort(col.key)">
+            <button v-if="isSortable(col.key)" type="button" class="bulk-sort" @click="sortBy(col.key)">
+              {{ col.label }}<span v-if="col.required" class="text-red-600"> *</span>
+              <span class="bulk-arrow" aria-hidden="true">{{ sort === col.key ? (sortDir === 'asc' ? '▲' : '▼') : '' }}</span>
+            </button>
+            <template v-else>{{ col.label }}<span v-if="col.required" class="text-red-600"> *</span></template>
           </div>
         </div>
         <div :style="{ height: rows.length * ROW_H + 'px', position: 'relative' }">
-          <div v-for="{ row, index } in visible" :key="index" class="bulk-row"
+          <div v-for="{ row, index } in visible" :key="index" class="bulk-row" :data-row="index + 1"
                :class="[{ 'bulk-selected': selectedRows.has(index), 'bulk-invalid': rowError(index) }, status(index) && `bulk-${status(index)}`]"
-               :style="{ position: 'absolute', top: index * ROW_H + 'px', height: ROW_H + 'px' }">
-            <button type="button" class="bulk-num" :title="rowTitle(index)" :data-status="status(index)"
+               :style="{ position: 'absolute', top: index * ROW_H + 'px', height: ROW_H + 'px' }"
+               :title="rowTitle(index) || undefined">
+            <button v-if="showRowNumbers" type="button" class="bulk-num" :data-status="status(index)"
                     @click="growable && toggleRow(index, $event)">{{ index + 1 }}</button>
             <div v-for="(col, c) in cols" :key="col.key" class="bulk-cell" :style="{ width: col.width + 'px' }"
                  :class="{ 'bulk-in-range': inRange(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
@@ -235,11 +254,19 @@ defineExpose({ focusCell, currentRow });
 .bulk-num { width: 56px; flex: none; text-align: right; padding: 0 6px; font-size: 12px; color: #6b7280; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; background: #f9fafb; line-height: 30px; }
 .bulk-cell { flex: none; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
 .bulk-th { font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
+.bulk-th-sortable:hover { background: #e5e7eb; }
+.bulk-th-active { background: #e5e7eb; }
+.bulk-sort { display: flex; align-items: center; width: 100%; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.bulk-arrow { margin-left: auto; padding-left: 4px; font-size: 9px; }
 .bulk-input { width: 100%; height: 100%; border: 0; padding: 0 6px; font-size: 14px; background: transparent; outline: none; }
 .bulk-input:focus { box-shadow: inset 0 0 0 2px #2563eb; background: #fff; }
 .bulk-in-range { background: #dbeafe; }
 .bulk-selected .bulk-num { background: #bfdbfe; color: #1e3a8a; }
 .bulk-invalid .bulk-num { background: #fee2e2; color: #991b1b; font-weight: 600; }
+/* Without the row-number gutter the row itself carries the save status. */
+.bulk-row.bulk-invalid, .bulk-row.bulk-error { box-shadow: inset 3px 0 0 #dc2626; }
+.bulk-row.bulk-saving { box-shadow: inset 3px 0 0 #d97706; }
+.bulk-row.bulk-saved { box-shadow: inset 3px 0 0 #16a34a; }
 .bulk-cell-error { box-shadow: inset 0 0 0 2px #dc2626; }
 .bulk-changed { background: #fef9c3; }
 .bulk-readonly { background: #f9fafb; color: #6b7280; }
