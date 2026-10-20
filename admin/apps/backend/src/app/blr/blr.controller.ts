@@ -1,9 +1,9 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, HttpCode, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, HttpCode, NotFoundException, Param, Post, Put } from '@nestjs/common';
 import type { z } from 'zod';
 import { BlrRequest, BlrUpdateRequest } from './blr.schema.js';
 import {
   BlrConflictError, BlrNotFoundError, BlrValidationError,
-  createBlr, findByIndex, getBlr, listReflexes, nextIndex, structureOptions, updateBlr,
+  createBlr, findByIndex, getBlr, nextIndex, structureOptions, updateBlr,
 } from './blr.service.js';
 
 const INVALID = 'The reconstruction is not valid; nothing was saved.';
@@ -60,32 +60,6 @@ export class BlrController {
   @Get('options')
   options() {
     return structureOptions();
-  }
-
-  /** GET /api/blr/reflexes — candidate reflexes (unlinked by default), Crouton list shape. */
-  @Get('reflexes')
-  reflexes(
-    @Query('q') q?: string,
-    @Query('variety_id') varietyId?: string,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-    @Query('unlinked') unlinked?: string,
-    @Query('owner_id') ownerId?: string,
-  ) {
-    const int = (value: string | undefined, fallback: number) => {
-      const n = Number(value);
-      return Number.isSafeInteger(n) && n > 0 ? n : fallback;
-    };
-    const variety = Number(varietyId);
-    const owner = Number(ownerId);
-    return listReflexes({
-      q: q?.trim() || undefined,
-      varietyId: Number.isSafeInteger(variety) && variety > 0 ? variety : null,
-      page: int(page, 1),
-      pageSize: int(pageSize, 50),
-      unlinked: unlinked !== '0' && unlinked !== 'false',
-      ownerId: Number.isSafeInteger(owner) && owner > 0 ? owner : null,
-    });
   }
 
   /** GET /api/blr/by-index/:blr — `{id}` of the reconstruction with that BLR index. */

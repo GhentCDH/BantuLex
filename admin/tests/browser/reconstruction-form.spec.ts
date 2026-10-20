@@ -85,3 +85,23 @@ test('the Crouton reconstruction view links to the reconstruction form',async({p
  await expect(page).toHaveURL(new RegExp(`/crouton/reconstruction-form\\?id=${rec.id}$`));
  await expect(page.getByText(`BLR ${rec.blr_index}`,{exact:true})).toBeVisible();
 });
+
+test('both reflex tables sort by a clicked column',async({page})=>{
+ const rec=sql(db,`select r.id from reconstruction r
+   where (select count(*) from reflex x where x.blr_entry_id=r.id)>=3 order by r.id limit 1`)[0];
+ await page.goto(`crouton/reconstruction-form?id=${rec.id}`);
+
+ const linked=page.getByRole('region',{name:'Linked reflexes'});
+ await linked.getByRole('button',{name:'Term'}).click();
+ await expect(linked.getByRole('columnheader',{name:/Term/})).toHaveAttribute('aria-sort','ascending');
+ const terms=await linked.locator('tbody tr td:first-child a').allTextContents();
+ expect(terms).toEqual([...terms].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base',numeric:true})));
+ await linked.getByRole('button',{name:'Term'}).click();
+ await expect(linked.getByRole('columnheader',{name:/Term/})).toHaveAttribute('aria-sort','descending');
+
+ const picker=page.getByRole('region',{name:'Add reflexes'});
+ await picker.getByRole('button',{name:'Term'}).click();
+ await expect(picker.getByRole('columnheader',{name:/Term/})).toHaveAttribute('aria-sort','ascending');
+ const first=sql(db,'select term from reflex where blr_entry_id is null order by term asc limit 1')[0].term;
+ await expect(picker.locator('tbody tr').first().locator('td').nth(2)).toHaveText(first ?? '—');
+});

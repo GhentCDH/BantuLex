@@ -107,21 +107,21 @@ test('BLR API rolls back when a reflex is linked or a reference is invalid',asyn
  } finally {await stopServer(s.child);}
 });
 
-test('BLR API lists candidates, options and the next index',async()=>{
+test('BLR API lists options and the next index; Crouton lists the candidate reflexes',async()=>{
  const {dir,db}=copyDatabase(); const s=await startServer(db,dir,14453);
  try {
   const options=await request(s.base,'/blr/options');
   assert.equal(options.status,200);
   assert.ok(Array.isArray(options.body.c1)&&options.body.c1.length>0);
 
-  const list=await request(s.base,'/blr/reflexes?pageSize=5');
+  // The picker uses Crouton's reflex list: isnull filter, q search, server sort, variety label.
+  const unlinkedCount=sql(db,'select count(*) n from reflex where blr_entry_id is null')[0].n;
+  const list=await request(s.base,'/reflex?pageSize=5&filter=blr_entry_id:0:isnull&sort=term&sortDir=desc');
   assert.equal(list.status,200,JSON.stringify(list));
-  assert.ok(list.body.data.length>0);
-  for(const row of list.body.data) assert.equal(row.blr_entry_id,null);
-
-  const all=await request(s.base,'/blr/reflexes?pageSize=5&unlinked=0');
-  assert.equal(all.status,200);
-  assert.ok(all.body.data.length>0);
+  assert.equal(list.body.request.count,unlinkedCount);
+  for(const row of list.body.data) { assert.equal(row.blr_entry_id,null); assert.ok('variety_label' in row); }
+  const terms=sql(db,"select term from reflex where blr_entry_id is null order by term desc limit 5").map(r=>r.term);
+  assert.deepEqual(list.body.data.map(r=>r.term),terms);
 
   const next=await request(s.base,'/blr/next-index');
   assert.equal(next.body.blr_index,sql(db,'select max(blr_index) m from reconstruction')[0].m+1);
@@ -215,10 +215,5 @@ test('BLR API update links and unlinks reflexes, and rolls back on a conflict',a
   assert.equal(none.status,200,JSON.stringify(none));
   assert.equal(sql(db,'select count(*) n from reflex where blr_entry_id=?',[rec.id])[0].n,0);
 
-  // Candidates for this reconstruction include its own reflexes.
-  await request(s.base,`/blr/${rec.id}`,'PUT',{...body,reflex_ids:[added]});
-  const list=await request(s.base,`/blr/reflexes?pageSize=500&q=&owner_id=${rec.id}&page=1`);
-  assert.equal(list.status,200);
-  assert.ok(list.body.data.every(r=>r.blr_entry_id==null||r.blr_entry_id===rec.id));
  } finally {await stopServer(s.child);}
 });

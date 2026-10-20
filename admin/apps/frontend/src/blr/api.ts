@@ -14,8 +14,10 @@ export interface ReflexQuery {
   variety_id?: number;
   page: number;
   pageSize: number;
+  sort: string;
+  sortDir: 'asc' | 'desc';
+  /** Only reflexes without a reconstruction. */
   unlinked: boolean;
-  owner_id?: number | null;
 }
 
 export interface ReflexPage { rows: ReflexRow[]; count: number; totalPages: number }
@@ -46,10 +48,25 @@ export async function saveReconstruction(id: number | null, body: SaveBody): Pro
   return data;
 }
 
+/** Reflex columns Crouton's list can sort on (physical columns; not the calculated variety label). */
+export const REFLEX_SORTABLE = ['id', 'term', 'translation', 'meaning', 'blr_index'];
+
+/**
+ * Candidate reflexes from Crouton's reflex list (`GET /api/reflex`): its `q` search,
+ * sorting and `field:value:operator` filters. An integer foreign key is matched with
+ * gt/lt around the id, as Crouton passes `equals` values as strings (see relations/links.ts).
+ */
 export async function listReflexes(query: ReflexQuery): Promise<ReflexPage> {
-  const { data } = await axios.get('/api/blr/reflexes', {
-    params: { ...query, unlinked: query.unlinked ? 1 : 0, owner_id: query.owner_id ?? undefined },
+  const params = new URLSearchParams({
+    page: String(query.page), pageSize: String(query.pageSize), sort: query.sort, sortDir: query.sortDir,
   });
+  if (query.q) params.set('q', query.q);
+  if (query.unlinked) params.append('filter', 'blr_entry_id:0:isnull');
+  if (query.variety_id) {
+    params.append('filter', `variety_id:${query.variety_id - 1}:gt`);
+    params.append('filter', `variety_id:${query.variety_id + 1}:lt`);
+  }
+  const { data } = await axios.get('/api/reflex', { params });
   return { rows: data.data ?? [], count: data.request?.count ?? 0, totalPages: data.request?.totalPages ?? 1 };
 }
 

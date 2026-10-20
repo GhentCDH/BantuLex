@@ -4,6 +4,8 @@
 // unlinked on save (they can be restored until then).
 import { computed } from 'vue';
 import { recordRoute } from '../relations/links';
+import SortHeader from './SortHeader.vue';
+import { compareValues, useSort } from './useSort';
 import type { ReflexRow } from './types';
 
 const props = defineProps<{ original: ReflexRow[] }>();
@@ -11,7 +13,18 @@ const model = defineModel<ReflexRow[]>({ required: true });
 
 const originalIds = computed(() => new Set(props.original.map(r => r.id)));
 const currentIds = computed(() => new Set(model.value.map(r => r.id)));
-const removed = computed(() => props.original.filter(r => !currentIds.value.has(r.id)));
+// All rows are loaded, so the table sorts in the browser; removed rows follow the current ones.
+const { sort, sortDir, toggle: sortBy } = useSort('id');
+const sorted = (rows: ReflexRow[]) => [...rows].sort((a, b) =>
+  compareValues((a as any)[sort.value], (b as any)[sort.value], sortDir.value) || a.id - b.id);
+const current = computed(() => sorted(model.value));
+const removed = computed(() => sorted(props.original.filter(r => !currentIds.value.has(r.id))));
+const COLUMNS = [
+  { key: 'term', label: 'Term' },
+  { key: 'meaning', label: 'Meaning' },
+  { key: 'translation', label: 'Translation' },
+  { key: 'variety_label', label: 'Variety' },
+];
 
 const remove = (row: ReflexRow) => { model.value = model.value.filter(r => r.id !== row.id); };
 const restore = (row: ReflexRow) => { model.value = [...model.value, row]; };
@@ -23,15 +36,13 @@ const restore = (row: ReflexRow) => { model.value = [...model.value, row]; };
       <table class="w-full text-sm">
         <thead class="sticky top-0 bg-gray-50">
           <tr class="text-left">
-            <th class="p-2">Term</th>
-            <th class="p-2">Meaning</th>
-            <th class="p-2">Translation</th>
-            <th class="p-2">Variety</th>
+            <SortHeader v-for="col in COLUMNS" :key="col.key" :label="col.label" :column="col.key"
+                        :sort="sort" :sort-dir="sortDir" @sort="sortBy" />
             <th class="p-2 w-24" />
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in model" :key="row.id" :class="{ 'bg-blue-50': !originalIds.has(row.id) }">
+          <tr v-for="row in current" :key="row.id" :class="{ 'bg-blue-50': !originalIds.has(row.id) }">
             <td class="p-2 forms">
               <router-link :to="recordRoute('reflex', row.id, 'view')" class="term no-underline hover:underline">{{ row.term ?? `#${row.id}` }}</router-link>
               <span v-if="!originalIds.has(row.id)" class="ml-1 text-xs text-blue-700">new</span>

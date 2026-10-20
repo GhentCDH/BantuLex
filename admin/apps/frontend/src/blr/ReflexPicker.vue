@@ -1,10 +1,13 @@
 <script setup lang="ts">
-// Pick the reflexes that belong to the reconstruction. Candidates come from the
-// BLR API (by default those without a reconstruction, plus the reflexes of
-// `ownerId`, the one being edited) and the selection survives paging and filter changes.
+// Pick the reflexes that belong to the reconstruction. Candidates come from
+// Crouton's reflex list (by default those without a reconstruction), sorted on
+// the server; the selection survives paging, sorting and filter changes.
+// Reflexes of `ownerId`, the reconstruction being edited, stay selectable.
 import { computed, onMounted, ref, watch } from 'vue';
 import RecordPicker, { type PickedRecord } from '../bulk/RecordPicker.vue';
-import { errorMessage, listReflexes } from './api';
+import SortHeader from './SortHeader.vue';
+import { REFLEX_SORTABLE, errorMessage, listReflexes } from './api';
+import { useSort } from './useSort';
 import type { ReflexRow } from './types';
 
 const props = defineProps<{ ownerId?: number | null }>();
@@ -13,6 +16,15 @@ const model = defineModel<ReflexRow[]>({ required: true });
 const q = ref('');
 const variety = ref<PickedRecord | null>(null);
 const onlyUnlinked = ref(true);
+const COLUMNS = [
+  { key: 'id', label: 'Id' },
+  { key: 'term', label: 'Term' },
+  { key: 'translation', label: 'Translation' },
+  { key: 'meaning', label: 'Meaning' },
+  { key: 'variety_label', label: 'Variety' },
+  { key: 'blr_index', label: 'Reconstruction' },
+];
+const { sort, sortDir, toggle: sortBy } = useSort('id');
 const page = ref(1);
 const pageSize = 50;
 const rows = ref<ReflexRow[]>([]);
@@ -36,8 +48,9 @@ async function load() {
       variety_id: variety.value?.id,
       page: page.value,
       pageSize,
+      sort: sort.value,
+      sortDir: sortDir.value,
       unlinked: onlyUnlinked.value,
-      owner_id: props.ownerId,
     });
     rows.value = result.rows;
     count.value = result.count;
@@ -71,7 +84,7 @@ watch(q, () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { page.value = 1; load(); }, 300);
 });
-watch([variety, onlyUnlinked, () => props.ownerId], () => { page.value = 1; load(); });
+watch([variety, onlyUnlinked, sort, sortDir], () => { page.value = 1; load(); });
 onMounted(load);
 </script>
 
@@ -92,7 +105,7 @@ onMounted(load);
                       :fields="['name_english', 'name_french', 'name_bantu', 'name_bastin', 'guthrie_index']" />
         <label class="inline-flex items-center gap-2 text-sm pb-1">
           <input v-model="onlyUnlinked" type="checkbox" aria-label="Only unlinked reflexes" />
-          Only reflexes without {{ ownerId ? 'another' : 'a' }} reconstruction
+          Only reflexes without a reconstruction
         </label>
       </div>
       <p v-if="error" role="alert" class="text-sm text-red-700">{{ error }}</p>
@@ -103,12 +116,8 @@ onMounted(load);
         <thead class="sticky top-0 bg-gray-50">
           <tr class="text-left">
             <th class="p-2 w-8"><input type="checkbox" :checked="allOnPage" aria-label="Select all on this page" @change="togglePage" /></th>
-            <th class="p-2">Id</th>
-            <th class="p-2">Term</th>
-            <th class="p-2">Translation</th>
-            <th class="p-2">Meaning</th>
-            <th class="p-2">Variety</th>
-            <th class="p-2">Reconstruction</th>
+            <SortHeader v-for="col in COLUMNS" :key="col.key" :label="col.label" :column="col.key"
+                        :sort="sort" :sort-dir="sortDir" :sortable="REFLEX_SORTABLE.includes(col.key)" @sort="sortBy" />
           </tr>
         </thead>
         <tbody>

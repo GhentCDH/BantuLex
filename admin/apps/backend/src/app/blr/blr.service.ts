@@ -86,53 +86,6 @@ function toReflexRow(r: any): ReflexRow {
   };
 }
 
-/**
- * Candidate reflexes for linking, in Crouton's list response shape. `unlinked`
- * keeps reflexes without a reconstruction, plus those of `ownerId` (the one being edited).
- */
-export async function listReflexes(query: {
-  q?: string; varietyId?: number | null; page: number; pageSize: number; unlinked: boolean; ownerId?: number | null;
-}) {
-  const where: any = {};
-  if (query.unlinked) {
-    if (query.ownerId) where.AND = [{ OR: [{ blr_entry_id: null }, { blr_entry_id: query.ownerId }] }];
-    else where.blr_entry_id = null;
-  }
-  if (query.varietyId) where.variety_id = query.varietyId;
-  if (query.q) {
-    where.OR = [
-      { term: { contains: query.q } },
-      { translation: { contains: query.q } },
-      { meaning: { contains: query.q } },
-      { term_morph_analysis: { contains: query.q } },
-      { ipa: { contains: query.q } },
-    ];
-  }
-  const pageSize = Math.max(1, Math.min(500, query.pageSize));
-  const page = Math.max(1, query.page);
-  const [rows, count] = await Promise.all([
-    prisma().reflex.findMany({
-      where,
-      orderBy: { id: 'asc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      select: REFLEX_SELECT,
-    }),
-    prisma().reflex.count({ where }),
-  ]);
-  return {
-    data: rows.map(toReflexRow),
-    request: {
-      count, page, pageSize,
-      totalPages: Math.max(1, Math.ceil(count / pageSize)),
-    },
-  };
-}
-
-/**
- * Create a reconstruction, its sound structures and link the selected reflexes
- * in one transaction. Any failed check leaves the database untouched.
- */
 /** Duplicate reflex ids and unknown contributor/reliability → BlrValidationError. */
 async function checkReferences(tx: any, body: BlrUpdateRequest) {
   const errors: FieldError[] = [];

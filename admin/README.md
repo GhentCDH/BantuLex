@@ -131,7 +131,8 @@ Editing goes through Crouton: rows are loaded with the resource's list operation
 - **Sound structure:** the grid uses the viewer's `C₁ V₁₁ V₁₂ C₂ V₂₁ V₂₂ C₃ V₃ C₄ V₄ CS` order, with the tone row under the vowels.
   - C/V/T slots are dropdowns of existing values. CS is a searchable list of existing values. Empty slots (∅) are stored as NULL.
   - An identical consonant/vowel/tone tuple is **reused** instead of duplicated. Editing never changes a structure row that other reconstructions share: a changed structure points to a matching or new tuple.
-- **The picker** filters candidates by `q`, by variety, and by default to reflexes without a reconstruction (plus those of the reconstruction being edited). It pages through them and keeps the selection across pages.
+- **The picker** uses Crouton's reflex list (`GET /api/reflex`): `q` search, a variety filter, and by default only reflexes without a reconstruction (`blr_entry_id:0:isnull`). It pages through them and keeps the selection across pages and sorts.
+- **Sorting:** click a column header in either reflex table. The linked reflexes are all loaded and sort in the browser. The picker sorts on the server through Crouton's `sort`/`sortDir`. Crouton can only sort physical columns, so the picker's *Variety* (a calculated label) is not sortable; use the variety filter instead.
 - **Errors:** if a selected reflex belongs to another reconstruction, or a contributor or reliability is invalid, nothing is saved and the error is shown.
 - **Public viewer links:** *View on public site ↗* in the form and in the reconstruction view goes to `/#/blr/<index>` on the same host, where the public site is served next to `/admin/`. The public site never links back to the admin.
 
