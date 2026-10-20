@@ -21,6 +21,10 @@ const props = withDefaults(defineProps<{
   showRowNumbers?: boolean;
   /** Show the drag-to-fill handle on the focused cell. */
   fillHandle?: boolean;
+  /** Column widths can be dragged; double-click a handle resets its column. */
+  resizable?: boolean;
+  /** localStorage key for the dragged column widths (optional). */
+  widthsKey?: string;
   /** Current server-side sort column, and whether it is ascending. */
   sort?: string;
   sortDir?: 'asc' | 'desc';
@@ -30,7 +34,7 @@ const props = withDefaults(defineProps<{
   /** Edited cells, as `${row index}:${key}`. */
   changed?: Set<string>;
   rowStatus?: Map<number, 'saving' | 'saved' | 'error'>;
-}>(), { growable: true, fill: false, showRowNumbers: true, fillHandle: false });
+}>(), { growable: true, fill: false, showRowNumbers: true, fillHandle: false, resizable: false });
 const rows = defineModel<BulkRow[]>('rows', { required: true });
 const emit = defineEmits<{
   (e: 'update:columns', value: string[]): void;
@@ -48,6 +52,61 @@ const viewport = ref<HTMLElement>();
 let resizeObserver: ResizeObserver | undefined;
 const cols = computed(() => props.columns.map(k => (props.defs ?? COLUMNS).find(c => c.key === k)!).filter(Boolean));
 const isReadonly = (key: string) => !!props.readonly?.includes(key);
+
+// Column widths: the definitions provide defaults, a drag can override them.
+const widths = ref<Record<string, number>>({});
+const widthFor = (col: Pick<BulkColumn, 'key' | 'width'>) => widths.value[col.key] ?? col.width;
+function readWidths() {
+  if (!props.widthsKey) return;
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(props.widthsKey) ?? '{}');
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      widths.value = Object.fromEntries(
+        Object.entries(parsed).filter(([, v]) => typeof v === 'number' && v >= 60),
+      );
+    }
+  } catch {
+    // Ignore corrupt storage.
+  }
+}
+function persistWidths() {
+  if (!props.widthsKey) return;
+  try { localStorage.setItem(props.widthsKey, JSON.stringify(widths.value)); } catch { /* unavailable */ }
+}
+watch(() => props.widthsKey, readWidths, { immediate: true });
+
+interface WidthDrag { key: string; startX: number; startWidth: number }
+let widthDrag: WidthDrag | null = null;
+function startResize(e: PointerEvent, col: Pick<BulkColumn, 'key' | 'width'>) {
+  if (!props.resizable) return;
+  e.preventDefault();
+  e.stopPropagation();
+  widthDrag = { key: col.key, startX: e.clientX, startWidth: widthFor(col) };
+  window.addEventListener('pointermove', onResize);
+  window.addEventListener('pointerup', endResize);
+}
+function onResize(e: PointerEvent) {
+  if (!widthDrag) return;
+  widths.value = { ...widths.value, [widthDrag.key]: Math.max(60, Math.round(widthDrag.startWidth + e.clientX - widthDrag.startX)) };
+}
+function endResize() {
+  window.removeEventListener('pointermove', onResize);
+  window.removeEventListener('pointerup', endResize);
+  if (widthDrag) { widthDrag = null; persistWidths(); }
+}
+function resetWidth(e: MouseEvent, key: string) {
+  if (!props.resizable) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const next = { ...widths.value };
+  delete next[key];
+  widths.value = next;
+  persistWidths();
+}
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', onResize);
+  window.removeEventListener('pointerup', endResize);
+});
 const first = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN));
 const last = computed(() => Math.min(rows.value.length, Math.ceil((scrollTop.value + viewportH.value) / ROW_H) + OVERSCAN));
 const visible = computed(() => rows.value.slice(first.value, last.value).map((row, i) => ({ row, index: first.value + i })));
@@ -249,7 +308,7 @@ function deleteSelected() {
 function addRow() { ensureRows(rows.value.length + 1); }
 
 const filled = computed(() => rows.value.filter(r => !isEmptyRow(r)).length);
-const width = computed(() => (props.showRowNumbers ? 56 : 0) + cols.value.reduce((n, c) => n + c.width, 0));
+const width = computed(() => (props.showRowNumbers ? 56 : 0) + cols.value.reduce((n, c) => n + widthFor(c), 0));
 const dirtyRows = computed(() => new Set([...(props.changed ?? [])].map(k => Number(k.split(':')[0]))));
 const isSortable = (key: string) => !!props.sortable?.includes(key);
 const ariaSort = (key: string) => props.sort === key ? (props.sortDir === 'asc' ? 'ascending' : 'descending') : (isSortable(key) ? 'none' : undefined);
@@ -278,14 +337,16 @@ defineExpose({ focusCell, currentRow });
       <div :style="{ width: width + 'px' }">
         <div class="bulk-row bulk-head" :style="{ height: ROW_H + 'px' }">
           <div v-if="showRowNumbers" class="bulk-num">#</div>
-          <div v-for="col in cols" :key="col.key" class="bulk-cell bulk-th"
+          <div v-for="col in cols" :key="col.key" class="bulk-cell bulk-th" :data-key="col.key"
                :class="{ 'bulk-th-sortable': isSortable(col.key), 'bulk-th-active': sort === col.key }"
-               :style="{ width: col.width + 'px' }" :aria-sort="ariaSort(col.key)">
+               :style="{ width: widthFor(col) + 'px' }" :aria-sort="ariaSort(col.key)">
             <button v-if="isSortable(col.key)" type="button" class="bulk-sort" @click="sortBy(col.key)">
               {{ col.label }}<span v-if="col.required" class="text-red-600"> *</span>
               <span class="bulk-arrow" aria-hidden="true">{{ sort === col.key ? (sortDir === 'asc' ? '▲' : '▼') : '' }}</span>
             </button>
             <template v-else>{{ col.label }}<span v-if="col.required" class="text-red-600"> *</span></template>
+            <div v-if="resizable" class="bulk-resize" :data-resize="col.key" title="Drag to resize; double-click to reset"
+                 @pointerdown="startResize($event, col)" @dblclick="resetWidth($event, col.key)"></div>
           </div>
         </div>
         <div :style="{ height: rows.length * ROW_H + 'px', position: 'relative' }">
@@ -295,7 +356,7 @@ defineExpose({ focusCell, currentRow });
                :title="rowTitle(index) || undefined">
             <button v-if="showRowNumbers" type="button" class="bulk-num" :data-status="status(index)"
                     @click="growable && toggleRow(index, $event)">{{ index + 1 }}</button>
-            <div v-for="(col, c) in cols" :key="col.key" class="bulk-cell" :style="{ width: col.width + 'px' }"
+            <div v-for="(col, c) in cols" :key="col.key" class="bulk-cell" :style="{ width: widthFor(col) + 'px' }"
                  :class="{ 'bulk-in-range': inRange(index, c), 'bulk-fill-preview': inFillPreview(index, c), 'bulk-cell-error': rowError(index)?.[col.key], 'bulk-changed': changed?.has(`${index}:${col.key}`), 'bulk-readonly': isReadonly(col.key) }"
                  :title="rowError(index)?.[col.key]">
               <input :id="cellId(index, c)" v-model="row[col.key]" class="bulk-input" spellcheck="false" :readonly="isReadonly(col.key)"
@@ -321,7 +382,9 @@ defineExpose({ focusCell, currentRow });
 .bulk-cell { position: relative; flex: none; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
 .bulk-fill-handle { position: absolute; right: -3px; bottom: -3px; z-index: 3; width: 7px; height: 7px; border: 1px solid #fff; background: #2563eb; cursor: crosshair; touch-action: none; }
 .bulk-fill-preview { background: #dbeafe; }
-.bulk-th { font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
+.bulk-th { position: relative; font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
+.bulk-resize { position: absolute; top: 0; right: -3px; z-index: 4; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
+.bulk-resize:hover { background: rgba(37, 99, 235, 0.25); }
 .bulk-th-sortable:hover { background: #e5e7eb; }
 .bulk-th-active { background: #e5e7eb; }
 .bulk-sort { display: flex; align-items: center; width: 100%; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }

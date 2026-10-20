@@ -150,3 +150,26 @@ test('bulk edit rejects a missing BLR index and flashes saved and failed rows',a
  await expect.poll(()=>row(id).blr_entry_id).toBe(rec.id);
  expect(row(id).blr_index).toBe(String(rec.blr_index));
 });
+
+test('bulk edit resizes a column by dragging its header edge',async({page})=>{
+ await page.goto('crouton/bulk-edit');
+ const th=page.locator('.bulk-th[data-key="term"]');
+ const before=await th.boundingBox();
+ const handle=page.locator('.bulk-resize[data-resize="term"]');
+ const hb=await handle.boundingBox();
+ await page.mouse.move(hb!.x+hb!.width/2,hb!.y+hb!.height/2);
+ await page.mouse.down();
+ await page.mouse.move(hb!.x+hb!.width/2+80,hb!.y+hb!.height/2,{steps:8});
+ await page.mouse.up();
+ const after=await th.boundingBox();
+ expect(after!.width).toBeGreaterThan(before!.width+50);
+
+ await page.reload();
+ const reloaded=await page.locator('.bulk-th[data-key="term"]').boundingBox();
+ expect(Math.abs(reloaded!.width-after!.width)).toBeLessThan(2);
+
+ const hb2=await page.locator('.bulk-resize[data-resize="term"]').boundingBox();
+ await page.mouse.dblclick(hb2!.x+hb2!.width/2,hb2!.y+hb2!.height/2);
+ const reset=await page.locator('.bulk-th[data-key="term"]').boundingBox();
+ expect(Math.abs(reset!.width-before!.width)).toBeLessThan(2);
+});

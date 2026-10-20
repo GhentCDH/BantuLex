@@ -288,7 +288,8 @@ function fitGrid() {
     </div>
     <div ref="gridArea" class="min-h-0" :style="{ height: gridH + 'px' }">
       <BulkGrid v-if="defs.length" v-model:rows="rows" :columns="visibleKeys" :defs="defs" :errors="errors" fill
-                :show-row-numbers="false" fill-handle :sort="sort" :sort-dir="sortDir" :sortable="SORTABLE"
+                :show-row-numbers="false" fill-handle resizable widths-key="bantulex-bulk-edit-widths"
+                :sort="sort" :sort-dir="sortDir" :sortable="SORTABLE"
                 :growable="false" :readonly="READONLY" :changed="changed" :row-status="shownStatus"
                 @sort-change="onSort" @row-leave="onRowLeave" />
     </div>
