@@ -4,14 +4,14 @@ import { useMemo } from "preact/hooks";
 import { useApp } from "../context.js";
 import { navigate } from "../route.js";
 import { useQuery } from "../use-query.js";
-import { RESULTS_TABLE, clearFilters, hasFilters, readState, toFilters, writeState } from "../search-state.js";
+import { RESULT_KINDS, clearFilters, hasFilters, readState, showResults, toFilters, writeState } from "../search-state.js";
 import { MeaningSearch } from "../components/meaning-search.js";
 import { STRUCTURE_FIELDS, SoundStructure } from "../components/sound-structure.js";
 import { Results } from "../components/results.js";
 
 const EMPTY = "∅";
 
-/** Main search: meaning and sound structure filters above the reflex results. */
+/** Main search: meaning and sound structure filters above the reflex or BLR results. */
 export function SearchView({ params }) {
     const state = readState(params);
     const update = (changes, options) => navigate("/", writeState({ ...state, ...changes }), options);
@@ -31,39 +31,41 @@ export function SearchView({ params }) {
             state,
             update,
             onClear: hasFilters(state) ? () => update(clearFilters(state)) : null,
+            onShow: (show) => update(showResults(state, show)),
         }),
     );
 }
 
 /**
- * Values per sound position with the number of reflexes that would match
- * when the value is chosen: under all other filters and the other selected
- * positions, as the result count shows it. Consonant and vowel positions
- * only offer the configured inventories; ∅ comes first.
+ * Values per sound position with the number of results (reflexes or BLRs)
+ * that would match when the value is chosen: under all other filters and
+ * the other selected positions, as the result count shows it. Consonant and
+ * vowel positions only offer the configured inventories; ∅ comes first.
  */
 function useStructureOptions(state) {
     const { store, config } = useApp();
     const { consonants = null, vowels = null } = config.soundStructure ?? {};
     const { structure: _, ...otherFilters } = toFilters(state);
+    const table = RESULT_KINDS[state.show].table;
     const { data: structures } = useQuery(() => loadStructures(store), "structures");
-    const { data: reflexesPerBlr } = useQuery(
+    const { data: resultsPerBlr } = useQuery(
         () =>
             store
-                .queryFacetCounts(RESULTS_TABLE, "blr_index", { filters: otherFilters, excludeSelf: false })
+                .queryFacetCounts(table, "blr_index", { filters: otherFilters, excludeSelf: false })
                 .then((rows) => new Map(rows.map((row) => [String(row.value), row.count]))),
-        JSON.stringify(otherFilters),
+        JSON.stringify([table, otherFilters]),
     );
     const segments = state.segments;
     return useMemo(() => {
-        if (!structures || !reflexesPerBlr) return {};
-        const counts = countBySegment(structures, reflexesPerBlr, segments);
+        if (!structures || !resultsPerBlr) return {};
+        const counts = countBySegment(structures, resultsPerBlr, segments);
         return Object.fromEntries(
             STRUCTURE_FIELDS.map((field, i) => {
                 const inventory = /^c\d/.test(field) ? consonants : /^v\d/.test(field) ? vowels : null;
                 return [field, ordered(counts[i], inventory, segments[field] ?? [])];
             }),
         );
-    }, [structures, reflexesPerBlr, JSON.stringify(segments)]);
+    }, [structures, resultsPerBlr, JSON.stringify(segments)]);
 }
 
 // The sound structure of every reconstruction, loaded once per session.
@@ -80,21 +82,21 @@ function loadStructures(store) {
 }
 
 /**
- * Reflex counts per position and value. A reconstruction that matches every
+ * Result counts per position and value. A reconstruction that matches every
  * selected position counts for all its values; one that misses exactly one
  * position counts only for its value there, which is the match a user gets
  * by choosing that value instead.
  */
-function countBySegment(structures, reflexesPerBlr, segments) {
+function countBySegment(structures, resultsPerBlr, segments) {
     const selected = STRUCTURE_FIELDS.map((field) => (segments[field]?.length ? new Set(segments[field]) : null));
     const counts = STRUCTURE_FIELDS.map(() => new Map());
     const add = (i, value, n) => counts[i].set(value, (counts[i].get(value) ?? 0) + n);
     for (const { index, values } of structures) {
-        const reflexes = reflexesPerBlr.get(index);
-        if (!reflexes) continue;
+        const results = resultsPerBlr.get(index);
+        if (!results) continue;
         const misses = selected.flatMap((set, i) => (set && !set.has(values[i]) ? [i] : []));
-        if (misses.length === 0) values.forEach((value, i) => add(i, value, reflexes));
-        else if (misses.length === 1) add(misses[0], values[misses[0]], reflexes);
+        if (misses.length === 0) values.forEach((value, i) => add(i, value, results));
+        else if (misses.length === 1) add(misses[0], values[misses[0]], results);
     }
     return counts;
 }

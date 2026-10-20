@@ -1,16 +1,18 @@
 // @ts-check
 /**
  * BantuLex filter types for the Pihka engine. They query `reflex_search`
- * (or any table with a text `blr_index` column) and keep all SQL out of the
- * UI, which only builds JSON descriptors:
+ * or `blr_reconstruction` and keep all SQL out of the UI, which only builds
+ * JSON descriptors:
  *
  *   { type: "values", selected: ["A", null] }            column is one of, null = empty
  *   { type: "contains", text: "kú" }                     column contains text
- *   { type: "gloss", text: "sheep", lang: "en", level: "reflex" }
- *   { type: "blr-structure", segments: { c1: ["b"], v12: ["∅"] } }
+ *   { type: "gloss", text: "sheep", lang: "en", level: "reflex", target: "blr" }
+ *   { type: "blr-structure", segments: { c1: ["b"], v12: ["∅"] }, target: "reflex" }
  *
  * For "values" and "contains" the filter key is the column; the others
- * ignore their key.
+ * ignore their key. `target` is the table that is queried: "reflex" (the
+ * default) for `reflex_search`, "blr" for `blr_reconstruction`. A gloss of
+ * the other level matches through the BLR index.
  */
 
 const quote = (name) => `"${name.replace(/"/g, '""')}"`;
@@ -49,6 +51,7 @@ function wholeWord(column, text) {
 }
 
 const blrIndexIn = (subquery) => `"blr_index" IN (SELECT CAST("blr_index" AS TEXT) FROM ${subquery})`;
+const hasReflexIn = (subquery) => `CAST("blr_index" AS TEXT) IN (SELECT "blr_index" FROM ${subquery})`;
 
 export function register(api) {
     api.registerFilterType("values", {
@@ -77,9 +80,11 @@ export function register(api) {
             const column = GLOSS_COLUMNS[filter.level]?.[filter.lang];
             if (!text || !column) return null;
             const { sql, params } = wholeWord(quote(column), text);
-            return filter.level === "blr"
+            const target = filter.target === "blr" ? "blr" : "reflex";
+            if (filter.level === target) return { conditions: [sql], params };
+            return target === "reflex"
                 ? { conditions: [blrIndexIn(`"reconstruction" WHERE ${sql}`)], params }
-                : { conditions: [sql], params };
+                : { conditions: [hasReflexIn(`"reflex_search" WHERE ${sql}`)], params };
         },
     });
 
@@ -90,10 +95,10 @@ export function register(api) {
             );
             if (!entries.length) return null;
             const where = entries.map(([field, values]) => `${quote(field)} IN (${values.map(() => "?").join(", ")})`);
-            return {
-                conditions: [blrIndexIn(`"blr_reconstruction" WHERE ${where.join(" AND ")}`)],
-                params: entries.flatMap(([, values]) => values.map(String)),
-            };
+            const params = entries.flatMap(([, values]) => values.map(String));
+            return filter.target === "blr"
+                ? { conditions: where, params }
+                : { conditions: [blrIndexIn(`"blr_reconstruction" WHERE ${where.join(" AND ")}`)], params };
         },
     });
 }
