@@ -85,7 +85,7 @@ onBeforeRouteUpdate(confirmDiscard);
 
 <template>
   <section class="reconstruction-page w-full px-4 py-3 flex flex-col gap-3" aria-label="Reconstruction form">
-    <ReconstructionToolbar :blr-index="blrIndex" :is-new="isNew" :site-url="options.siteUrl.value"
+    <ReconstructionToolbar :blr-index="blrIndex" :is-new="isNew"
                            :lookup-error="lookupError" @open="open" @new="startNew" />
 
     <p v-if="form.loadError.value || options.error.value" role="alert" class="text-sm text-red-700">

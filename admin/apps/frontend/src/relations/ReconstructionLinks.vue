@@ -1,14 +1,12 @@
 <script setup lang="ts">
 // Read-only view of a reconstruction's "reconstruction-links" calculated column:
-// links to the reconstruction form and, when SITE_URL is set, the public BLR viewer.
-import { computed, onMounted, ref } from 'vue';
+// links to the reconstruction form and to the public BLR viewer on the same host.
+import { computed } from 'vue';
 import { useControlBinding, type ControlElement, type JsonSchema } from '@ghentcdh/crouton-vue';
-import { publicSiteUrl, viewerUrl } from '../blr/api';
+import { viewerUrl } from '../blr/api';
 const props = defineProps<{ uischema: ControlElement; schema: JsonSchema }>();
 const { formValues, wrapper } = useControlBinding(props.uischema, props.schema);
 const values = computed(() => (formValues as Record<string, any>) ?? {});
-const siteUrl = ref<string | null>(null);
-onMounted(async () => { siteUrl.value = await publicSiteUrl(); });
 </script>
 <template>
   <!-- Same row layout as Crouton's read-only fields: label cell, then the value. -->
@@ -17,7 +15,7 @@ onMounted(async () => { siteUrl.value = await publicSiteUrl(); });
     <div class="h-full p-2 min-w-0 text-sm flex items-center gap-4">
       <router-link v-if="values.id != null" :to="{ path: '/crouton/reconstruction-form', query: { id: String(values.id) } }"
                    class="text-primary no-underline hover:underline">Reconstruction form</router-link>
-      <a v-if="siteUrl && values.blr_index != null" :href="viewerUrl(siteUrl, values.blr_index)" target="_blank" rel="noopener"
+      <a v-if="values.blr_index != null" :href="viewerUrl(values.blr_index)" target="_blank" rel="noopener"
          class="text-primary no-underline hover:underline">Public site ↗</a>
     </div>
   </div>

@@ -63,7 +63,6 @@ ENV NODE_ENV=production \
     PORT=4444 \
     DATABASE_PATH=/app/data/bantulex.db \
     BACKUP_DIR=/app/backups \
-    SITE_URL=https://tst.bantulex.ugent.be \
     CROUTON_SCHEMA_EDITOR=false
 COPY --from=build /app/package.json /app/crouton.json ./
 COPY --from=build /app/node_modules ./node_modules

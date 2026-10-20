@@ -35,7 +35,7 @@ docker run -d -p 127.0.0.1:4444:4444 -v "$PWD/../data:/app/data" -v "$PWD/../bac
 
 The build downloads the basemap from the newest Protomaps daily build; `--build-arg PMTILES_BUILD=YYYYMMDD` pins one (old builds are deleted upstream).
 
-Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so both mounted directories must be writable by that uid; SQLite also writes journal files next to the database. `HOST`, `PORT`, `DATABASE_PATH`, `BACKUP_DIR` and `SITE_URL` (the public site, for viewer links) can be overridden with `-e`. There is no login, so publish the port only on localhost or behind an authenticating reverse proxy. The build stage needs about 2 GB of free Docker disk.
+Open http://localhost:4444/admin/. The container runs as uid 1000 (`node`), so both mounted directories must be writable by that uid; SQLite also writes journal files next to the database. `HOST`, `PORT`, `DATABASE_PATH` and `BACKUP_DIR` can be overridden with `-e`. There is no login, so publish the port only on localhost or behind an authenticating reverse proxy. The build stage needs about 2 GB of free Docker disk.
 
 ## Database
 
@@ -133,7 +133,7 @@ Editing goes through Crouton: rows are loaded with the resource's list operation
   - An identical consonant/vowel/tone tuple is **reused** instead of duplicated. Editing never changes a structure row that other reconstructions share: a changed structure points to a matching or new tuple.
 - **The picker** filters candidates by `q`, by variety, and by default to reflexes without a reconstruction (plus those of the reconstruction being edited). It pages through them and keeps the selection across pages.
 - **Errors:** if a selected reflex belongs to another reconstruction, or a contributor or reliability is invalid, nothing is saved and the error is shown.
-- **Public viewer links:** `SITE_URL` (default `https://tst.bantulex.ugent.be` in the image and the dev container; empty hides the links) adds *View on public site ↗* to the form and to the reconstruction view. The public site never links back to the admin.
+- **Public viewer links:** *View on public site ↗* in the form and in the reconstruction view goes to `/#/blr/<index>` on the same host, where the public site is served next to `/admin/`. The public site never links back to the admin.
 
 Code: `apps/backend/src/app/blr/` (controller, zod schema, service). The frontend lives in `apps/frontend/src/blr/`:
 

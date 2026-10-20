@@ -34,14 +34,8 @@ async function lookup(resource: string, field: string): Promise<Option[]> {
 export const contributors = () => lookup('blrcontributor', 'name');
 export const reliability = () => lookup('blrreliability', 'value');
 
-let siteUrl: Promise<string | null> | undefined;
-/** The public site's base URL (SITE_URL), fetched once; null when not configured. */
-export function publicSiteUrl() {
-  siteUrl ??= axios.get('/api/blr/config').then(r => r.data?.siteUrl ?? null, () => null);
-  return siteUrl;
-}
-/** The public viewer page of a BLR index. */
-export const viewerUrl = (base: string, blrIndex: number | string) => `${base}/#/blr/${encodeURIComponent(String(blrIndex))}`;
+/** The public viewer page of a BLR index, on the same host as the admin (/admin/ next to the site's /). */
+export const viewerUrl = (blrIndex: number | string) => `/#/blr/${encodeURIComponent(String(blrIndex))}`;
 
 export const getReconstruction = async (id: number) => (await axios.get(`/api/blr/${id}`)).data as BlrRecord;
 

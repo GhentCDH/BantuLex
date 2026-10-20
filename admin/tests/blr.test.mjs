@@ -152,9 +152,6 @@ test('BLR API loads a reconstruction by id and by BLR index',async()=>{
   assert.equal((await request(s.base,'/blr/by-index/999999999')).status,404);
   assert.equal((await request(s.base,'/blr/abc')).status,404);
 
-  const config=await request(s.base,'/blr/config');
-  assert.equal(config.status,200);
-  assert.ok('siteUrl' in config.body);
  } finally {await stopServer(s.child);}
 });
 

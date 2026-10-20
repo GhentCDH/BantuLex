@@ -49,11 +49,6 @@ async function run<T>(action: () => Promise<T>): Promise<T> {
  */
 @Controller('api/blr')
 export class BlrController {
-  /** GET /api/blr/config — settings the admin UI needs (the public site URL, when set). */
-  @Get('config')
-  config() {
-    return { siteUrl: process.env.SITE_URL?.trim().replace(/\/+$/, '') || null };
-  }
 
   /** GET /api/blr/next-index — the index the next reconstruction will get. */
   @Get('next-index')

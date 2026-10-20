@@ -7,7 +7,6 @@ import { viewerUrl } from './api';
 const props = defineProps<{
   blrIndex: number | null;
   isNew: boolean;
-  siteUrl: string | null;
   lookupError?: string;
 }>();
 const emit = defineEmits<{ open: [blrIndex: number]; new: [] }>();
@@ -34,7 +33,7 @@ function open() {
     <button v-if="!isNew" class="btn btn-sm" type="button" @click="emit('new')">New reconstruction</button>
     <span v-if="lookupError" role="alert" class="text-sm text-red-700">{{ lookupError }}</span>
     <span class="ml-auto flex items-center gap-3 text-sm">
-      <a v-if="!isNew && siteUrl && blrIndex != null" :href="viewerUrl(siteUrl, blrIndex)" target="_blank" rel="noopener"
+      <a v-if="!isNew && blrIndex != null" :href="viewerUrl(blrIndex)" target="_blank" rel="noopener"
          class="text-primary underline">View on public site ↗</a>
       <router-link class="text-primary underline" :to="{ path: '/crouton/blrcontributor' }">Manage contributors</router-link>
     </span>

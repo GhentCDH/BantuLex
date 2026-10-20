@@ -35,8 +35,6 @@ services:
     <<: *dev
     environment:
       HOST: 0.0.0.0
-      # Public site for the "View on public site" links; empty hides them.
-      SITE_URL: ${SITE_URL-https://tst.bantulex.ugent.be}
     ports:
       - "127.0.0.1:5555:5555"
       - "127.0.0.1:4444:4444"

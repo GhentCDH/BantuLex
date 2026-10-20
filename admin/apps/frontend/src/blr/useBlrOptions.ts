@@ -8,14 +8,13 @@ export function useBlrOptions() {
   const contributors = ref<Option[]>([]);
   const reliability = ref<Option[]>([]);
   const structure = ref<Record<string, string[]>>({});
-  const siteUrl = ref<string | null>(null);
   const loading = ref(true);
   const error = ref('');
 
   onMounted(async () => {
     try {
-      [structure.value, contributors.value, reliability.value, siteUrl.value] = await Promise.all([
-        api.structureOptions(), api.contributors(), api.reliability(), api.publicSiteUrl(),
+      [structure.value, contributors.value, reliability.value] = await Promise.all([
+        api.structureOptions(), api.contributors(), api.reliability(),
       ]);
     } catch (e) {
       error.value = api.errorMessage(e);
@@ -24,5 +23,5 @@ export function useBlrOptions() {
     }
   });
 
-  return { contributors, reliability, structure, siteUrl, loading, error };
+  return { contributors, reliability, structure, loading, error };
 }
