@@ -193,6 +193,8 @@ function startFill(e: PointerEvent, r: number, c: number) {
   if (!showFillHandle(r, c)) return;
   e.preventDefault();
   e.stopPropagation();
+  // The relation menu may sit over the handle; it must not intercept the drag.
+  openRelation.value = null;
   const g = range.value;
   fillDrag.value = { top: g.top, bottom: g.bottom, left: g.left, right: g.right, targetTop: g.bottom + 1, targetBottom: g.bottom };
   window.addEventListener('pointermove', onFillMove);
@@ -463,7 +465,7 @@ defineExpose({ focusCell, currentRow });
 .bulk-head { position: sticky; top: 0; z-index: 2; background: #f3f4f6; }
 .bulk-num { width: 56px; flex: none; text-align: right; padding: 0 6px; font-size: 12px; color: #6b7280; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; background: #f9fafb; line-height: 30px; }
 .bulk-cell { position: relative; flex: none; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
-.bulk-fill-handle { position: absolute; right: -3px; bottom: -3px; z-index: 3; width: 7px; height: 7px; border: 1px solid #fff; background: #2563eb; cursor: crosshair; touch-action: none; }
+.bulk-fill-handle { position: absolute; right: -3px; bottom: -3px; z-index: 8; width: 7px; height: 7px; border: 1px solid #fff; background: #2563eb; cursor: crosshair; touch-action: none; }
 .bulk-fill-preview { background: #dbeafe; }
 .bulk-th { position: relative; font-size: 12px; font-weight: 600; padding: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; }
 .bulk-resize { position: absolute; top: 0; right: -3px; z-index: 4; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
