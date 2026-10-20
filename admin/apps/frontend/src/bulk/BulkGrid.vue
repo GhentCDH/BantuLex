@@ -5,6 +5,7 @@
 // file. Arrows/Enter move between cells; Delete clears a selected block.
 // Bulk edit uses it on a fixed set of existing rows (`growable: false`).
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import type { RouteLocationRaw } from 'vue-router';
 import { COLUMNS, columnForHeader, emptyRow, isEmptyRow, type BulkColumn, type BulkRow } from './columns';
 import { parseTsv, toTsv } from './tsv';
 
@@ -32,7 +33,7 @@ const props = withDefaults(defineProps<{
   /** Column headers can be dragged to reorder the grid. */
   reorderable?: boolean;
   /** Columns rendered as links instead of inputs (e.g. the record id). */
-  linkColumns?: Record<string, (value: string) => { path: string; query: Record<string, string> }>;
+  linkColumns?: Record<string, (value: string) => RouteLocationRaw>;
   /** Current server-side sort column, and whether it is ascending. */
   sort?: string;
   sortDir?: 'asc' | 'desc';
