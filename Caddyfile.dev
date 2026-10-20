@@ -7,12 +7,12 @@
 	@pihka path /core/* /extensions/point_map/*
 	root @pihka /srv/pihka
 	root * /srv/site
-	@revalidate path *.html *.js *.css *.json /
-	header @revalidate Cache-Control "no-cache"
 
-	# The ?v= query string in the request busts the cache on a new version.
-	@sqlite path *.db *.sqlite
-	header @sqlite Cache-Control "public, max-age=31536000, immutable"
+    @revalidate path *.html *.js *.css *.json *.wasm *.mjs *.db *.sqlite *.geojson /
+    header @revalidate Cache-Control "no-cache"
+
+    @sqlite path *.db *.sqlite
+    header @sqlite Content-Type application/vnd.sqlite3
 
 	encode {
 		zstd
@@ -21,6 +21,7 @@
 		match {
 			header Content-Type text/*
 			header Content-Type application/json*
+			header Content-Type application/geo+json*
 			header Content-Type application/javascript*
 			header Content-Type application/xml*
 			header Content-Type application/wasm

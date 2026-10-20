@@ -1,12 +1,34 @@
 {
   "database": "database/bantulex.sqlite",
-  "databaseVersion": "2026.10.14.1",
+  "databaseVersion": "2026.10.20.1",
   "enrichment": { "fts": false },
+  "mapTheme": {
+    "palette": ["#00418a", "#f14e29", "#3d5940", "#f2a90c", "#8f0b0c", "#98b5f1", "#786955"],
+    "other": "#c4bfb2",
+    "pin": "#f14e29",
+    "outline": "#fffdf6",
+    "clusterText": "#fffdf6",
+    "basemap": {
+      "water": "#c4d4ec",
+      "earth": "#f8f6ef",
+      "landcover": "#dfe3d3",
+      "landuse": "#efece2",
+      "boundaries": "#786955",
+      "roads": "#ddd5c3"
+    }
+  },
   "perspectives": [
     {
       "id": "reconstructions",
       "table": "blr_reconstruction",
-      "query": "SELECT r.id, r.blr_index, r.word, r.word_tone, r.english, r.french, r.noun_class, r.distribution, r.proto_kk, r.note, COALESCE(NULLIF(cs.c1, ''), '∅') AS c1, COALESCE(NULLIF(vs.v11, ''), '∅') AS v11, COALESCE(NULLIF(vs.v12, ''), '∅') AS v12, COALESCE(NULLIF(cs.c2, ''), '∅') AS c2, COALESCE(NULLIF(vs.v21, ''), '∅') AS v21, COALESCE(NULLIF(vs.v22, ''), '∅') AS v22, COALESCE(NULLIF(cs.c3, ''), '∅') AS c3, COALESCE(NULLIF(vs.v3, ''), '∅') AS v3, COALESCE(NULLIF(cs.c4, ''), '∅') AS c4, COALESCE(NULLIF(vs.v4, ''), '∅') AS v4, COALESCE(NULLIF(cs.cs, ''), '∅') AS cs, COALESCE(NULLIF(ts.t11, ''), '∅') AS t11, COALESCE(NULLIF(ts.t12, ''), '∅') AS t12, COALESCE(NULLIF(ts.t21, ''), '∅') AS t21, COALESCE(NULLIF(ts.t22, ''), '∅') AS t22, COALESCE(NULLIF(ts.t3, ''), '∅') AS t3, COALESCE(NULLIF(ts.t4, ''), '∅') AS t4, rel.value AS reliability, con.name AS contributor FROM reconstruction r LEFT JOIN blrconsonantstructure cs ON cs.id = r.consonant_structure_id LEFT JOIN blrvowelstructure vs ON vs.id = r.vowel_structure_id LEFT JOIN blrtonestructure ts ON ts.id = r.tone_structure_id LEFT JOIN blrreliability rel ON rel.id = r.reliability_id LEFT JOIN blrcontributor con ON con.id = r.contributor_id"
+      "materialize": true,
+      "query": "SELECT r.id, r.blr_index, r.word, r.word_tone, r.english, r.french, r.noun_class, r.distribution, r.proto_kk, r.note, COALESCE(NULLIF(cs.c1, ''), '∅') AS c1, COALESCE(NULLIF(vs.v11, ''), '∅') AS v11, COALESCE(NULLIF(vs.v12, ''), '∅') AS v12, COALESCE(NULLIF(cs.c2, ''), '∅') AS c2, COALESCE(NULLIF(vs.v21, ''), '∅') AS v21, COALESCE(NULLIF(vs.v22, ''), '∅') AS v22, COALESCE(NULLIF(cs.c3, ''), '∅') AS c3, COALESCE(NULLIF(vs.v3, ''), '∅') AS v3, COALESCE(NULLIF(cs.c4, ''), '∅') AS c4, COALESCE(NULLIF(vs.v4, ''), '∅') AS v4, COALESCE(NULLIF(cs.cs, ''), '∅') AS cs, COALESCE(NULLIF(ts.t11, ''), '∅') AS t11, COALESCE(NULLIF(ts.t12, ''), '∅') AS t12, COALESCE(NULLIF(ts.t21, ''), '∅') AS t21, COALESCE(NULLIF(ts.t22, ''), '∅') AS t22, COALESCE(NULLIF(ts.t3, ''), '∅') AS t3, COALESCE(NULLIF(ts.t4, ''), '∅') AS t4, rel.value AS reliability, con.name AS contributor, COALESCE(n.reflexes, 0) AS reflexes FROM reconstruction r LEFT JOIN blrconsonantstructure cs ON cs.id = r.consonant_structure_id LEFT JOIN blrvowelstructure vs ON vs.id = r.vowel_structure_id LEFT JOIN blrtonestructure ts ON ts.id = r.tone_structure_id LEFT JOIN blrreliability rel ON rel.id = r.reliability_id LEFT JOIN blrcontributor con ON con.id = r.contributor_id LEFT JOIN (SELECT blr_index, count(*) AS reflexes FROM reflex GROUP BY blr_index) n ON n.blr_index = CAST(r.blr_index AS TEXT)",
+      "default_sort": "blr_index",
+      "facets": [
+        { "field": "noun_class" },
+        { "field": "reliability" },
+        { "field": "contributor" }
+      ]
     },
     {
       "id": "reflexes",

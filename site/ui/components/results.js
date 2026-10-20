@@ -2,7 +2,7 @@
 /**
  * Reflex results as a table (paginated, sortable, a filter per column), as a
  * map of pins or as a map of words (all matching reflexes, coloured by BLR
- * index or Guthrie zone).
+ * index or Guthrie zone). BLR results only have the table.
  */
 import { h } from "preact";
 import { useMemo } from "preact/hooks";
@@ -10,20 +10,21 @@ import { useApp } from "../context.js";
 import { useT } from "../i18n.js";
 import { href } from "../route.js";
 import { useQuery } from "../use-query.js";
-import { PAGE_SIZE, RESULT_COLUMNS, RESULTS_TABLE, toFilters } from "../search-state.js";
+import { PAGE_SIZE, RESULT_KINDS, toFilters } from "../search-state.js";
 import { ColumnFilter } from "./column-filter.js";
+import { useMapTheme } from "./base-map.js";
 import { PointMap, toPoints } from "./point-map.js";
 import { WordMap } from "./word-map.js";
 
-const DEFAULT_SORT = { column: "term", direction: "ASC" };
 const VIEWS = ["table", "map", "words"];
+const REFLEXES = RESULT_KINDS.reflex.table;
 
 // Both maps read every matching row; keep the last set so that switching
 // between them does not query again.
 let allRows = { key: "", rows: /** @type {Promise<any[]> | null} */ (null) };
 function loadAllRows(store, filters, key) {
     if (allRows.key !== key || !allRows.rows) {
-        const rows = store.queryTable(RESULTS_TABLE, { filters, pageSize: null }).then((r) => r.rows);
+        const rows = store.queryTable(REFLEXES, { filters, pageSize: null }).then((r) => r.rows);
         rows.catch(() => allRows.rows === rows && (allRows = { key: "", rows: null }));
         allRows = { key, rows };
     }
@@ -32,15 +33,19 @@ function loadAllRows(store, filters, key) {
 
 /**
  * @param {{ state: any, update: (changes: object, options?: object) => void,
- *   baseFilters?: object, hiddenColumns?: string[], onClear?: (() => void) | null }} props
+ *   baseFilters?: object, hiddenColumns?: string[], onClear?: (() => void) | null,
+ *   onShow?: ((show: string) => void) | null }} props
  */
-export function Results({ state, update, baseFilters = {}, hiddenColumns = [], onClear = null }) {
+export function Results({ state, update, baseFilters = {}, hiddenColumns = [], onClear = null, onShow = null }) {
     const t = useT();
+    const kind = RESULT_KINDS[state.show];
     const filters = { ...toFilters(state), ...baseFilters };
-    const columns = RESULT_COLUMNS.filter((column) => !hiddenColumns.includes(column.name));
-    const view = state.view === "table"
-        ? h(TableResults, { state, update, filters, columns })
-        : h(MapResults, { filters, colorBy: state.colorBy, wordsOf: state.view === "words" ? state.wordsOf : null });
+    const columns = kind.columns.filter((column) => !hiddenColumns.includes(column.name));
+    // BLRs have no location, so they are only listed.
+    const shown = state.show === "blr" ? "table" : state.view;
+    const view = shown === "table"
+        ? h(TableResults, { state, update, filters, columns, kind })
+        : h(MapResults, { filters, colorBy: state.colorBy, wordsOf: shown === "words" ? state.wordsOf : null, showZones: state.zones });
     const select = (key, label, options) =>
         h("label", { class: "inline-field" },
             label,
@@ -51,12 +56,26 @@ export function Results({ state, update, baseFilters = {}, hiddenColumns = [], o
 
     return h("section", { class: "results" },
         h("div", { class: "results-toolbar" },
-            h(ResultCount, { filters }),
+            onShow && h("div", { class: "segmented", role: "group", "aria-label": t("show") },
+                ["reflex", "blr"].map((name) =>
+                    h("button", {
+                        type: "button",
+                        "aria-pressed": state.show === name,
+                        onClick: () => state.show !== name && onShow(name),
+                    }, t(name === "blr" ? "showBlrs" : "showReflexes")))),
+            h(ResultCount, { table: kind.table, filters, label: state.show === "blr" ? "blrResults" : "results" }),
             onClear && h("button", { type: "button", class: "link-button", onClick: onClear }, t("clearAll")),
             h("span", { class: "spacer" }),
-            state.view === "words" && select("wordsOf", t("wordsOf"), [["term", t("wordTerm")], ["blr", t("wordBlr")]]),
-            state.view !== "table" && select("colorBy", t("colorBy"), [["blr", t("colorBlr")], ["zone", t("colorZone")]]),
-            h("div", { class: "segmented", role: "group" },
+            shown === "words" && select("wordsOf", t("wordsOf"), [["term", t("wordTerm")], ["blr", t("wordBlr")]]),
+            shown !== "table" && select("colorBy", t("colorBy"), [["blr", t("colorBlr")], ["zone", t("colorZone")]]),
+            shown !== "table" && h("label", { class: "inline-field" },
+                h("input", {
+                    type: "checkbox",
+                    checked: state.zones,
+                    onChange: (event) => update({ zones: event.currentTarget.checked }, { replace: true }),
+                }),
+                t("guthrieZones")),
+            state.show === "reflex" && h("div", { class: "segmented", role: "group" },
                 VIEWS.map((name) =>
                     h("button", {
                         type: "button",
@@ -67,24 +86,24 @@ export function Results({ state, update, baseFilters = {}, hiddenColumns = [], o
     );
 }
 
-function ResultCount({ filters }) {
+function ResultCount({ table, filters, label }) {
     const t = useT();
     const { store } = useApp();
-    const key = JSON.stringify(filters);
+    const key = JSON.stringify([table, filters]);
     const { data } = useQuery(
-        () => store.queryTable(RESULTS_TABLE, { filters, page: 0, pageSize: 1 }).then((r) => r.totalRows),
+        () => store.queryTable(table, { filters, page: 0, pageSize: 1 }).then((r) => r.totalRows),
         key,
     );
-    return h("strong", { class: "result-count", "aria-live": "polite" }, data == null ? "…" : t("results", data));
+    return h("strong", { class: "result-count", "aria-live": "polite" }, data == null ? "…" : t(label, data));
 }
 
-function TableResults({ state, update, filters, columns }) {
+function TableResults({ state, update, filters, columns, kind }) {
     const t = useT();
     const { store } = useApp();
-    const sort = state.sort ?? DEFAULT_SORT;
-    const key = JSON.stringify([filters, sort, state.page]);
+    const sort = state.sort ?? kind.defaultSort;
+    const key = JSON.stringify([kind.table, filters, sort, state.page]);
     const { data, error, loading } = useQuery(
-        () => store.queryTable(RESULTS_TABLE, { filters, sort, page: state.page, pageSize: PAGE_SIZE }),
+        () => store.queryTable(kind.table, { filters, sort, page: state.page, pageSize: PAGE_SIZE }),
         key,
     );
     if (error) return h("p", { class: "notice notice-error" }, t("error"));
@@ -118,8 +137,8 @@ function TableResults({ state, update, filters, columns }) {
                                     },
                                         t.label(column.name),
                                         h("span", { class: "sort-mark", "aria-hidden": "true" }, sorted === "ASC" ? "↑" : sorted === "DESC" ? "↓" : "")),
-                                    h(ColumnFilter, {
-                                        table: RESULTS_TABLE,
+                                    column.filter && h(ColumnFilter, {
+                                        table: kind.table,
                                         column,
                                         filters,
                                         values: state.values[column.name] ?? [],
@@ -131,7 +150,7 @@ function TableResults({ state, update, filters, columns }) {
                 h("tbody", null,
                     rows.map((row) =>
                         h("tr", { key: row.id }, columns.map((column) => h("td", { key: column.name }, h(Cell, { column, row })))))))),
-        data && rows.length === 0 && h("p", { class: "empty-state" }, t("noResults")),
+        data && rows.length === 0 && h("p", { class: "empty-state" }, t(state.show === "blr" ? "noBlrResults" : "noResults")),
         data && data.totalPages > 1 && h(Pager, {
             page: data.page,
             totalPages: data.totalPages,
@@ -160,21 +179,28 @@ function Pager({ page, totalPages, onPage }) {
 }
 
 /** Pins, or with `wordsOf` the words of the reflexes ("term" or "blr"). */
-function MapResults({ filters, colorBy, wordsOf }) {
+function MapResults({ filters, colorBy, wordsOf, showZones }) {
     const t = useT();
     const { store } = useApp();
     const key = JSON.stringify(filters);
     const { data, error, loading } = useQuery(() => loadAllRows(store, filters, key), key);
+    const theme = useMapTheme();
     const column = colorBy === "zone" ? "zone" : "blr_label";
     const { points, legend } = useMemo(
-        () => toPoints(data ?? [], column, { neutral: ["—"] }),
-        [data, column],
+        () => toPoints(data ?? [], column, { neutral: ["—"], theme }),
+        [data, column, theme],
     );
+    // Coloured by zone, each zone gets the colour of its pins.
+    const zones = useMemo(() => {
+        if (!showZones) return null;
+        if (column !== "zone") return {};
+        return Object.fromEntries(points.filter((point) => point.row.zone).map((point) => [point.row.zone, point.color]));
+    }, [showZones, column, points]);
     if (error) return h("p", { class: "notice notice-error" }, t("error"));
     return h("div", { class: loading ? "map-block is-loading" : "map-block" },
         wordsOf
-            ? h(WordMap, { points, legend, mode: wordsOf })
-            : h(PointMap, { points, legend, popup: (row) => h(ReflexPopup, { row }) }),
+            ? h(WordMap, { points, legend, mode: wordsOf, zones })
+            : h(PointMap, { points, legend, zones, popup: (row) => h(ReflexPopup, { row }) }),
         data && points.length === 0 && h("p", { class: "map-empty" }, t("noLocation")));
 }
 

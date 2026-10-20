@@ -13,7 +13,7 @@ import { Facts } from "../components/facts.js";
 export function BlrView({ index, params }) {
     const t = useT();
     const { store } = useApp();
-    const state = readState(params);
+    const state = readState(params, "reflex");
     const update = (changes, options) =>
         navigate(`/blr/${encodeURIComponent(index)}`, writeState({ ...state, ...changes }), options);
     // Reflexes can carry BLR indexes without a reconstruction (e.g. "banana_09").
