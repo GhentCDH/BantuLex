@@ -340,6 +340,16 @@
     }
   },
   "layout": {
+    "table": {
+      "type": "table",
+      "filterFields": [
+        "name_english",
+        "name_bantu",
+        "branch",
+        "branch_detailed",
+        "guthrie_index"
+      ]
+    },
     "form": {
       "type": "grid",
       "columns": 12,

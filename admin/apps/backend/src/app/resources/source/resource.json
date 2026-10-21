@@ -202,6 +202,13 @@
     }
   },
   "layout": {
+    "table": {
+      "type": "table",
+      "filterFields": [
+        "author_year",
+        "title"
+      ]
+    },
     "form": {
       "type": "grid",
       "columns": 12,

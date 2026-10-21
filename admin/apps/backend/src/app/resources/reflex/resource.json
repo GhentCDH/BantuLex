@@ -626,6 +626,26 @@
     }
   },
   "layout": {
+    "table": {
+      "type": "table",
+      "filterFields": [
+        "term",
+        "translation",
+        "meaning",
+        "part_of_speech",
+        "semantic_field",
+        "scientific_name"
+      ],
+      "rowActions": [
+        {
+          "type": "link",
+          "id": "viewPublic",
+          "label": "View on public site",
+          "icon": "mdi:open-in-new",
+          "href": "/#/reflex/{id}"
+        }
+      ]
+    },
     "form": {
       "type": "grid",
       "columns": 12,

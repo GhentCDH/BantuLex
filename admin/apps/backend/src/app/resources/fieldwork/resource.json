@@ -328,6 +328,13 @@
     }
   },
   "layout": {
+    "table": {
+      "type": "table",
+      "filterFields": [
+        "archive",
+        "data_entered_by"
+      ]
+    },
     "form": {
       "type": "grid",
       "columns": 12,

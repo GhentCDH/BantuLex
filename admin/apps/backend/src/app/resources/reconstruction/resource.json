@@ -575,6 +575,30 @@
     }
   },
   "layout": {
+    "table": {
+      "type": "table",
+      "filterFields": [
+        "word",
+        "word_tone",
+        "english",
+        "french",
+        "noun_class",
+        "distribution"
+      ],
+      "rowActions": [
+        {
+          "type": "link",
+          "id": "viewPublic",
+          "label": "View on public site",
+          "icon": "mdi:open-in-new",
+          "href": "/#/blr/{blr_index}",
+          "condition": {
+            "field": "blr_index",
+            "op": "exists"
+          }
+        }
+      ]
+    },
     "form": {
       "type": "grid",
       "columns": 12,
