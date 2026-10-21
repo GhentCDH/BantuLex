@@ -102,8 +102,8 @@ const rowIssues = computed(() => {
     const e: Record<string, string> = {};
     if (!row.term?.trim()) e.term = 'Term is empty';
     const blr = row.blr_index?.trim();
-    if (blr && !BLR_OK.test(blr)) e.blr_index = 'Not a BLR number: kept as a note, not linked';
-    else if (blr && unknown.has(blrNumber(blr)!)) e.blr_index = `No reconstruction with BLR index ${blrNumber(blr)}: not linked`;
+    if (blr && !BLR_OK.test(blr)) e.blr_index = 'Not a BLR number: kept as reconstruction note, not linked';
+    else if (blr && unknown.has(blrNumber(blr)!)) e.blr_index = `No reconstruction with BLR index ${blrNumber(blr)}: kept as reconstruction note, not linked`;
     if (Object.keys(e).length) map.set(index, e);
   }
   for (const [i, e] of serverErrors.value) map.set(i, { ...map.get(i), ...e });
@@ -379,7 +379,7 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
           <span v-else-if="termErrors.length" class="text-sm opacity-70">Give every row a term first (in the file or in the grid).</span>
           <span v-if="check" class="text-sm text-green-800" role="status">
             Check passed: {{ check.rows.toLocaleString() }} rows; {{ check.blr_linked.toLocaleString() }} linked to BLR;
-            {{ check.blr_text.toLocaleString() }} BLR texts kept as notes<span v-if="check.blr_unknown.length">; {{ check.blr_unknown.length }} unknown BLR index(es)</span>.
+            {{ check.blr_text.toLocaleString() }} BLR texts kept as reconstruction notes<span v-if="check.blr_unknown.length">; {{ check.blr_unknown.length }} unknown BLR index(es)</span>.
           </span>
         </div>
       </template>
@@ -400,7 +400,7 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
         <dt class="opacity-70">Fieldwork</dt><dd>{{ draft.fieldwork?.label ?? '—' }}</dd>
         <dt class="opacity-70">Rows</dt><dd>{{ filled.length.toLocaleString() }} from {{ draft.file ?? 'no file yet' }}</dd>
         <dt class="opacity-70">BLR</dt>
-        <dd>{{ check ? `${check.blr_linked.toLocaleString()} linked, ${check.blr_text.toLocaleString()} kept as notes, ${check.blr_unknown.length} unknown` : 'not checked yet' }}</dd>
+        <dd>{{ check ? `${check.blr_linked.toLocaleString()} linked, ${check.blr_text.toLocaleString()} kept as reconstruction notes, ${check.blr_unknown.length} unknown` : 'not checked yet' }}</dd>
       </dl>
       <ul v-if="!ready" class="text-sm text-amber-700 list-disc ml-5 mb-3">
         <li v-if="!linksOk">Step 2: choose or create the source.</li>

@@ -52,9 +52,7 @@ test('BLR API creates a reconstruction, structures and reflex links in one trans
   assert.equal(sql(db,'select t11 from blrtonestructure where id=?',[rec.tone_structure_id])[0].t11,'H');
 
   for(const id of ids) {
-   const row=sql(db,'select blr_index, blr_entry_id from reflex where id=?',[id])[0];
-   assert.equal(row.blr_index,String(max+1));
-   assert.equal(row.blr_entry_id,res.body.id);
+   assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[id])[0].blr_entry_id,res.body.id);
   }
 
   const next=await request(s.base,'/blr/next-index');
@@ -208,8 +206,8 @@ test('BLR API update links and unlinks reflexes, and rolls back on a conflict',a
   assert.equal(res.status,200,JSON.stringify(res));
   assert.equal(res.body.linked,1);
   assert.equal(res.body.unlinked,1);
-  assert.deepEqual(sql(db,'select blr_index, blr_entry_id from reflex where id=?',[dropped])[0],{blr_index:null,blr_entry_id:null});
-  assert.deepEqual(sql(db,'select blr_index, blr_entry_id from reflex where id=?',[added])[0],{blr_index:String(rec.blr_index),blr_entry_id:rec.id});
+  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[dropped])[0].blr_entry_id,null);
+  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[added])[0].blr_entry_id,rec.id);
 
   // A reflex of another reconstruction: 409 and nothing changes.
   const other=sql(db,'select id from reflex where blr_entry_id is not null and blr_entry_id<>? limit 1',[rec.id])[0].id;

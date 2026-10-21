@@ -54,7 +54,7 @@ export async function saveReconstruction(id: number | null, body: SaveBody): Pro
 }
 
 /** Reflex columns Crouton's list can sort on (physical columns; not the calculated variety label). */
-export const REFLEX_SORTABLE = ['id', 'term', 'translation', 'meaning', 'blr_index'];
+export const REFLEX_SORTABLE = ['id', 'term', 'translation', 'meaning', 'reconstruction_note'];
 
 /**
  * Candidate reflexes from Crouton's reflex list (`GET /api/reflex`): its `q` search,

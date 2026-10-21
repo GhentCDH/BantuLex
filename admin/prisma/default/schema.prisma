@@ -206,8 +206,7 @@ model reflex {
   scientific_name     String?
   semantic_field      String?
   part_of_speech      String?
-  blr_index           String?
-  blr_note            String?
+  reconstruction_note String?
   ipa                 String?
   notes_on_ipa        String?
   notes               String?

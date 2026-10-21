@@ -39,9 +39,7 @@ test('create a reconstruction with structures and reflexes in one save',async({p
  expect(rec.consonant_structure_id).not.toBeNull();
  expect(rec.vowel_structure_id).not.toBeNull();
  expect(rec.tone_structure_id).not.toBeNull();
- const linked=sql(db,'select blr_index, blr_entry_id from reflex where id=?',[reflex.id])[0];
- expect(linked.blr_index).toBe(String(max+1));
- expect(linked.blr_entry_id).toBe(rec.id);
+ expect(sql(db,'select blr_entry_id from reflex where id=?',[reflex.id])[0].blr_entry_id).toBe(rec.id);
 });
 
 test('a new reconstruction cannot be saved without a reflex',async({page})=>{
@@ -71,7 +69,7 @@ test('edit a reconstruction opened by BLR index: fields, header and unlinking a 
  await expect(page.getByRole('button',{name:'Save changes'})).toBeDisabled();
 
  expect(sql(db,'select english from reconstruction where id=?',[rec.id])[0].english).toBe('edited gloss');
- expect(sql(db,'select blr_index, blr_entry_id from reflex where id=?',[dropped])[0]).toEqual({blr_index:null,blr_entry_id:null});
+ expect(sql(db,'select blr_entry_id from reflex where id=?',[dropped])[0].blr_entry_id).toBeNull();
 
  await page.reload();
  await expect(page.getByLabel('English',{exact:true})).toHaveValue('edited gloss');

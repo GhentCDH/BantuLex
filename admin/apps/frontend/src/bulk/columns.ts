@@ -30,7 +30,7 @@ export const COLUMNS: BulkColumn[] = [
   { key: 'notes', label: 'Notes', width: 200, aliases: ['note', 'opmerking'],
     help: 'Any remark about this word.', example: 'loanword according to author' },
   { key: 'blr_index', label: 'BLR index', width: 100, aliases: ['blr'],
-    help: 'Number of the Proto-Bantu reconstruction (BLR), e.g. 368. "9094 ipv 3604" uses 9094. Other text is kept as a note and not linked.',
+    help: 'Number of the Proto-Bantu reconstruction (BLR), e.g. 368. "9094 ipv 3604" uses 9094. Other text, or a number without a reconstruction, is kept as the reconstruction note and not linked.',
     example: '368' },
 ];
 export const DEFAULT_COLUMNS = ['term', 'translation'];

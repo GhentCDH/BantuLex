@@ -36,7 +36,7 @@ export interface ReflexRow {
   term: string | null;
   translation: string | null;
   meaning: string | null;
-  blr_index: string | null;
+  reconstruction_note: string | null;
   blr_entry_id: number | null;
   variety_id: number | null;
   variety_label: string | null;

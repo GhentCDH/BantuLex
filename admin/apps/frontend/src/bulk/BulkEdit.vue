@@ -13,12 +13,15 @@ import { COLUMNS, DEFAULT_PAGE_SIZE, PAGE_SIZES, type BulkRow } from './columns'
 import { useColumnOrder } from './useColumnOrder';
 import { useColumnVisibility } from './useColumnVisibility';
 import { recordRoute } from '../relations/links';
+import { findByIndex } from '../blr/api';
 
 const TEXT = ['term', 'translation', 'meaning', 'part_of_speech', 'term_morph_analysis', 'semantic_field',
-  'scientific_name', 'ipa', 'notes_on_ipa', 'blr_index', 'blr_note', 'notes'];
-/** Relation columns, edited through their label and resolved to an id on save. */
-const RELATIONS = ['variety_label'];
+  'scientific_name', 'ipa', 'notes_on_ipa', 'reconstruction_note', 'notes'];
+/** Relation columns, edited through their label and resolved to an id on save (the BLR index to blr_entry_id). */
+const RELATIONS = ['variety_label', 'blr_index'];
 const EDITABLE = [...TEXT, ...RELATIONS];
+/** The grid column that shows an API error on a foreign key. */
+const FIELD_COLUMN: Record<string, string> = { variety_id: 'variety_label', blr_entry_id: 'blr_index' };
 const READONLY = ['id'];
 type Status = 'saving' | 'saved' | 'error';
 
@@ -156,6 +159,7 @@ async function load() {
       id: String(r.id),
       variety_label: r.variety_label ?? '',
       variety_id: r.variety_id != null ? String(r.variety_id) : '',
+      blr_index: r.blr_index ?? '',
       ...Object.fromEntries(TEXT.map(k => [k, r[k] ?? ''])),
     }));
     count.value = data.request?.count ?? 0;
@@ -205,6 +209,21 @@ async function saveRow(i: number) {
           canonicalLabels.variety_label = resolved.label;
         }
       }
+    } else if (key === 'blr_index') {
+      const text = value(i, key).trim();
+      if (!text) { body.blr_entry_id = null; schemaKeys.blr_entry_id = true; continue; }
+      const index = Number(text);
+      if (!/^\d+$/.test(text) || !Number.isSafeInteger(index) || index < 1) {
+        issues.blr_index = 'The BLR index must be a positive whole number.';
+        continue;
+      }
+      try {
+        body.blr_entry_id = await findByIndex(index);
+        schemaKeys.blr_entry_id = true;
+        canonicalLabels.blr_index = String(index);
+      } catch {
+        issues.blr_index = `No BLR reconstruction with index ${index}.`;
+      }
     } else {
       body[key] = value(i, key) === '' ? null : value(i, key);
       schemaKeys[key] = true;
@@ -231,6 +250,9 @@ async function saveRow(i: number) {
         originals.value[i].variety_id = savedId;
         rows.value[i].variety_label = label;
         rows.value[i].variety_id = savedId;
+      } else if (k === 'blr_index') {
+        originals.value[i].blr_index = canonicalLabels.blr_index ?? null;
+        rows.value[i].blr_index = canonicalLabels.blr_index ?? '';
       } else {
         originals.value[i][k] = data?.[k] ?? body[k];
       }
@@ -240,7 +262,7 @@ async function saveRow(i: number) {
     if (rows.value !== rowsAtStart) return;
     const message = e?.response?.data?.message;
     const issues = Array.isArray(message)
-      ? Object.fromEntries(message.map((m: any) => [m.field === 'variety_id' || EDITABLE.includes(m.field) ? (m.field === 'variety_id' ? 'variety_label' : m.field) : '_', m.message]))
+      ? Object.fromEntries(message.map((m: any) => [FIELD_COLUMN[m.field] ?? (EDITABLE.includes(m.field) ? m.field : '_'), m.message]))
       : { _: typeof message === 'string' ? message : e.message };
     setRowError(i, issues, 'error');
   }
@@ -330,7 +352,10 @@ onMounted(async () => {
   defs.value = [
     { key: 'id', label: 'Id', width: 70 },
     { key: 'variety_label', label: 'Variety', width: 170 },
-    ...TEXT.map(k => ({ key: k, label: labels[k] ?? k, width: COLUMNS.find(c => c.key === k)?.width ?? 150 })),
+    ...TEXT.flatMap(k => [
+      ...(k === 'reconstruction_note' ? [{ key: 'blr_index', label: 'BLR index', width: 100 }] : []),
+      { key: k, label: labels[k] ?? k, width: COLUMNS.find(c => c.key === k)?.width ?? 150 },
+    ]),
   ];
   await load();
   try {
