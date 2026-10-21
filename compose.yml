@@ -24,6 +24,9 @@ services:
       # Must contain bantulex.db and be writable by uid 1000 (SQLite journal files).
       - ./data:/app/data
     restart: unless-stopped
+    labels:
+      # The backup service stops this container while it copies bantulex.db.
+      docker-volume-backup.stop-during-backup: bantulex
 
   # ── Caddy (website + admin proxy) ──────────────────────────────────────────
   # The public site on /, the admin on /admin/ and /api (502 until `just admin` runs).
@@ -39,6 +42,26 @@ services:
       - ./vendor/pihka/pihka:/srv/pihka:ro
       # The whole folder, not the file: import and reset-db replace bantulex.db.
       - ./data:/srv/data:ro
+
+  # ── Backup (offen/docker-volume-backup) ────────────────────────────────────
+  # Archives bantulex.db into backups/ on the schedules in backup-schedules/ (7 daily, 4 weekly,
+  # 3 monthly, 1 yearly). It stops every container labelled stop-during-backup=bantulex (the admin)
+  # for the few seconds of the copy, so the file is consistent. "backup" profile: just backup-up.
+  backup:
+    image: docker.io/offen/docker-volume-backup:v2.49.2
+    profiles: ["backup"]
+    restart: unless-stopped
+    environment:
+      BACKUP_STOP_DURING_BACKUP_LABEL: bantulex
+      BACKUP_SOURCES: /backup/data/bantulex.db
+      # Only for a one-off `just backup`; the schedules set their own name and pruning.
+      BACKUP_FILENAME: "bantulex-manual-%Y-%m-%dT%H-%M-%S.{{ .Extension }}"
+    volumes:
+      - ./data:/backup/data:ro
+      - ./backups:/archive
+      - ./backup-schedules:/etc/dockervolumebackup/conf.d:ro
+      # Needed to stop and start the admin. Rootless Podman: DOCKER_SOCKET=$XDG_RUNTIME_DIR/podman/podman.sock
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
 
 volumes:
   venv:
