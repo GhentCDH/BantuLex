@@ -4,22 +4,42 @@
   "draft": false,
   "name": "country",
   "route": "country",
-  "model": "country",
-  "tag": "country",
   "title": "Countries",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "country",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "country"
+  },
   "sidebar": {
     "group": "geography",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "name"
+      ],
+      "filter": [
+        "id",
+        "name",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "name"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +53,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "name": {
       "label": "Name",
@@ -53,11 +68,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -74,11 +85,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -91,44 +98,19 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    }
-  },
-  "modalSize": "xl",
-  "include": [],
-  "layout": {
-    "form": {
-      "type": "grid",
-      "columns": 12,
-      "controls": [
-        {
-          "id": "name",
-          "colspan": 6
-        }
-      ]
-    }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"country\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
+      "hiddenInTable": true
     },
-    {
-      "id": "location_by_country_id",
-      "alias": "location_by_country_id",
+    "display_label": {
+      "label": "Reference",
+      "hiddenInTable": true,
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"country\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "location_by_country_id": {
       "label": "Locations",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1013,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -139,16 +121,16 @@
           "childResource": "location",
           "foreignKey": "country_id",
           "columns": []
-        }
+        },
+        "position": 1013
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     },
-    {
-      "id": "region_by_country_id",
-      "alias": "region_by_country_id",
+    "region_by_country_id": {
       "label": "Regions",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1025,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -159,8 +141,29 @@
           "childResource": "region",
           "foreignKey": "country_id",
           "columns": []
-        }
+        },
+        "position": 1025
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     }
-  ]
+  },
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
+        {
+          "id": "name",
+          "colspan": 6
+        }
+      ]
+    }
+  }
 }

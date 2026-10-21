@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Read-only view of a reconstruction's "reconstruction-links" calculated column:
+// Read-only view of a reconstruction's "reconstruction-links" computed column:
 // links to the reconstruction form and to the public BLR viewer on the same host.
 import { computed } from 'vue';
 import { useControlBinding, type ControlElement, type JsonSchema } from '@ghentcdh/crouton-vue';

@@ -16,10 +16,9 @@
     "postinstall": "node scripts/patch-crouton.mjs"
   },
   "dependencies": {
-    "@ghentcdh/crouton-api": "0.0.1-alpha.82",
-    "@ghentcdh/crouton-core": "0.0.1-alpha.82",
-    "@ghentcdh/crouton-vue": "0.0.1-alpha.82",
-    "@ghentcdh/ui": "3.1.1",
+    "@ghentcdh/crouton-api": "0.0.1-alpha.88",
+    "@ghentcdh/crouton-core": "0.0.1-alpha.88",
+    "@ghentcdh/crouton-vue": "0.0.1-alpha.88",
     "@jsonforms/core": "3.8.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
@@ -41,15 +40,16 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "tiptap-markdown": "^0.9.0",
+    "vee-validate": "5.0.0-beta.1",
     "vue": "3.5.42",
     "vue-router": "5.2.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@clack/prompts": "^0.11.0",
-    "@ghentcdh/create-crouton": "0.0.1-alpha.82",
-    "@ghentcdh/crouton-cli": "0.0.1-alpha.81",
-    "@ghentcdh/crouton-prisma": "0.0.1-alpha.82",
+    "@ghentcdh/create-crouton": "0.0.1-alpha.88",
+    "@ghentcdh/crouton-cli": "0.0.1-alpha.88",
+    "@ghentcdh/crouton-prisma": "0.0.1-alpha.88",
     "@playwright/test": "^1.58.0",
     "@prisma/internals": "7.10.0",
     "@tailwindcss/vite": "4.3.3",

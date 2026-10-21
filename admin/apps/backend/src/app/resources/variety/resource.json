@@ -4,22 +4,60 @@
   "draft": false,
   "name": "variety",
   "route": "variety",
-  "model": "variety",
-  "tag": "variety",
   "title": "Varieties",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "variety",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "variety"
+  },
   "sidebar": {
     "group": "classifications",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "name_english",
+        "name_french",
+        "name_bantu",
+        "name_bastin",
+        "branch",
+        "branch_detailed",
+        "bastin_index",
+        "guthrie_index",
+        "guthrie_plus"
+      ],
+      "filter": [
+        "id",
+        "name_english",
+        "name_french",
+        "name_bantu",
+        "name_bastin",
+        "branch",
+        "branch_detailed",
+        "bastin_index",
+        "guthrie_index",
+        "guthrie_plus",
+        "substrate_suspect",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "name_english",
+      "guthrie_index"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +71,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "name_english": {
       "label": "Name english",
@@ -53,11 +86,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -75,11 +104,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -97,11 +122,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -119,11 +140,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -141,11 +158,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -163,11 +176,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -185,11 +194,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -207,11 +212,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -229,11 +230,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -251,11 +248,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "boolean"
@@ -272,11 +265,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -289,20 +278,86 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(COALESCE(x.name_english, x.name_bantu, x.name_french, x.name_bastin) || COALESCE(' (' || x.guthrie_index || ')', ''), ''), '#' || x.id) FROM \"variety\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "bulkimport_by_variety_id": {
+      "label": "Bulk imports",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "bulkimport",
+          "foreignKey": "variety_id",
+          "columns": []
+        },
+        "position": 1001
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
+      }
+    },
+    "reflex_by_variety_id": {
+      "label": "Reflexes",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "variety_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            }
+          ]
+        },
+        "position": 1020
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
+    "table": {
+      "type": "table",
+      "filterFields": [
+        "name_english",
+        "name_bantu",
+        "branch",
+        "branch_detailed",
+        "guthrie_index"
+      ]
+    },
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "name_english",
           "colspan": 6
@@ -345,65 +400,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(COALESCE(x.name_english, x.name_bantu, x.name_french, x.name_bastin) || COALESCE(' (' || x.guthrie_index || ')', ''), ''), '#' || x.id) FROM \"variety\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "bulkimport_by_variety_id",
-      "alias": "bulkimport_by_variety_id",
-      "label": "Bulk imports",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1001,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "related-table",
-          "colspan": 12,
-          "childResource": "bulkimport",
-          "foreignKey": "variety_id",
-          "columns": []
-        }
-      }
-    },
-    {
-      "id": "reflex_by_variety_id",
-      "alias": "reflex_by_variety_id",
-      "label": "Reflexes",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1020,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "related-table",
-          "colspan": 12,
-          "childResource": "reflex",
-          "foreignKey": "variety_id",
-          "columns": [
-            {
-              "key": "term",
-              "label": "Term"
-            },
-            {
-              "key": "translation",
-              "label": "Translation"
-            }
-          ]
-        }
-      }
-    }
-  ]
+  }
 }

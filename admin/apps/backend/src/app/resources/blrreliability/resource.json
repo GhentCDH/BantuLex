@@ -4,22 +4,42 @@
   "draft": false,
   "name": "blrreliability",
   "route": "blrreliability",
-  "model": "blrreliability",
-  "tag": "blrreliability",
   "title": "BLR reliability",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "blrreliability",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "blrreliability"
+  },
   "sidebar": {
     "group": "classifications",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "value"
+      ],
+      "filter": [
+        "id",
+        "value",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "value"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +53,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "value": {
       "label": "Value",
@@ -53,11 +68,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -74,11 +85,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -91,44 +98,19 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    }
-  },
-  "modalSize": "xl",
-  "include": [],
-  "layout": {
-    "form": {
-      "type": "grid",
-      "columns": 12,
-      "controls": [
-        {
-          "id": "value",
-          "colspan": 6
-        }
-      ]
-    }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.value, ''), '#' || x.id) FROM \"blrreliability\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
+      "hiddenInTable": true
     },
-    {
-      "id": "reconstruction_by_reliability_id",
-      "alias": "reconstruction_by_reliability_id",
+    "display_label": {
+      "label": "Reference",
+      "hiddenInTable": true,
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.value, ''), '#' || x.id) FROM \"blrreliability\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "reconstruction_by_reliability_id": {
       "label": "Reconstructions",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1016,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -139,8 +121,29 @@
           "childResource": "reconstruction",
           "foreignKey": "reliability_id",
           "columns": []
-        }
+        },
+        "position": 1016
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     }
-  ]
+  },
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
+        {
+          "id": "value",
+          "colspan": 6
+        }
+      ]
+    }
+  }
 }

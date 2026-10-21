@@ -8,3 +8,10 @@ allowBuilds:
   nx: true
   prisma: true
   '@scarf/scarf': false
+minimumReleaseAgeExclude:
+  - '@ghentcdh/create-crouton@0.0.1-alpha.88'
+  - '@ghentcdh/crouton-api@0.0.1-alpha.88'
+  - '@ghentcdh/crouton-cli@0.0.1-alpha.88'
+  - '@ghentcdh/crouton-core@0.0.1-alpha.88'
+  - '@ghentcdh/crouton-prisma@0.0.1-alpha.88'
+  - '@ghentcdh/crouton-vue@0.0.1-alpha.88'

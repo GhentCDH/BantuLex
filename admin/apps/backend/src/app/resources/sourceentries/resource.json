@@ -4,17 +4,36 @@
   "draft": false,
   "name": "sourceentries",
   "route": "sourceentries",
-  "model": "sourceentries",
-  "tag": "sourceentries",
   "title": "Source entries",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "sourceentries",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "sourceentries"
+  },
   "sidebar": {
     "group": "sources",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "role",
+        "pages"
+      ],
+      "filter": [
+        "id",
+        "role",
+        "order",
+        "pages",
+        "entry_id",
+        "source_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
@@ -33,13 +52,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "role": {
       "label": "Role",
@@ -52,11 +66,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": true,
       "fieldInput": {
         "type": "string"
@@ -73,11 +83,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": true,
       "fieldInput": {
         "type": "number"
@@ -95,11 +101,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -117,11 +119,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -134,14 +132,6 @@
           "resource": "/reflex/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "source_id": {
@@ -156,11 +146,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -173,14 +159,6 @@
           "resource": "/source/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "created_at": {
@@ -194,11 +172,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -211,20 +185,65 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.role, (SELECT s.author_year FROM source s WHERE s.id = x.source_id)), ''), '#' || x.id) FROM \"sourceentries\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "entry_label": {
+      "label": "Reflex",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "reflex",
+          "idKey": "entry_id"
+        },
+        "position": 3
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.term, x.translation), ''), '#' || x.id) FROM \"reflex\" x WHERE x.id = main.\"entry_id\"",
+        "type": "string"
+      }
+    },
+    "source_label": {
+      "label": "Source",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "source",
+          "idKey": "source_id"
+        },
+        "position": 3
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.\"source_id\"",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "role",
           "colspan": 6
@@ -247,54 +266,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.role, (SELECT s.author_year FROM source s WHERE s.id = x.source_id)), ''), '#' || x.id) FROM \"sourceentries\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "entry_label",
-      "alias": "entry_label",
-      "label": "Reflex",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.term, x.translation), ''), '#' || x.id) FROM \"reflex\" x WHERE x.id = main.\"entry_id\"",
-      "position": 3,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "reflex",
-          "idKey": "entry_id"
-        }
-      }
-    },
-    {
-      "id": "source_label",
-      "alias": "source_label",
-      "label": "Source",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.\"source_id\"",
-      "position": 3,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "source",
-          "idKey": "source_id"
-        }
-      }
-    }
-  ]
+  }
 }

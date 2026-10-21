@@ -4,22 +4,54 @@
   "draft": false,
   "name": "blrtonestructure",
   "route": "blrtonestructure",
-  "model": "blrtonestructure",
-  "tag": "blrtonestructure",
   "title": "BLR tone structures",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "blrtonestructure",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "blrtonestructure"
+  },
   "sidebar": {
     "group": "classifications",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "t11",
+        "t12",
+        "t21",
+        "t22",
+        "t3",
+        "t4"
+      ],
+      "filter": [
+        "id",
+        "t11",
+        "t12",
+        "t21",
+        "t22",
+        "t3",
+        "t4",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "t11",
+      "t12",
+      "t21"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +65,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "t11": {
       "label": "T11",
@@ -53,11 +80,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -75,11 +98,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -97,11 +116,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -119,11 +134,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -141,11 +152,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -163,11 +170,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -184,11 +187,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -201,20 +200,47 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' ', x.t11, x.t12, x.t21, x.t22, x.t3, x.t4), ''), '#' || x.id) FROM \"blrtonestructure\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "reconstruction_by_tone_structure_id": {
+      "label": "Reconstructions",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reconstruction",
+          "foreignKey": "tone_structure_id",
+          "columns": []
+        },
+        "position": 1019
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "t11",
           "colspan": 6
@@ -241,36 +267,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.t11, x.t12, x.t21, x.t22, x.t3, x.t4), ''), '#' || x.id) FROM \"blrtonestructure\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "reconstruction_by_tone_structure_id",
-      "alias": "reconstruction_by_tone_structure_id",
-      "label": "Reconstructions",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1019,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "related-table",
-          "colspan": 12,
-          "childResource": "reconstruction",
-          "foreignKey": "tone_structure_id",
-          "columns": []
-        }
-      }
-    }
-  ]
+  }
 }

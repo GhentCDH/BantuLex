@@ -6,7 +6,7 @@
 // Every import is a batch that can be undone (list below the wizard).
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import axios from 'axios';
-import { ModalService, NotificationService } from '@ghentcdh/ui';
+import { ModalService, NotificationService } from '@ghentcdh/crouton-vue';
 import BulkGrid from './BulkGrid.vue';
 import RecordPicker, { type PickedRecord } from './RecordPicker.vue';
 import WizardStep, { type StepStatus } from './WizardStep.vue';

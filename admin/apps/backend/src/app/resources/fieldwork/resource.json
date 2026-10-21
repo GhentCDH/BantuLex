@@ -4,22 +4,46 @@
   "draft": false,
   "name": "fieldwork",
   "route": "fieldwork",
-  "model": "fieldwork",
-  "tag": "fieldwork",
   "title": "Fieldworks",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "fieldwork",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "fieldwork"
+  },
   "sidebar": {
     "group": "fieldwork",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "archive",
+        "data_entered_by"
+      ],
+      "filter": [
+        "id",
+        "project_id",
+        "collection_year_id",
+        "archive",
+        "data_entered_by",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "archive"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +57,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "project_id": {
       "label": "Project",
@@ -53,11 +72,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -70,14 +85,6 @@
           "resource": "/project/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "collection_year_id": {
@@ -92,11 +99,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -109,14 +112,6 @@
           "resource": "/collectionyear/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "archive": {
@@ -131,11 +126,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -153,11 +144,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -174,11 +161,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -191,56 +174,19 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    }
-  },
-  "modalSize": "xl",
-  "include": [],
-  "layout": {
-    "form": {
-      "type": "grid",
-      "columns": 12,
-      "controls": [
-        {
-          "id": "project_id",
-          "colspan": 6
-        },
-        {
-          "id": "collection_year_id",
-          "colspan": 6
-        },
-        {
-          "id": "archive",
-          "colspan": 6
-        },
-        {
-          "id": "data_entered_by",
-          "colspan": 6
-        }
-      ]
-    }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT p.name FROM project p WHERE p.id = x.project_id), (SELECT y.value FROM collectionyear y WHERE y.id = x.collection_year_id), x.archive), ''), '#' || x.id) FROM \"fieldwork\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
+      "hiddenInTable": true
     },
-    {
-      "id": "project_label",
-      "alias": "project_label",
+    "display_label": {
+      "label": "Reference",
+      "hiddenInTable": true,
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT p.name FROM project p WHERE p.id = x.project_id), (SELECT y.value FROM collectionyear y WHERE y.id = x.collection_year_id), x.archive), ''), '#' || x.id) FROM \"fieldwork\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "project_label": {
       "label": "Project",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"project\" x WHERE x.id = main.\"project_id\"",
-      "position": 1,
       "hiddenInTable": false,
       "hiddenInView": false,
       "fieldInput": {
@@ -250,16 +196,16 @@
           "colspan": 12,
           "linkResource": "project",
           "idKey": "project_id"
-        }
+        },
+        "position": 1
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"project\" x WHERE x.id = main.\"project_id\"",
+        "type": "string"
       }
     },
-    {
-      "id": "collection_year_label",
-      "alias": "collection_year_label",
+    "collection_year_label": {
       "label": "Collection year",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.value || CASE WHEN x.status <> 'known' THEN ' (' || x.status || ')' ELSE '' END, ''), '#' || x.id) FROM \"collectionyear\" x WHERE x.id = main.\"collection_year_id\"",
-      "position": 1,
       "hiddenInTable": false,
       "hiddenInView": false,
       "fieldInput": {
@@ -269,16 +215,16 @@
           "colspan": 12,
           "linkResource": "collectionyear",
           "idKey": "collection_year_id"
-        }
+        },
+        "position": 1
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.value || CASE WHEN x.status <> 'known' THEN ' (' || x.status || ')' ELSE '' END, ''), '#' || x.id) FROM \"collectionyear\" x WHERE x.id = main.\"collection_year_id\"",
+        "type": "string"
       }
     },
-    {
-      "id": "bulkimport_by_fieldwork_id",
-      "alias": "bulkimport_by_fieldwork_id",
+    "bulkimport_by_fieldwork_id": {
       "label": "Bulk imports",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1003,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -289,16 +235,16 @@
           "childResource": "bulkimport",
           "foreignKey": "fieldwork_id",
           "columns": []
-        }
+        },
+        "position": 1003
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     },
-    {
-      "id": "fieldworkconsultant_by_fieldwork_id",
-      "alias": "fieldworkconsultant_by_fieldwork_id",
+    "fieldworkconsultant_by_fieldwork_id": {
       "label": "Fieldwork consultants",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1007,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -314,16 +260,16 @@
               "label": "Consultant"
             }
           ]
-        }
+        },
+        "position": 1007
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     },
-    {
-      "id": "fieldworkdatacollector_by_fieldwork_id",
-      "alias": "fieldworkdatacollector_by_fieldwork_id",
+    "fieldworkdatacollector_by_fieldwork_id": {
       "label": "Fieldwork data collectors",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1009,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -339,16 +285,16 @@
               "label": "Data collector"
             }
           ]
-        }
+        },
+        "position": 1009
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     },
-    {
-      "id": "reflex_by_fieldwork_id",
-      "alias": "reflex_by_fieldwork_id",
+    "reflex_by_fieldwork_id": {
       "label": "Reflexes",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1022,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -372,8 +318,48 @@
               "label": "Variety"
             }
           ]
-        }
+        },
+        "position": 1022
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     }
-  ]
+  },
+  "layout": {
+    "table": {
+      "type": "table",
+      "filterFields": [
+        "archive",
+        "data_entered_by"
+      ]
+    },
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
+        {
+          "id": "project_id",
+          "colspan": 6
+        },
+        {
+          "id": "collection_year_id",
+          "colspan": 6
+        },
+        {
+          "id": "archive",
+          "colspan": 6
+        },
+        {
+          "id": "data_entered_by",
+          "colspan": 6
+        }
+      ]
+    }
+  }
 }

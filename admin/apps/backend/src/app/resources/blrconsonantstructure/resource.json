@@ -4,22 +4,52 @@
   "draft": false,
   "name": "blrconsonantstructure",
   "route": "blrconsonantstructure",
-  "model": "blrconsonantstructure",
-  "tag": "blrconsonantstructure",
   "title": "BLR consonant structures",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "blrconsonantstructure",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "blrconsonantstructure"
+  },
   "sidebar": {
     "group": "classifications",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "cs"
+      ],
+      "filter": [
+        "id",
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "cs",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "c1",
+      "c2",
+      "cs"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +63,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "c1": {
       "label": "C1",
@@ -53,11 +78,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -75,11 +96,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -97,11 +114,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -119,11 +132,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -141,11 +150,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -162,11 +167,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -179,20 +180,47 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' ', x.c1, x.c2, x.c3, x.c4), ''), '#' || x.id) FROM \"blrconsonantstructure\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "reconstruction_by_consonant_structure_id": {
+      "label": "Reconstructions",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reconstruction",
+          "foreignKey": "consonant_structure_id",
+          "columns": []
+        },
+        "position": 1017
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "c1",
           "colspan": 6
@@ -215,36 +243,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.c1, x.c2, x.c3, x.c4), ''), '#' || x.id) FROM \"blrconsonantstructure\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "reconstruction_by_consonant_structure_id",
-      "alias": "reconstruction_by_consonant_structure_id",
-      "label": "Reconstructions",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1017,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "related-table",
-          "colspan": 12,
-          "childResource": "reconstruction",
-          "foreignKey": "consonant_structure_id",
-          "columns": []
-        }
-      }
-    }
-  ]
+  }
 }

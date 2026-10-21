@@ -4,22 +4,43 @@
   "draft": false,
   "name": "place",
   "route": "place",
-  "model": "place",
-  "tag": "place",
   "title": "Places",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "place",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "place"
+  },
   "sidebar": {
     "group": "geography",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "name"
+      ],
+      "filter": [
+        "id",
+        "name",
+        "region_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "name"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +54,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "name": {
       "label": "Name",
@@ -53,11 +69,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -75,11 +87,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -92,14 +100,6 @@
           "resource": "/region/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "created_at": {
@@ -113,11 +113,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -130,48 +126,19 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    }
-  },
-  "modalSize": "xl",
-  "include": [],
-  "layout": {
-    "form": {
-      "type": "grid",
-      "columns": 12,
-      "controls": [
-        {
-          "id": "name",
-          "colspan": 6
-        },
-        {
-          "id": "region_id",
-          "colspan": 6
-        }
-      ]
-    }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"place\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
+      "hiddenInTable": true
     },
-    {
-      "id": "region_label",
-      "alias": "region_label",
+    "display_label": {
+      "label": "Reference",
+      "hiddenInTable": true,
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"place\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "region_label": {
       "label": "Region",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"region\" x WHERE x.id = main.\"region_id\"",
-      "position": 2,
       "hiddenInTable": false,
       "hiddenInView": false,
       "fieldInput": {
@@ -181,16 +148,16 @@
           "colspan": 12,
           "linkResource": "region",
           "idKey": "region_id"
-        }
+        },
+        "position": 2
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"region\" x WHERE x.id = main.\"region_id\"",
+        "type": "string"
       }
     },
-    {
-      "id": "location_by_place_id",
-      "alias": "location_by_place_id",
+    "location_by_place_id": {
       "label": "Locations",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1011,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -201,8 +168,33 @@
           "childResource": "location",
           "foreignKey": "place_id",
           "columns": []
-        }
+        },
+        "position": 1011
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     }
-  ]
+  },
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
+        {
+          "id": "name",
+          "colspan": 6
+        },
+        {
+          "id": "region_id",
+          "colspan": 6
+        }
+      ]
+    }
+  }
 }

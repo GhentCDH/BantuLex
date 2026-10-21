@@ -4,17 +4,35 @@
   "draft": false,
   "name": "coordinate",
   "route": "coordinate",
-  "model": "coordinate",
-  "tag": "coordinate",
   "title": "Coordinates",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "coordinate",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "coordinate"
+  },
   "sidebar": {
     "group": "geography",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "description",
+        "coordinate_source"
+      ],
+      "filter": [
+        "id",
+        "latitude",
+        "longitude",
+        "coordinate_source",
+        "location_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
@@ -33,13 +51,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "latitude": {
       "label": "Latitude",
@@ -53,11 +66,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "number"
@@ -75,11 +84,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "number"
@@ -97,11 +102,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": false,
-      "searchable": true,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "textarea"
@@ -119,11 +120,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -141,11 +138,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -158,14 +151,6 @@
           "resource": "/location/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "created_at": {
@@ -179,11 +164,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -196,20 +177,62 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(', ', x.latitude, x.longitude), ''), '#' || x.id) FROM \"coordinate\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "coordinate_map": {
+      "label": "Map",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "coordinate-map",
+          "colspan": 12
+        }
+      },
+      "computed": {
+        "sql": "SELECT json_object('id', main.id, 'latitude', main.latitude, 'longitude', main.longitude, 'description', main.description)",
+        "type": "string"
+      }
+    },
+    "location_label": {
+      "label": "Location",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "location",
+          "idKey": "location_id"
+        },
+        "position": 3
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.\"location_id\"",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "latitude",
           "colspan": 6
@@ -232,51 +255,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', x.latitude, x.longitude), ''), '#' || x.id) FROM \"coordinate\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "coordinate_map",
-      "alias": "coordinate_map",
-      "label": "Map",
-      "type": "string",
-      "sqlExpression": "SELECT json_object('id', main.id, 'latitude', main.latitude, 'longitude', main.longitude, 'description', main.description)",
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "coordinate-map",
-          "colspan": 12
-        }
-      }
-    },
-    {
-      "id": "location_label",
-      "alias": "location_label",
-      "label": "Location",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.\"location_id\"",
-      "position": 3,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "location",
-          "idKey": "location_id"
-        }
-      }
-    }
-  ]
+  }
 }

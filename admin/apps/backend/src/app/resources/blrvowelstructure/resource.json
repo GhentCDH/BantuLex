@@ -4,22 +4,54 @@
   "draft": false,
   "name": "blrvowelstructure",
   "route": "blrvowelstructure",
-  "model": "blrvowelstructure",
-  "tag": "blrvowelstructure",
   "title": "BLR vowel structures",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "blrvowelstructure",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "blrvowelstructure"
+  },
   "sidebar": {
     "group": "classifications",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "v11",
+        "v12",
+        "v21",
+        "v22",
+        "v3",
+        "v4"
+      ],
+      "filter": [
+        "id",
+        "v11",
+        "v12",
+        "v21",
+        "v22",
+        "v3",
+        "v4",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "v11",
+      "v12",
+      "v21"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +65,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "v11": {
       "label": "V11",
@@ -53,11 +80,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -75,11 +98,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -97,11 +116,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -119,11 +134,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -141,11 +152,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -163,11 +170,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -184,11 +187,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -201,20 +200,47 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' ', x.v11, x.v12, x.v21, x.v22, x.v3, x.v4), ''), '#' || x.id) FROM \"blrvowelstructure\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "reconstruction_by_vowel_structure_id": {
+      "label": "Reconstructions",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reconstruction",
+          "foreignKey": "vowel_structure_id",
+          "columns": []
+        },
+        "position": 1018
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "v11",
           "colspan": 6
@@ -241,36 +267,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.v11, x.v12, x.v21, x.v22, x.v3, x.v4), ''), '#' || x.id) FROM \"blrvowelstructure\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "reconstruction_by_vowel_structure_id",
-      "alias": "reconstruction_by_vowel_structure_id",
-      "label": "Reconstructions",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1018,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "related-table",
-          "colspan": 12,
-          "childResource": "reconstruction",
-          "foreignKey": "vowel_structure_id",
-          "columns": []
-        }
-      }
-    }
-  ]
+  }
 }
