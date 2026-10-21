@@ -2,12 +2,41 @@
 // Composition root: opens the database with the Pihka engine and mounts the
 // BantuLex UI. Nothing of Pihka's default UI is loaded.
 import { h, render } from "preact";
+import { DataSource } from "./core/engine/datasource.js";
 import { openDataset } from "./core/engine/index.js";
 import * as filters from "./engine/filters.js";
 import { App } from "./ui/app.js";
 import { Status } from "./ui/components/status.js";
 
 const MB = 1024 * 1024;
+
+/**
+ * The download datasource, but materialized perspective tables already in the
+ * file are dropped from the in-memory copy, so the engine rebuilds them.
+ * The admin does not update such a table (for example one written by Pihka's
+ * prepareSampleDatabase), so reusing it would show stale data.
+ * @param {string[]} tables
+ */
+function freshPerspectives(tables) {
+    return {
+        register(api) {
+            api.registerDataSource("download", (url) => {
+                const ds = new DataSource(url);
+                ds.ready = ds.ready.then(async () => {
+                    const stale = await ds.exec(
+                        `SELECT name FROM sqlite_schema WHERE type = 'table' AND name COLLATE NOCASE IN (${tables.map(() => "?").join(", ")})`,
+                        { bind: tables },
+                    );
+                    for (const { name } of stale) {
+                        console.warn(`[bantulex] "${name}" is a stale copy in the database file; rebuilding it.`);
+                        await ds.exec(`DROP TABLE "${String(name).replaceAll('"', '""')}"`);
+                    }
+                });
+                return ds;
+            });
+        },
+    };
+}
 
 async function main() {
     const element = /** @type {HTMLElement} */ (document.getElementById("app"));
@@ -20,16 +49,26 @@ async function main() {
         if (!response.ok) throw new Error(`config.json: HTTP ${response.status}`);
         const config = await response.json();
         const databaseUrl = new URL(config.database, import.meta.url);
-        if (config.databaseVersion) databaseUrl.searchParams.set("v", String(config.databaseVersion));
 
         const session = await openDataset({
             databaseUrl: databaseUrl.href,
             config: {
                 datasource: config.datasource,
                 enrichment: config.enrichment,
-                perspectives: config.perspectives.map(({ id, table, query }) => ({ id, table, query })),
+                // materialize, facets and default_sort let the engine build reflex_search with indexes.
+                perspectives: config.perspectives.map(({ id, table, query, materialize, facets, default_sort }) => ({
+                    id,
+                    table,
+                    query,
+                    materialize,
+                    facets,
+                    default_sort,
+                })),
             },
-            plugins: [filters],
+            plugins: [
+                filters,
+                freshPerspectives(config.perspectives.filter((p) => p.materialize).map((p) => p.table)),
+            ],
             onProgress: ({ phase, bytes }) =>
                 status(
                     phase === "loading" && bytes

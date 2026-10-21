@@ -36,6 +36,8 @@ services:
       - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
       - ./site:/srv/site:ro
       - ./vendor/pihka/pihka:/srv/pihka:ro
+      # The whole folder, not the file: import and reset-db replace bantulex.db.
+      - ./data:/srv/data:ro
 
 volumes:
   venv:

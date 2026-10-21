@@ -1,6 +1,5 @@
 {
-  "database": "database/bantulex.sqlite",
-  "databaseVersion": "2026.10.20.1",
+  "database": "database/bantulex.db",
   "enrichment": { "fts": false },
   "mapTheme": {
     "palette": ["#00418a", "#f14e29", "#3d5940", "#f2a90c", "#8f0b0c", "#98b5f1", "#786955"],

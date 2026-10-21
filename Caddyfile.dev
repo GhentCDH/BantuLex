@@ -6,6 +6,10 @@
 	# site/ is the web root; the Pihka engine and the map extension come from the submodule.
 	@pihka path /core/* /extensions/point_map/*
 	root @pihka /srv/pihka
+	# The site reads the admin's database directly; nothing else in /srv/data is served.
+	@database path /database/bantulex.db
+	root @database /srv/data
+	rewrite @database /bantulex.db
 	root * /srv/site
 
     @revalidate path *.html *.js *.css *.json *.wasm *.mjs *.db *.sqlite *.geojson /

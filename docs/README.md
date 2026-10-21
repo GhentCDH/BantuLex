@@ -12,8 +12,9 @@
 data/bantulex.xlsx, data/BLR_export.xlsx
         │  just import (utils/importer)
         ▼
-     Postgres ──── exporters (utils/exporter) ──► EvoLex Excel, to-fix worklist
-        │  Dataflow
+  data/bantulex.db ──── exporters (utils/exporter) ──► EvoLex Excel, to-fix worklist
+        │      ▲
+        │      └── edits: admin (Crouton, /admin/)
         ▼
-  SQLite export ──► just site-db ──► just publish ──► bantulex.ugent.be (Pihka)
+  bantulex.ugent.be (Pihka): the browser downloads the same file
 ```
