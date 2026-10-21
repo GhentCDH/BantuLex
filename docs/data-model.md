@@ -59,8 +59,8 @@ reflex is the present-day form that continues an older root.
 | `scientific_name` | `Scientific name` | Taxon name for plants and animals. |
 | `semantic_field` | `Semantic field` | Semantic category. |
 | `part_of_speech` | `Part of Speech` | Word class. |
-| `blr_index` | `BLR Index` | The BLR number as written in the spreadsheet (text). |
-| `blr_entry_id` | | Foreign key to the matching `reconstruction`, resolved from `blr_index`. |
+| `blr_entry_id` | `BLR Index` | Foreign key to the `reconstruction` with that BLR number. The number itself is read through this link. |
+| `reconstruction_note` | `BLR Index` | The cell text when it did not become a plain link: text (`7364 (PT??)`), `X ipv Y` (X is linked), or a number without a reconstruction. NULL when empty. |
 | `ipa`, `notes_on_ipa` | `IPA`, `Notes on IPA` | Phonetic transcription and notes on it. |
 | `notes` | `Opmerking` | Free remarks. |
 | `variety_id`, `location_id`, `fieldwork_id` | | Where, by whom and when the word was recorded. |
@@ -76,7 +76,7 @@ with `BLR_FILE`); reflexes come from `data/bantulex.xlsx`.
 
 | Column | Excel column | Meaning |
 | --- | --- | --- |
-| `blr_index` | `Index` | The BLR number. `reflex.blr_index` refers to this value. |
+| `blr_index` | `Index` | The BLR number. Reflexes refer to the reconstruction through `reflex.blr_entry_id`. |
 | `word_tone` | `Word\Tone` | The root with tone marks (`bʊ́d`). |
 | `word` | `Word` | The root without tone marks (`bʊd`). |
 | `english`, `french` | `English`, `Français:` | Glosses. |

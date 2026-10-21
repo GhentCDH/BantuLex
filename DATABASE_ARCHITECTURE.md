@@ -41,7 +41,7 @@ Models are organized by their role in the BantuLex linguistics management workfl
 
 #### Reflex
 A single lexical record for a specific term in a specific variety.
-*   **Fields**: `original_id`, `beginning_id` (unique business ID; empty for rows split off with a duplicate ID), `term`, `term_morph_analysis`, `translation`, `meaning`, `scientific_name`, `semantic_field`, `part_of_speech`, `blr_index` (integer as text; "X ipv Y" uses X), `blr_note` (BLR index text that is not a number, not linked), `ipa`, `notes_on_ipa`, `notes`.
+*   **Fields**: `original_id`, `beginning_id` (unique business ID; empty for rows split off with a duplicate ID), `term`, `term_morph_analysis`, `translation`, `meaning`, `scientific_name`, `semantic_field`, `part_of_speech`, `reconstruction_note` (BLR Index text that did not become a plain link; the BLR number is read via `blr_entry_id`), `ipa`, `notes_on_ipa`, `notes`.
 *   **Relationships**: Linked to `Variety`, `Location`, `Fieldwork` and `Reconstruction` (via `blr_entry_id`); sources via `SourceEntries`.
 
 #### Reconstruction

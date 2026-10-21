@@ -5,13 +5,15 @@ them must be fixed in the spreadsheets, not in code.
 
 ## Known issues
 
-### Reflexes with a `blr_index` but no reconstruction
+### BLR Index cells that are not linked
 
-3,269 reflexes have a `blr_index` but no `blr_entry_id`. Only 9 of these are
-numbers without a matching BLR entry. The others are labels that are not BLR
-numbers, for example `PT` (166 rows), `banana_64`, `banana_09` and `1939 1935`.
-Find out what these labels mean; if they are a separate index, they need their
-own column.
+3,989 reflexes have a `reconstruction_note`: their BLR Index cell did not
+become a plain link to a reconstruction (import of 2026-10-21). 295 of these
+are numbers without a reconstruction (28 numbers, e.g. 10235 for 39 reflexes;
+most are between 10412 and 10504, after the last BLR entry). The others are
+labels that are not BLR numbers, for example `PT` (166 rows), `banana_64`,
+`banana_09` and `1939 1935`, or `X ipv Y` notes (linked to X). Find out what
+these labels mean; if they are a separate index, they need their own column.
 
 ### Reliability values are free text
 
