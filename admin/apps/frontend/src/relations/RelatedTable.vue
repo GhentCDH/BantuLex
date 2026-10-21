@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Read-only view of a "related-table" calculated column: a paged table of the records of
+// Read-only view of a "related-table" computed column: a paged table of the records of
 // another resource that point to this record (one-to-many), with links to view and edit them.
 import { computed, ref, watch } from 'vue';
 import { useControlBinding, type ControlElement, type JsonSchema } from '@ghentcdh/crouton-vue';

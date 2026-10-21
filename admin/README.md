@@ -45,7 +45,7 @@ No migrations, seeds, resets, `db push`, or automatic schema synchronization run
 
 ## Configuration
 
-`crouton.json` configures the title, navigation groups, resource directories, and explicit saving. Each `apps/backend/src/app/resources/<table>/resource.json` configures endpoints, columns, controls, layout, lookup URLs, and visibility. Generated Prisma/Zod files are build artifacts; JSON resources are the maintained application definition.
+`crouton.json` configures the title, navigation groups, resource directories, and explicit saving. Each `apps/backend/src/app/resources/<table>/resource.json` configures the data source (`source`), endpoints and their search and filter fields (`operations`), columns (computed columns carry `computed.sql`), lookup labels, the form layout (`layout.form.items`, modal size in `layout.form.container`), and visibility. The files follow Crouton's v1 schema (`$schema`); check them with `docker compose run --rm dev pnpm crouton validate --strict`. Generated Prisma/Zod files are build artifacts; JSON resources are the maintained application definition.
 
 The default datasource adapter only bounds page sizes and sorts lists by `id` by default. Every table, including the junctions `fieldworkdatacollector` and `fieldworkconsultant`, has an integer `id`; the junctions have a unique (fieldwork, person) pair. Ordinary CRUD, validation, search, pagination, forms, modals, and navigation are provided by Crouton.
 
@@ -54,7 +54,7 @@ The default datasource adapter only bounds page sizes and sorts lists by `id` by
 When the importer's schema changes (`utils/utilities/src/utilities/model.py`):
 
 1. Print the introspected schema with `docker compose run --rm dev pnpm exec prisma db pull --print --config prisma/default/prisma.config.ts` and copy it into `prisma/default/schema.prisma`. Keep `created_at`/`updated_at` as `String @default(dbgenerated("CURRENT_TIMESTAMP"))`, so Prisma keeps the importer's `YYYY-MM-DD HH:MM:SS` text instead of writing ISO timestamps.
-2. Edit the affected `resource.json` files by hand, following an existing resource: lookups for foreign keys, a `display_label` and `<name>_label` calculated columns (as relation links), the parent's related-records table, and form controls (see [Relations in the detail view](#relations-in-the-detail-view)).
+2. Edit the affected `resource.json` files by hand, following an existing resource: lookups for foreign keys, a `display_label` and `<name>_label` computed columns (as relation links), the parent's related-records table, and form controls (see [Relations in the detail view](#relations-in-the-detail-view)).
 3. Regenerate `tests/inventory.json` with `docker compose run --rm --no-deps utils python3 /app/admin/scripts/inventory.py` (from the repository root) and run the tests.
 
 `pnpm crouton update resources` is not used: it does nothing for this custom datasource, and with a generic one it would rename every model and field to PascalCase/camelCase.
@@ -79,14 +79,15 @@ The `e2e` service runs `pnpm test:e2e` with the same mounts as `dev`. It connect
 
 ## Framework compatibility
 
-Runtime dependencies use exact published Crouton API/Vue/core/generator **0.0.1-alpha.82** and CLI **0.0.1-alpha.81**. Do not replace these with the npm `latest` tag: it points at an older release (use the `alpha` tag).
+Runtime dependencies use exact published Crouton API/Vue/core/generator/CLI **0.0.1-alpha.88**. Do not replace these with the npm `latest` tag: it points at an older release (use the `alpha` tag). Modal and notification services come from `@ghentcdh/crouton-vue` (it no longer uses `@ghentcdh/ui`).
 
 `scripts/patch-crouton.mjs`, run by postinstall and setup, applies narrowly scoped corrections to the pinned distribution. Each patch locates its (content-hashed) file by the code it rewrites, is idempotent, and prints a warning instead of failing when upstream has changed the target:
 
-- Emit pagination requests directly instead of wrapping them in `requestData`.
 - Preserve valid empty TEXT values separately from SQL NULL.
-- Connect the generic autocomplete’s existing Clear control to clearing the stored foreign key.
-- Use SQLite placeholders for calculated-column queries (readable relation labels and map data).
+- Use SQLite placeholders for computed-column queries (readable relation labels and map data).
+- Build the table and view layouts from regular columns only: computed columns are injected separately, and were otherwise shown twice in tables.
+- Leave computed columns out of the default search fields (resources without `operations.findAll.search`, e.g. the fieldwork junctions), since they are not database fields.
+- Treat only ISO-like `YYYY-MM-DD` strings as dates in the detail view (otherwise "6641" is shown as a date).
 
 These are framework fixes, not replacement application forms. Since alpha.82, unique-constraint violations are returned by Crouton as field validation errors (HTTP 400, code `unique`) rather than by the application's 409 mapping.
 
@@ -145,10 +146,10 @@ Code: `apps/backend/src/app/blr/` (controller, zod schema, service). The fronten
 
 ## Relations in the detail view
 
-The API returns flat records; the detail (View) modal shows the relations between them through two read-only renderers, registered in `apps/frontend/src/main.ts` and selected by a calculated column's `fieldInput.options.format`:
+The API returns flat records; the detail (View) modal shows the relations between them through two read-only renderers, registered in `apps/frontend/src/main.ts` and selected by a computed column's `fieldInput.options.format`:
 
 - `relation-link` on a `<name>_label` column: the related record's label as a link to its view, with an *Edit* link, e.g. a reflex's variety, location, fieldwork and BLR entry. Options: `linkResource` (the related resource) and `idKey` (the foreign key column of this record). Tables and forms are unchanged: tables show the plain label, forms the autocomplete.
-- `related-table` on a column `<child>_by_<foreign key>` (`sqlExpression: SELECT CAST(main.id AS TEXT)`, hidden in tables): a paged table of the records that point to this one, with view and edit links, e.g. the reflexes of a fieldwork. Options: `childResource`, `foreignKey` and `columns` (`[{key, label}]`, shown after the record's `display_label`).
+- `related-table` on a column `<child>_by_<foreign key>` (`computed.sql: SELECT CAST(main.id AS TEXT)`, hidden in tables): a paged table of the records that point to this one, with view and edit links, e.g. the reflexes of a fieldwork. Options: `childResource`, `foreignKey` and `columns` (`[{key, label}]`, shown after the record's `display_label`).
 
 Every `relation-link` has its reverse `related-table` (checked by `tests/relations.test.mjs`). Crouton's own relation columns (`format: relation`) are not used: their labels come from a single field of the related row instead of the composite `display_label`, and a visible one-to-many relation loads all children (thousands of reflexes) with the record. The table queries the list API with `filter=<fk>:<id-1>:gt&filter=<fk>:<id+1>:lt`, because Crouton's `equals` filter is not cast to a number for integer columns.
 
@@ -160,4 +161,4 @@ The Coordinates page shows every valid coordinate below the table, regardless of
 
 MapLibre GL JS 6.11 renders the local `apps/frontend/public/maps/world.pmtiles` archive (served at `/admin/maps/world.pmtiles`) through the `pmtiles` protocol. The archive is not in git: `scripts/fetch-basemap.sh` extracts zoom levels 0–4 (about 6 MB) of the newest [Protomaps](https://docs.protomaps.com/basemaps/downloads) daily build with go-pmtiles. The `Dockerfile` runs it at image build time and the dev entrypoint runs it when the file is missing; delete the file and restart the dev container to refresh it. Vite and the production Express server support its HTTP range requests. The archive is a small overview basemap, so fine street detail is limited. Attribution remains visible. No access token, hosted style or external tile service is needed.
 
-`apps/frontend/src/maps/config.json` configures the resource endpoint, archive, paging and zoom. The coordinate resource JSON defines the read-only calculated map data and renderer format. The frontend wraps Crouton’s original resource view and registers its read-only renderer; CRUD remains in Crouton. Map tests check all-row coverage, detail pins and PMTiles range delivery using a disposable database.
+`apps/frontend/src/maps/config.json` configures the resource endpoint, archive, paging and zoom. The coordinate resource JSON defines the read-only computed map data and renderer format. The frontend wraps Crouton’s original resource view and registers its read-only renderer; CRUD remains in Crouton. Map tests check all-row coverage, detail pins and PMTiles range delivery using a disposable database.

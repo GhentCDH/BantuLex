@@ -41,7 +41,7 @@ api.interceptors.response.use((response) => {
   }
   return response;
 });
-// Read-only renderers for the detail view, selected by a calculated column's options.format.
+// Read-only renderers for the detail view, selected by a computed column's fieldInput.options.format.
 const readonlyFormats: Record<string, any> = { 'coordinate-map': CoordinateDetail, 'relation-link': RelationLink, 'related-table': RelatedTable, 'reconstruction-links': ReconstructionLinks };
 const readonlyRenderers = Object.entries(readonlyFormats).map(([format, renderer]) => ({ tester: (ui: any) => ui.options?.format === format ? 30 : -1, renderer: markRaw(renderer) }));
 createApp(App).use(CroutonPlugin(api, { readonlyRenderers })).use(router).mount('#app');

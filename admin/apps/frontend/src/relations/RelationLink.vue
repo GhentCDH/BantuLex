@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Read-only view of a `<fk>_label` calculated column (options.format "relation-link"):
+// Read-only view of a `<fk>_label` computed column (options.format "relation-link"):
 // the related record's label as a link to its view, with an edit link next to it,
 // so a related record is not mistaken for a text field of this record.
 import { computed } from 'vue';
