@@ -3,7 +3,7 @@ import { createApp, defineAsyncComponent, defineComponent, h, markRaw } from 'vu
 import { createRouter, createWebHistory, useRoute, type RouteRecordRaw } from 'vue-router';
 import axios from 'axios';
 import { CroutonPlugin, CroutonRouter } from '@ghentcdh/crouton-vue';
-import { ModalService } from '@ghentcdh/ui';
+import { ModalService } from '@ghentcdh/crouton-vue';
 import App from './App.vue';
 import CoordinateList from './maps/CoordinateList.vue';
 import CoordinateDetail from './maps/CoordinateDetail.vue';

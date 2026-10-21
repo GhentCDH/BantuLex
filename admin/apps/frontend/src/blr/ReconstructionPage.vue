@@ -5,7 +5,7 @@
 // the components; every save is one transaction of the BLR API.
 import { ref, watch } from 'vue';
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
-import { NotificationService } from '@ghentcdh/ui';
+import { NotificationService } from '@ghentcdh/crouton-vue';
 import BlrCard from './BlrCard.vue';
 import LinkedReflexes from './LinkedReflexes.vue';
 import ReconstructionFields from './ReconstructionFields.vue';
