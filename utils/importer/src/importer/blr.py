@@ -12,14 +12,12 @@ from utilities.model import (
     BLRToneStructure,
     BLRVowelStructure,
     Reconstruction,
-    Reflex,
 )
 
 from .entries import (
     BlrDuplicateIndexEntry,
     BlrEmptyRowEntry,
     BlrMissingWordEntry,
-    BlrUnresolvedLinkEntry,
     MissingColumnEntry,
     RowContext,
     SourceLocation,
@@ -63,12 +61,22 @@ BLR_EXPECTED_HEADERS = [
 ]
 
 
+def reconstruction_ids() -> dict[int, int]:
+    """Reconstruction id per BLR index, for linking reflexes."""
+    with Session(engine) as session:
+        return {
+            idx: rid
+            for idx, rid in session.exec(select(Reconstruction.blr_index, Reconstruction.id))
+            if idx is not None
+        }
+
+
 def import_blr(import_report: ImportReport | None = None) -> None:
     """Import the configured BLR workbook into the reconstruction table.
 
     Existing reconstructions are updated in place (matched on `blr_index`), so
-    a newer export can refresh a live database. Reflex links are resolved
-    afterwards.
+    a newer export can refresh a live database. It runs before the reflex
+    import, which links each reflex through `reconstruction_ids`.
     """
     create_all(engine)
 
@@ -302,46 +310,3 @@ def import_blr(import_report: ImportReport | None = None) -> None:
         logger.info(
             f"BLR import done — {inserted} new entries inserted, {updated} updated."
         )
-
-        # Link Reflex.blr_entry_id via Reflex.blr_index (integer match)
-        blr_index_map = {idx: rec.id for idx, rec in existing_by_index.items()}
-        linked = 0
-        unresolved = 0
-        for reflex in session.exec(
-            select(Reflex).where(
-                Reflex.blr_index.is_not(None),
-                Reflex.blr_entry_id.is_(None),
-            )
-        ).all():
-            # No spreadsheet row here: this phase iterates DB Reflex rows.
-            link_loc = SourceLocation(file_name, sheet_name, None, "BLR Index", None)
-            try:
-                idx = int(reflex.blr_index)
-            except (ValueError, TypeError):
-                unresolved += 1
-                report.add(
-                    BlrUnresolvedLinkEntry(
-                        loc=link_loc,
-                        note="BLR index kon niet als integer worden geparsed.",
-                        reflex_id=reflex.id,
-                        blr_index_raw=reflex.blr_index,
-                    )
-                )
-                continue
-            blr_id = blr_index_map.get(idx)
-            if blr_id:
-                reflex.blr_entry_id = blr_id
-                linked += 1
-            else:
-                unresolved += 1
-                report.add(
-                    BlrUnresolvedLinkEntry(
-                        loc=link_loc,
-                        note="Geen overeenkomende BLR Reconstruction gevonden voor dit index.",
-                        reflex_id=reflex.id,
-                        blr_index_raw=idx,
-                    )
-                )
-
-        session.commit()
-        logger.info(f"Linked {linked} entries to BLR — {unresolved} unresolved.")
