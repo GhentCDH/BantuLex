@@ -17,6 +17,13 @@ function patch(name, pkg, from, to, applied = to) {
 patch('empty TEXT', 'crouton-api', 'if (out[key] === "") {', 'if (out[key] === "" && !this.schema.shape[key]?.safeParse("").success) {');
 // Crouton's calculated-column helper emits PostgreSQL placeholders; this app uses SQLite.
 patch('SQLite placeholders', 'crouton-api', 'ids.map((_, i) => `$${i + 1}`).join(", ")', 'ids.map(() => "?").join(", ")');
+// Without operations.findAll.search, `q` falls back to every searchable column, including computed ones that are not
+// database fields (e.g. display_label), which makes the list query fail with 400.
+patch('search fallback', 'crouton-core', 'var isSearchableColumn = (c) => !c.idField && ', 'var isSearchableColumn = (c) => !c.idField && !c.computed && ');
+patch('search fallback', 'crouton-api', 'var isSearchableColumn = /* @__PURE__ */ __name((c) => !c.idField && ', 'var isSearchableColumn = /* @__PURE__ */ __name((c) => !c.idField && !c.computed && ');
+// Computed columns (columns[id].computed) are injected into the table and view as calculated columns; building the
+// layouts from them as well showed each one twice in the table.
+patch('computed columns once', 'crouton-api', 'const visibilityColumns = resolveColumnVisibility(enrichedColumns, json.layout);', 'const visibilityColumns = resolveColumnVisibility(enrichedColumns.filter((c) => !c.computed), json.layout);');
 // The detail view renders any value that `new Date()` accepts as a date, so "6641" or "1990" became "1 Jan 6641".
 // Only ISO-like YYYY-MM-DD strings are dates here.
 patch('date detection', 'crouton-vue', 't.resource ? Jc : hs(e) ? jc', 't.resource ? Jc : typeof e == "string" && /^\\d{4}-\\d{2}-\\d{2}/.test(e) && hs(e) ? jc');
