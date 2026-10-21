@@ -25,6 +25,9 @@ just admin        # Build + start the Crouton admin (compose profile "admin", :4
 just admin-dev    # Admin with hot reload (admin/docker-compose.yml, dev profile)
 just admin-test   # Admin typecheck, build and API tests in its dev container
 just admin-e2e    # Admin browser tests: Playwright in the container drives the host Chrome over CDP
+just pihka-up     # Caddy on :9161, a copy of the server's system Caddy: the site, data/bantulex.db and the admin proxy
+just backup-up    # Scheduled backups into backups/ (compose profile "backup"); just backup / just restore <archive>
+just deploy       # Build the site and rsync it to BANTULEX_DEPLOY_HOST:/data/bantulex_tst/public
 ```
 
 Python tools can also be run directly via Docker:
@@ -81,4 +84,4 @@ The canonical data model is in [utils/utilities/src/utilities/model.py](utils/ut
 - Python tools: `utils/utils.env` (`DB_PATH`, `DATA_ROOT`, optional `EXCEL_FILE`, optional `BLR_FILE`); `dev.env` is loaded by Docker Compose for `utils`.
 - Admin: `HOST`, `PORT`, `DATABASE_PATH` (defaults in `admin/Dockerfile`); it has no login, so only expose it on localhost or behind an authenticating proxy.
 
-Production deployment targets Nomad (see `ARCHITECTURE.md`); Docker Compose is for local dev only.
+On the server, the system Caddy serves the site from `/data/bantulex_tst/public` (`just deploy`) and proxies `/admin` and `/api` to the admin container, which is deployed separately from its own compose file (see `docs/deployment.md`). The `caddy` and `backup` services in `compose.yml` are for dev; the backup service can be added to the server's admin compose.

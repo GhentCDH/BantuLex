@@ -23,7 +23,7 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 
 - **utils** — Python/uv container with the importer, exporters and documenter (run on demand)
 - **admin** — Crouton admin app (UI on `/admin/`, API on `/api`) at http://localhost:4444/admin/, editing `data/bantulex.db`. It is in the `admin` compose profile, so `just up`/`just rebuild` do not start it; use `just admin`. See [admin/README.md](admin/README.md) for details.
-- **caddy** — web server on http://localhost:9161, as in deployment: the Pihka website on `/` and the admin on `/admin/` and `/api` (`Caddyfile`, see [publishing](docs/publishing.md))
+- **caddy** — web server on http://localhost:9161, a copy of the system Caddy on the server: the Pihka website on `/` and the admin on `/admin/` and `/api` (`Caddyfile`, see [publishing](docs/publishing.md)). Not deployed.
 - **backup** — scheduled backups of `data/bantulex.db` into `backups/` ([offen/docker-volume-backup](https://offen.github.io/docker-volume-backup/)). It is in the `backup` compose profile; use `just backup-up`. See [Backups](#backups).
 
 ## Recipes
@@ -48,7 +48,7 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just open-admin` | Open the admin in the browser |
 | `just pihka-init` | Fetch the pinned Pihka submodule |
 | `just pihka-up` | Preview the website locally |
-| `just publish` | Build the website and rsync it |
+| `just deploy` | Build the website and rsync it to the server (see [deployment](docs/deployment.md)) |
 
 On Linux, `data/` must be writable by uid 1000.
 

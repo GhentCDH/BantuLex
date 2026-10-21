@@ -1,12 +1,15 @@
 # BantuLex Architecture
 
-This document describes the structure and deployment architecture of the BantuLex project, matching the transition from Docker Compose (local development) to Nomad (target production environment).
+This document describes the structure and deployment architecture of the BantuLex project. Local development uses Docker Compose (`compose.yml`). On the server, the system Caddy serves the static Pihka site and proxies the admin container, which is deployed separately (see [docs/deployment.md](docs/deployment.md)).
 
 ## Infrastructure Overview
 
 ```mermaid
 graph TB
     subgraph dev["Docker Compose (local dev)"]
+        caddy_dev["caddy<br/><small>stock caddy :9161<br/>copy of the server's system Caddy<br/>site/ + Pihka mounted live</small>"]
+        style caddy_dev fill:none,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5,color:#64748b
+
         admin_dev["admin (Crouton)<br/><small>local build of ./admin :4444<br/>UI /admin/, API /api<br/>compose profile admin</small>"]
         style admin_dev fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
 
@@ -19,6 +22,8 @@ graph TB
         exports_dev[("./data exports<br/><small>EvoLex xlsx, to-fix worklist</small>")]
         style exports_dev fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
+        caddy_dev -- "/admin/*, /api/*" --> admin_dev
+        caddy_dev -. "/database/bantulex.db" .-> db_dev
         utils_dev -. "import" .-> db_dev
         db_dev -. "export" .-> utils_dev
         utils_dev -.-> exports_dev
@@ -26,41 +31,43 @@ graph TB
     end
     style dev fill:#f8fafc,stroke:#cbd5e1,stroke-width:2px,color:#475569
 
-    subgraph nomad["Nomad Job: bantulex (target)"]
-        gateway["gateway<br/><small>caddy:latest :80</small>"]
+    subgraph server["Server (gcdhdockqas1)"]
+        gateway["system Caddy<br/><small>tst.bantulex.ugent.be<br/>TLS, ugent_only</small>"]
         style gateway fill:#ffffff,stroke:#64748b,stroke-width:1.5px
 
-        data_mgmt["data_management<br/><small>ghcr.io/ghentcdh/bantulex<br/>Crouton admin: UI /admin/, API /api<br/>pre-built container, :4444</small>"]
+        data_mgmt["admin<br/><small>ghcr.io/ghentcdh/bantulex<br/>Crouton admin: UI /admin/, API /api<br/>own compose file, 127.0.0.1:8190</small>"]
         style data_mgmt fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
 
-        data_pub["data_publishing<br/><small>map frontend<br/>separate project</small>"]
+        data_pub[("/data/bantulex_tst/public<br/><small>static Pihka site<br/>just deploy</small>")]
         style data_pub fill:#ffffff,stroke:#64748b,stroke-width:1.5px
 
-        db_nomad[("CSI/SMB Volume: bantulex.db")]
-        style db_nomad fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
+        db_server[("/data/bantulex_tst/data/bantulex.db")]
+        style db_server fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
 
         gateway -- "/admin/*, /api/*" --> data_mgmt
         gateway -- "/*" --> data_pub
-        data_mgmt -.-> db_nomad
+        gateway -. "/database/bantulex.db" .-> db_server
+        data_mgmt -.-> db_server
     end
-    style nomad fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#065f46
+    style server fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#065f46
 
     subgraph build["Container Build Required"]
         build_tool["ghcr.io/ghentcdh/bantulex<br/><small>Crouton admin - built from admin/Dockerfile<br/>published by CI on v* tags</small>"]
         style build_tool fill:#ffffff,stroke:#ef4444,stroke-width:2px,color:#991b1b
 
-        no_build["No custom build needed<br/><small>gateway -> stock caddy:latest</small>"]
+        no_build["No container for the site<br/><small>static files, rsynced by just deploy</small>"]
         style no_build fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#065f46
     end
     style build fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#991b1b
 
-    build_tool -. "red dashed = target build pipeline" .-> data_mgmt
+    build_tool -. "red dashed = the build pipeline" .-> data_mgmt
 ```
 
 Notes:
 
-- Local dev has no gateway: the admin is reached directly on `127.0.0.1:4444`, and the exporters write their files to `data/`. The map that uses those exports lives in a separate project.
-- The admin has no login: in production it must sit behind an authenticating reverse proxy. Its UI base path is `/admin/` and its API `/api` (see `admin/README.md`); serving it under another sub-path requires changing that configuration.
+- In dev, the `caddy` service copies the server's system Caddy block (`Caddyfile`), so the site, the database route and the admin proxy behave as on the server. The admin is also reachable directly on `127.0.0.1:4444`, and the exporters write their files to `data/`.
+- The public site and the admin use the same database file. The browser downloads `bantulex.db` and builds its search tables itself, so admin edits are on the site at the next page load. The database is never copied to the server by a deploy (see `docs/publishing.md`).
+- The admin has no login: on the server it must sit behind an authenticating reverse proxy. Its UI base path is `/admin/` and its API `/api` (see `admin/README.md`); serving it under another sub-path requires changing that configuration.
 - The importer writes the SQLite file `bantulex.db` (`DB_PATH` in `utils/utils.env`), which the exporters read and the admin edits. When the importer's schema changes, the admin's Prisma schema and resources must follow (see `admin/README.md`).
 
 ## Legend
