@@ -23,7 +23,7 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 
 - **utils** — Python/uv container with the importer, exporters and documenter (run on demand)
 - **admin** — Crouton admin app (UI on `/admin/`, API on `/api`) at http://localhost:4444/admin/, editing `data/bantulex.db`. It is in the `admin` compose profile, so `just up`/`just rebuild` do not start it; use `just admin`. See [admin/README.md](admin/README.md) for details.
-- **pihka**: local preview of the Pihka website on port 9161 (see [publishing](docs/publishing.md))
+- **caddy** — web server on http://localhost:9161, as in deployment: the Pihka website on `/` and the admin on `/admin/` and `/api` (`Caddyfile`, see [publishing](docs/publishing.md))
 
 ## Recipes
 

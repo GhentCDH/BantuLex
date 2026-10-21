@@ -55,9 +55,9 @@ export-all: export-evolex export-tofix
 
 # De site leest data/bantulex.db, dezelfde database die de admin bewerkt; de browser bouwt reflex_search zelf.
 
-# Lokale Pihka op {{PIHKA_URL}}, site/ is live gemount (herlaad de browser na wijzigingen)
+# Lokale Caddy op {{PIHKA_URL}}: de site (live gemount, herlaad de browser na wijzigingen) en de admin op /admin/
 pihka-up:
-    docker compose up -d pihka
+    docker compose up -d caddy
 
 # Voegt site/ en de gebruikte delen van Pihka samen tot één statische map
 build-site:
