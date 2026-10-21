@@ -4,22 +4,64 @@
   "draft": false,
   "name": "reconstruction",
   "route": "reconstruction",
-  "model": "reconstruction",
-  "tag": "reconstruction",
   "title": "Reconstructions list",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "reconstruction",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "reconstruction"
+  },
   "sidebar": {
     "group": "lexical",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "word_tone",
+        "word",
+        "english",
+        "french",
+        "noun_class",
+        "distribution",
+        "note",
+        "proto_kk",
+        "date_of_entry"
+      ],
+      "filter": [
+        "id",
+        "blr_index",
+        "word_tone",
+        "word",
+        "english",
+        "french",
+        "noun_class",
+        "distribution",
+        "proto_kk",
+        "date_of_entry",
+        "contributor_id",
+        "reliability_id",
+        "consonant_structure_id",
+        "vowel_structure_id",
+        "tone_structure_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "word",
+      "english"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +75,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "blr_index": {
       "label": "Blr index",
@@ -53,11 +90,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "number"
@@ -75,11 +108,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -97,11 +126,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -119,11 +144,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -141,11 +162,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -163,11 +180,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -185,11 +198,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -207,11 +216,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": false,
-      "searchable": true,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "textarea"
@@ -229,11 +234,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -251,11 +252,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -273,11 +270,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -290,14 +283,6 @@
           "resource": "/blrcontributor/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "reliability_id": {
@@ -312,11 +297,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -329,14 +310,6 @@
           "resource": "/blrreliability/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "consonant_structure_id": {
@@ -351,11 +324,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -368,14 +337,6 @@
           "resource": "/blrconsonantstructure/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "vowel_structure_id": {
@@ -390,11 +351,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -407,14 +364,6 @@
           "resource": "/blrvowelstructure/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "tone_structure_id": {
@@ -429,11 +378,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -446,14 +391,6 @@
           "resource": "/blrtonestructure/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "created_at": {
@@ -467,11 +404,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -484,20 +417,172 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.blr_index, x.word, x.english), ''), '#' || x.id) FROM \"reconstruction\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "contributor_label": {
+      "label": "Contributor",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrcontributor",
+          "idKey": "contributor_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"blrcontributor\" x WHERE x.id = main.\"contributor_id\"",
+        "type": "string"
+      }
+    },
+    "reliability_label": {
+      "label": "Reliability",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrreliability",
+          "idKey": "reliability_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.value, ''), '#' || x.id) FROM \"blrreliability\" x WHERE x.id = main.\"reliability_id\"",
+        "type": "string"
+      }
+    },
+    "consonant_structure_label": {
+      "label": "Consonant structure",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrconsonantstructure",
+          "idKey": "consonant_structure_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' ', x.c1, x.c2, x.c3, x.c4), ''), '#' || x.id) FROM \"blrconsonantstructure\" x WHERE x.id = main.\"consonant_structure_id\"",
+        "type": "string"
+      }
+    },
+    "vowel_structure_label": {
+      "label": "Vowel structure",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrvowelstructure",
+          "idKey": "vowel_structure_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' ', x.v11, x.v12, x.v21, x.v22, x.v3, x.v4), ''), '#' || x.id) FROM \"blrvowelstructure\" x WHERE x.id = main.\"vowel_structure_id\"",
+        "type": "string"
+      }
+    },
+    "tone_structure_label": {
+      "label": "Tone structure",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "blrtonestructure",
+          "idKey": "tone_structure_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' ', x.t11, x.t12, x.t21, x.t22, x.t3, x.t4), ''), '#' || x.id) FROM \"blrtonestructure\" x WHERE x.id = main.\"tone_structure_id\"",
+        "type": "string"
+      }
+    },
+    "reconstruction_links": {
+      "label": "Open in",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "reconstruction-links",
+          "colspan": 12
+        },
+        "position": 0
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.blr_index AS TEXT)",
+        "type": "string"
+      }
+    },
+    "reflex_by_blr_entry_id": {
+      "label": "Reflexes",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "blr_entry_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            },
+            {
+              "key": "variety_label",
+              "label": "Variety"
+            }
+          ]
+        },
+        "position": 1023
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "blr_index",
           "colspan": 6
@@ -560,161 +645,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.blr_index, x.word, x.english), ''), '#' || x.id) FROM \"reconstruction\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "contributor_label",
-      "alias": "contributor_label",
-      "label": "Contributor",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"blrcontributor\" x WHERE x.id = main.\"contributor_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "blrcontributor",
-          "idKey": "contributor_id"
-        }
-      }
-    },
-    {
-      "id": "reliability_label",
-      "alias": "reliability_label",
-      "label": "Reliability",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.value, ''), '#' || x.id) FROM \"blrreliability\" x WHERE x.id = main.\"reliability_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "blrreliability",
-          "idKey": "reliability_id"
-        }
-      }
-    },
-    {
-      "id": "consonant_structure_label",
-      "alias": "consonant_structure_label",
-      "label": "Consonant structure",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.c1, x.c2, x.c3, x.c4), ''), '#' || x.id) FROM \"blrconsonantstructure\" x WHERE x.id = main.\"consonant_structure_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "blrconsonantstructure",
-          "idKey": "consonant_structure_id"
-        }
-      }
-    },
-    {
-      "id": "vowel_structure_label",
-      "alias": "vowel_structure_label",
-      "label": "Vowel structure",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.v11, x.v12, x.v21, x.v22, x.v3, x.v4), ''), '#' || x.id) FROM \"blrvowelstructure\" x WHERE x.id = main.\"vowel_structure_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "blrvowelstructure",
-          "idKey": "vowel_structure_id"
-        }
-      }
-    },
-    {
-      "id": "tone_structure_label",
-      "alias": "tone_structure_label",
-      "label": "Tone structure",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' ', x.t11, x.t12, x.t21, x.t22, x.t3, x.t4), ''), '#' || x.id) FROM \"blrtonestructure\" x WHERE x.id = main.\"tone_structure_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "blrtonestructure",
-          "idKey": "tone_structure_id"
-        }
-      }
-    },
-    {
-      "id": "reconstruction_links",
-      "alias": "reconstruction_links",
-      "label": "Open in",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.blr_index AS TEXT)",
-      "position": 0,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "reconstruction-links",
-          "colspan": 12
-        }
-      }
-    },
-    {
-      "id": "reflex_by_blr_entry_id",
-      "alias": "reflex_by_blr_entry_id",
-      "label": "Reflexes",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1023,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "related-table",
-          "colspan": 12,
-          "childResource": "reflex",
-          "foreignKey": "blr_entry_id",
-          "columns": [
-            {
-              "key": "term",
-              "label": "Term"
-            },
-            {
-              "key": "translation",
-              "label": "Translation"
-            },
-            {
-              "key": "variety_label",
-              "label": "Variety"
-            }
-          ]
-        }
-      }
-    }
-  ]
+  }
 }

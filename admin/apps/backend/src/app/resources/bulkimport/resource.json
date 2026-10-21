@@ -4,22 +4,61 @@
   "draft": false,
   "name": "bulkimport",
   "route": "bulkimport",
-  "model": "bulkimport",
-  "tag": "bulkimport",
   "title": "Bulk imports",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "bulkimport",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "bulkimport"
+  },
   "sidebar": {
     "group": "sources",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "label",
+        "note",
+        "status",
+        "undone_at",
+        "role"
+      ],
+      "filter": [
+        "id",
+        "label",
+        "note",
+        "rows",
+        "status",
+        "undone_at",
+        "role",
+        "source_id",
+        "variety_id",
+        "location_id",
+        "fieldwork_id",
+        "source_created",
+        "variety_created",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": false,
     "update": false,
     "patch": false,
     "delete": false
+  },
+  "lookup": {
+    "labels": [
+      "label",
+      "note",
+      "status",
+      "undone_at",
+      "role"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +72,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "label": {
       "label": "Label",
@@ -53,11 +87,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -75,11 +105,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": true,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "textarea"
@@ -96,11 +122,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": true,
       "fieldInput": {
         "type": "number"
@@ -117,11 +139,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": true,
       "fieldInput": {
         "type": "string"
@@ -139,11 +157,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -161,11 +175,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -183,11 +193,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -200,14 +206,6 @@
           "resource": "/source/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "variety_id": {
@@ -222,11 +220,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -239,14 +233,6 @@
           "resource": "/variety/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "location_id": {
@@ -261,11 +247,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -278,14 +260,6 @@
           "resource": "/location/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "fieldwork_id": {
@@ -300,11 +274,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -317,14 +287,6 @@
           "resource": "/fieldwork/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "source_created": {
@@ -338,11 +300,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": true,
       "fieldInput": {
         "type": "boolean"
@@ -359,11 +317,7 @@
       "hiddenInForm": false,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": true,
       "fieldInput": {
         "type": "boolean"
@@ -380,11 +334,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -397,20 +347,153 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
+      "hiddenInTable": true
+    },
+    "display_label": {
+      "label": "Reference",
       "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.label, x.created_at), ''), '#' || x.id) FROM \"bulkimport\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "source_label": {
+      "label": "Source",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "source",
+          "idKey": "source_id"
+        },
+        "position": 3
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.\"source_id\"",
+        "type": "string"
+      }
+    },
+    "variety_label": {
+      "label": "Variety",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "variety",
+          "idKey": "variety_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(COALESCE(x.name_english, x.name_bantu, x.name_french, x.name_bastin) || COALESCE(' (' || x.guthrie_index || ')', ''), ''), '#' || x.id) FROM \"variety\" x WHERE x.id = main.\"variety_id\"",
+        "type": "string"
+      }
+    },
+    "location_label": {
+      "label": "Location",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "location",
+          "idKey": "location_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.\"location_id\"",
+        "type": "string"
+      }
+    },
+    "fieldwork_label": {
+      "label": "Fieldwork",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "relation-link",
+          "colspan": 12,
+          "linkResource": "fieldwork",
+          "idKey": "fieldwork_id"
+        },
+        "position": 10
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT p.name FROM project p WHERE p.id = x.project_id), (SELECT y.value FROM collectionyear y WHERE y.id = x.collection_year_id), x.archive), ''), '#' || x.id) FROM \"fieldwork\" x WHERE x.id = main.\"fieldwork_id\"",
+        "type": "string"
+      }
+    },
+    "reflex_count": {
+      "label": "Reflexes now",
+      "hiddenInTable": false,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "string",
+          "colspan": 12
+        },
+        "position": 4
+      },
+      "computed": {
+        "sql": "SELECT COUNT(*) FROM \"reflex\" x WHERE x.bulkimport_id = main.id",
+        "type": "string"
+      }
+    },
+    "reflex_by_bulkimport_id": {
+      "label": "Reflexes",
+      "hiddenInTable": true,
+      "hiddenInView": false,
+      "fieldInput": {
+        "type": "string",
+        "options": {
+          "format": "related-table",
+          "colspan": 12,
+          "childResource": "reflex",
+          "foreignKey": "bulkimport_id",
+          "columns": [
+            {
+              "key": "term",
+              "label": "Term"
+            },
+            {
+              "key": "translation",
+              "label": "Translation"
+            },
+            {
+              "key": "variety_label",
+              "label": "Variety"
+            }
+          ]
+        },
+        "position": 1024
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
+      }
     }
   },
-  "modalSize": "xl",
-  "include": [],
   "layout": {
     "form": {
       "type": "grid",
       "columns": 12,
-      "controls": [
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
         {
           "id": "label",
           "colspan": 6
@@ -461,142 +544,5 @@
         }
       ]
     }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', x.label, x.created_at), ''), '#' || x.id) FROM \"bulkimport\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
-    },
-    {
-      "id": "source_label",
-      "alias": "source_label",
-      "label": "Source",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.\"source_id\"",
-      "position": 3,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "source",
-          "idKey": "source_id"
-        }
-      }
-    },
-    {
-      "id": "variety_label",
-      "alias": "variety_label",
-      "label": "Variety",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(COALESCE(x.name_english, x.name_bantu, x.name_french, x.name_bastin) || COALESCE(' (' || x.guthrie_index || ')', ''), ''), '#' || x.id) FROM \"variety\" x WHERE x.id = main.\"variety_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "variety",
-          "idKey": "variety_id"
-        }
-      }
-    },
-    {
-      "id": "location_label",
-      "alias": "location_label",
-      "label": "Location",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.\"location_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "location",
-          "idKey": "location_id"
-        }
-      }
-    },
-    {
-      "id": "fieldwork_label",
-      "alias": "fieldwork_label",
-      "label": "Fieldwork",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(' \u00b7 ', (SELECT p.name FROM project p WHERE p.id = x.project_id), (SELECT y.value FROM collectionyear y WHERE y.id = x.collection_year_id), x.archive), ''), '#' || x.id) FROM \"fieldwork\" x WHERE x.id = main.\"fieldwork_id\"",
-      "position": 10,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "relation-link",
-          "colspan": 12,
-          "linkResource": "fieldwork",
-          "idKey": "fieldwork_id"
-        }
-      }
-    },
-    {
-      "id": "reflex_count",
-      "alias": "reflex_count",
-      "label": "Reflexes now",
-      "type": "string",
-      "sqlExpression": "SELECT COUNT(*) FROM \"reflex\" x WHERE x.bulkimport_id = main.id",
-      "position": 4,
-      "hiddenInTable": false,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "string",
-          "colspan": 12
-        }
-      }
-    },
-    {
-      "id": "reflex_by_bulkimport_id",
-      "alias": "reflex_by_bulkimport_id",
-      "label": "Reflexes",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1024,
-      "hiddenInTable": true,
-      "hiddenInView": false,
-      "fieldInput": {
-        "type": "string",
-        "options": {
-          "format": "related-table",
-          "colspan": 12,
-          "childResource": "reflex",
-          "foreignKey": "bulkimport_id",
-          "columns": [
-            {
-              "key": "term",
-              "label": "Term"
-            },
-            {
-              "key": "translation",
-              "label": "Translation"
-            },
-            {
-              "key": "variety_label",
-              "label": "Variety"
-            }
-          ]
-        }
-      }
-    }
-  ]
+  }
 }

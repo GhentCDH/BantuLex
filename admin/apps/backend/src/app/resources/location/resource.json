@@ -4,17 +4,30 @@
   "draft": false,
   "name": "location",
   "route": "location",
-  "model": "location",
-  "tag": "location",
   "title": "Locations",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "location",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "location"
+  },
   "sidebar": {
     "group": "geography",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "filter": [
+        "id",
+        "place_id",
+        "region_id",
+        "country_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
@@ -33,13 +46,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "place_id": {
       "label": "Place",
@@ -53,11 +61,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -70,14 +74,6 @@
           "resource": "/place/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "region_id": {
@@ -92,11 +88,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -109,14 +101,6 @@
           "resource": "/region/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "country_id": {
@@ -131,11 +115,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": true,
-      "showInLookup": false,
       "required": false,
       "fieldInput": {
         "type": "autocomplete",
@@ -148,14 +128,6 @@
           "resource": "/country/schemas",
           "enableCreate": false
         }
-      },
-      "fieldView": {
-        "type": "number",
-        "format": "number"
-      },
-      "fieldTable": {
-        "type": "number",
-        "format": "number"
       }
     },
     "created_at": {
@@ -169,11 +141,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -186,52 +154,19 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    }
-  },
-  "modalSize": "xl",
-  "include": [],
-  "layout": {
-    "form": {
-      "type": "grid",
-      "columns": 12,
-      "controls": [
-        {
-          "id": "place_id",
-          "colspan": 6
-        },
-        {
-          "id": "region_id",
-          "colspan": 6
-        },
-        {
-          "id": "country_id",
-          "colspan": 6
-        }
-      ]
-    }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
+      "hiddenInTable": true
     },
-    {
-      "id": "place_label",
-      "alias": "place_label",
+    "display_label": {
+      "label": "Reference",
+      "hiddenInTable": true,
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(concat_ws(', ', (SELECT p.name FROM place p WHERE p.id = x.place_id), (SELECT r.name FROM region r WHERE r.id = x.region_id), (SELECT c.name FROM country c WHERE c.id = x.country_id)), ''), '#' || x.id) FROM \"location\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "place_label": {
       "label": "Place",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"place\" x WHERE x.id = main.\"place_id\"",
-      "position": 1,
       "hiddenInTable": false,
       "hiddenInView": false,
       "fieldInput": {
@@ -241,16 +176,16 @@
           "colspan": 12,
           "linkResource": "place",
           "idKey": "place_id"
-        }
+        },
+        "position": 1
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"place\" x WHERE x.id = main.\"place_id\"",
+        "type": "string"
       }
     },
-    {
-      "id": "region_label",
-      "alias": "region_label",
+    "region_label": {
       "label": "Region",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"region\" x WHERE x.id = main.\"region_id\"",
-      "position": 1,
       "hiddenInTable": false,
       "hiddenInView": false,
       "fieldInput": {
@@ -260,16 +195,16 @@
           "colspan": 12,
           "linkResource": "region",
           "idKey": "region_id"
-        }
+        },
+        "position": 1
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"region\" x WHERE x.id = main.\"region_id\"",
+        "type": "string"
       }
     },
-    {
-      "id": "country_label",
-      "alias": "country_label",
+    "country_label": {
       "label": "Country",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"country\" x WHERE x.id = main.\"country_id\"",
-      "position": 1,
       "hiddenInTable": false,
       "hiddenInView": false,
       "fieldInput": {
@@ -279,16 +214,16 @@
           "colspan": 12,
           "linkResource": "country",
           "idKey": "country_id"
-        }
+        },
+        "position": 1
+      },
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.name, ''), '#' || x.id) FROM \"country\" x WHERE x.id = main.\"country_id\"",
+        "type": "string"
       }
     },
-    {
-      "id": "bulkimport_by_location_id",
-      "alias": "bulkimport_by_location_id",
+    "bulkimport_by_location_id": {
       "label": "Bulk imports",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1002,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -299,16 +234,16 @@
           "childResource": "bulkimport",
           "foreignKey": "location_id",
           "columns": []
-        }
+        },
+        "position": 1002
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     },
-    {
-      "id": "coordinate_by_location_id",
-      "alias": "coordinate_by_location_id",
+    "coordinate_by_location_id": {
       "label": "Coordinates",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1004,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -328,16 +263,16 @@
               "label": "Longitude"
             }
           ]
-        }
+        },
+        "position": 1004
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     },
-    {
-      "id": "reflex_by_location_id",
-      "alias": "reflex_by_location_id",
+    "reflex_by_location_id": {
       "label": "Reflexes",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1021,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -361,8 +296,37 @@
               "label": "Variety"
             }
           ]
-        }
+        },
+        "position": 1021
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     }
-  ]
+  },
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
+        {
+          "id": "place_id",
+          "colspan": 6
+        },
+        {
+          "id": "region_id",
+          "colspan": 6
+        },
+        {
+          "id": "country_id",
+          "colspan": 6
+        }
+      ]
+    }
+  }
 }

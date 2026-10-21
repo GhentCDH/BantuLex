@@ -4,22 +4,44 @@
   "draft": false,
   "name": "collectionyear",
   "route": "collectionyear",
-  "model": "collectionyear",
-  "tag": "collectionyear",
   "title": "Collection years",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "collectionyear",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "collectionyear"
+  },
   "sidebar": {
     "group": "fieldwork",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "value",
+        "status"
+      ],
+      "filter": [
+        "id",
+        "value",
+        "status",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "value"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +55,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "value": {
       "label": "Value",
@@ -53,11 +70,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -74,11 +87,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": true,
       "fieldInput": {
         "type": "string"
@@ -95,11 +104,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -112,48 +117,19 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    }
-  },
-  "modalSize": "xl",
-  "include": [],
-  "layout": {
-    "form": {
-      "type": "grid",
-      "columns": 12,
-      "controls": [
-        {
-          "id": "value",
-          "colspan": 6
-        },
-        {
-          "id": "status",
-          "colspan": 6
-        }
-      ]
-    }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.value || CASE WHEN x.status <> 'known' THEN ' (' || x.status || ')' ELSE '' END, ''), '#' || x.id) FROM \"collectionyear\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
+      "hiddenInTable": true
     },
-    {
-      "id": "fieldwork_by_collection_year_id",
-      "alias": "fieldwork_by_collection_year_id",
+    "display_label": {
+      "label": "Reference",
+      "hiddenInTable": true,
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.value || CASE WHEN x.status <> 'known' THEN ' (' || x.status || ')' ELSE '' END, ''), '#' || x.id) FROM \"collectionyear\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "fieldwork_by_collection_year_id": {
       "label": "Fieldworks",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1006,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -164,8 +140,33 @@
           "childResource": "fieldwork",
           "foreignKey": "collection_year_id",
           "columns": []
-        }
+        },
+        "position": 1006
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     }
-  ]
+  },
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
+        {
+          "id": "value",
+          "colspan": 6
+        },
+        {
+          "id": "status",
+          "colspan": 6
+        }
+      ]
+    }
+  }
 }

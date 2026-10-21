@@ -5,7 +5,7 @@ import {inventory,sql,copyDatabase,startServer,stopServer,request} from './helpe
 // Detail-view relations: "relation-link" label columns link to the parent record, "related-table" columns list the
 // children through the list API, with an open gt/lt interval on the foreign key (Crouton's `equals` is not cast to a number).
 const resources=Object.fromEntries(inventory.map(t=>[t.table,JSON.parse(readFileSync(`apps/backend/src/app/resources/${t.table}/resource.json`))]));
-const calculated=format=>Object.entries(resources).flatMap(([table,r])=>(r.calculatedColumns??[]).filter(c=>c.fieldInput?.options?.format===format).map(c=>({table,...c.fieldInput.options})));
+const calculated=format=>Object.entries(resources).flatMap(([table,r])=>Object.values(r.columns).filter(c=>c.computed&&c.fieldInput?.options?.format===format).map(c=>({table,...c.fieldInput.options})));
 const links=calculated('relation-link'),tables=calculated('related-table');
 const fks=Object.fromEntries(inventory.map(t=>[t.table,t.foreignKeys]));
 test('relation columns point at existing resources and foreign keys, both ways',()=>{

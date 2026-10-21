@@ -4,22 +4,45 @@
   "draft": false,
   "name": "source",
   "route": "source",
-  "model": "source",
-  "tag": "source",
   "title": "Sources",
-  "idType": "number",
-  "database": "default",
+  "source": {
+    "model": "source",
+    "datasource": "default",
+    "idType": "number"
+  },
+  "openapi": {
+    "tag": "source"
+  },
   "sidebar": {
     "group": "sources",
     "hide": false
   },
   "operations": {
-    "findAll": true,
+    "findAll": {
+      "search": [
+        "author_year",
+        "title"
+      ],
+      "filter": [
+        "id",
+        "author_year",
+        "year_uncertain",
+        "created_at",
+        "updated_at"
+      ]
+    },
     "findOne": true,
     "create": true,
     "update": true,
     "patch": true,
     "delete": true
+  },
+  "lookup": {
+    "labels": [
+      "author_year",
+      "title"
+    ],
+    "separator": " "
   },
   "columns": {
     "id": {
@@ -33,13 +56,8 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
-      "idField": true,
-      "defaultSort": true
+      "idField": true
     },
     "author_year": {
       "label": "Author year",
@@ -53,11 +71,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
       "hiddenInTable": false,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "string"
@@ -74,11 +88,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
       "hiddenInTable": false,
-      "showInLookup": false,
       "required": true,
       "fieldInput": {
         "type": "boolean"
@@ -96,11 +106,7 @@
       "hiddenInForm": false,
       "createable": true,
       "updateable": true,
-      "sortable": true,
-      "filterable": false,
-      "searchable": true,
       "hiddenInTable": true,
-      "showInLookup": true,
       "required": false,
       "fieldInput": {
         "type": "textarea"
@@ -117,11 +123,7 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
+      "hiddenInTable": true
     },
     "updated_at": {
       "label": "Updated at",
@@ -134,52 +136,19 @@
       "hiddenInForm": true,
       "createable": false,
       "updateable": false,
-      "sortable": true,
-      "filterable": true,
-      "searchable": false,
-      "hiddenInTable": true,
-      "showInLookup": false
-    }
-  },
-  "modalSize": "xl",
-  "include": [],
-  "layout": {
-    "form": {
-      "type": "grid",
-      "columns": 12,
-      "controls": [
-        {
-          "id": "author_year",
-          "colspan": 6
-        },
-        {
-          "id": "year_uncertain",
-          "colspan": 6
-        },
-        {
-          "id": "title",
-          "colspan": 12
-        }
-      ]
-    }
-  },
-  "calculatedColumns": [
-    {
-      "id": "display_label",
-      "alias": "display_label",
-      "label": "Reference",
-      "type": "string",
-      "sqlExpression": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.id",
-      "hiddenInTable": true,
-      "hiddenInView": true
+      "hiddenInTable": true
     },
-    {
-      "id": "bulkimport_by_source_id",
-      "alias": "bulkimport_by_source_id",
+    "display_label": {
+      "label": "Reference",
+      "hiddenInTable": true,
+      "hiddenInView": true,
+      "computed": {
+        "sql": "SELECT COALESCE(NULLIF(x.author_year, ''), '#' || x.id) FROM \"source\" x WHERE x.id = main.id",
+        "type": "string"
+      }
+    },
+    "bulkimport_by_source_id": {
       "label": "Bulk imports",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1000,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -190,16 +159,16 @@
           "childResource": "bulkimport",
           "foreignKey": "source_id",
           "columns": []
-        }
+        },
+        "position": 1000
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     },
-    {
-      "id": "sourceentries_by_source_id",
-      "alias": "sourceentries_by_source_id",
+    "sourceentries_by_source_id": {
       "label": "Source entries",
-      "type": "string",
-      "sqlExpression": "SELECT CAST(main.id AS TEXT)",
-      "position": 1027,
       "hiddenInTable": true,
       "hiddenInView": false,
       "fieldInput": {
@@ -223,8 +192,37 @@
               "label": "Reflex"
             }
           ]
-        }
+        },
+        "position": 1027
+      },
+      "computed": {
+        "sql": "SELECT CAST(main.id AS TEXT)",
+        "type": "string"
       }
     }
-  ]
+  },
+  "layout": {
+    "form": {
+      "type": "grid",
+      "columns": 12,
+      "container": {
+        "mode": "modal",
+        "size": "xl"
+      },
+      "items": [
+        {
+          "id": "author_year",
+          "colspan": 6
+        },
+        {
+          "id": "year_uncertain",
+          "colspan": 6
+        },
+        {
+          "id": "title",
+          "colspan": 12
+        }
+      ]
+    }
+  }
 }
