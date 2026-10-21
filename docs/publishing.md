@@ -83,6 +83,11 @@ builds them with their indexes on every page load (about 0.6 s for 185,000
 reflexes). The site does not use full-text search
 (`"enrichment": {"fts": false}`), so no search indexes are built.
 
+Do not run Pihka's `prepareSampleDatabase` on `data/bantulex.db`. It writes
+these tables into the file, and the admin does not update them. If the file has
+them anyway, `site/main.js` drops them from the in-memory copy (with a console
+warning), and the engine builds them again from the current data.
+
 ## Caching
 
 Caddy sends `Cache-Control: no-cache` for the database, HTML, JavaScript, CSS
