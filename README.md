@@ -24,6 +24,7 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 - **utils** — Python/uv container with the importer, exporters and documenter (run on demand)
 - **admin** — Crouton admin app (UI on `/admin/`, API on `/api`) at http://localhost:4444/admin/, editing `data/bantulex.db`. It is in the `admin` compose profile, so `just up`/`just rebuild` do not start it; use `just admin`. See [admin/README.md](admin/README.md) for details.
 - **caddy** — web server on http://localhost:9161, as in deployment: the Pihka website on `/` and the admin on `/admin/` and `/api` (`Caddyfile`, see [publishing](docs/publishing.md))
+- **backup** — scheduled backups of `data/bantulex.db` into `backups/` ([offen/docker-volume-backup](https://offen.github.io/docker-volume-backup/)). It is in the `backup` compose profile; use `just backup-up`. See [Backups](#backups).
 
 ## Recipes
 
@@ -37,6 +38,9 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just migrate-db` | Add new tables/columns from `model.py` to an existing `data/bantulex.db` (keeps admin edits) |
 | `just reset-db` | Back up `data/bantulex.db` to `backups/` and remove it |
 | `just reinit` | Rebuild + reset database + import |
+| `just backup-up` | Start the scheduled backups |
+| `just backup` | Make one backup now (`backups/bantulex-manual-*.tar.gz`) |
+| `just restore <archive>` | Put a backup back in `data/bantulex.db` (the current file goes to `backups/` first) |
 | `just admin` | Build and start the admin app (needs `data/bantulex.db`) |
 | `just admin-dev` | Run the admin with hot reload (UI on http://localhost:5555/admin/) |
 | `just admin-test` | Typecheck, build and test the admin in its dev container |
@@ -46,7 +50,22 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just pihka-up` | Preview the website locally |
 | `just publish` | Build the website and rsync it |
 
-The admin does not make backups; `just reset-db` copies `data/bantulex.db` into `backups/` before removing it. Backups contain data and are gitignored. On Linux, `data/` must be writable by uid 1000.
+On Linux, `data/` must be writable by uid 1000.
+
+## Backups
+
+The admin does not make backups itself. The `backup` service archives `data/bantulex.db` into `backups/` on the schedules in `backup-schedules/` (times in UTC):
+
+| Schedule | When | Kept |
+| --- | --- | --- |
+| `daily.env` | every night at 03:00 | 7 |
+| `weekly.env` | Sundays at 03:10 | 4 |
+| `monthly.env` | the 1st at 03:20 | 3 |
+| `yearly.env` | 1 January at 03:30 | 1 |
+
+Each file has its own name prefix (`bantulex-daily-`, ...), and pruning only removes old files with that prefix. Other files in `backups/`, such as the copies from `just reset-db` and `just restore`, are never removed. To get a consistent copy, the service stops every container with the label `docker-volume-backup.stop-during-backup=bantulex` (the admin) for the few seconds of the copy and starts it again; the admin then answers with an error for those seconds. It needs the Docker socket for that; with rootless Podman, set `DOCKER_SOCKET=$XDG_RUNTIME_DIR/podman/podman.sock`. After a change in `backup-schedules/`, restart the service.
+
+An archive is a `.tar.gz` with one file, `/backup/data/bantulex.db`. `just restore <archive>` stops the admin, moves the current database to `backups/`, puts the archived one in its place and starts the admin again. Backups contain data and are gitignored.
 
 ## Credits
 

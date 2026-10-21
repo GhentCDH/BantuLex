@@ -110,6 +110,28 @@ reset-db:
 
 reinit: rebuild reset-db import
 
+# ── Back-ups (offen/docker-volume-backup, schema's in backup-schedules/) ─────
+
+# Back-upservice starten: 7 dagelijkse, 4 wekelijkse, 3 maandelijkse en 1 jaarlijkse back-up in backups/
+backup-up:
+    mkdir -p backups
+    docker compose --profile backup up -d backup
+
+# Eenmalige back-up naar backups/bantulex-manual-*.tar.gz (stopt de admin enkele seconden)
+backup:
+    mkdir -p backups
+    docker compose --profile backup run --rm --entrypoint backup backup
+
+# Zet een back-up terug, bv. just restore backups/bantulex-daily-2026-10-21T03-00-00.tar.gz
+# De huidige database gaat eerst naar backups/; de admin wordt gestopt en weer gestart.
+restore archive:
+    tar -xzOf "{{archive}}" /backup/data/bantulex.db > data/bantulex.db.restore
+    docker compose --profile admin stop admin
+    if [ -f data/bantulex.db ]; then mv data/bantulex.db "backups/bantulex_$(date +%Y%m%d_%H%M%S).db"; fi
+    mv data/bantulex.db.restore data/bantulex.db
+    rm -f data/bantulex.db-journal
+    docker compose --profile admin start admin
+
 # ── Dev helpers ──────────────────────────────────────────────────────────────
 
 open-admin:
