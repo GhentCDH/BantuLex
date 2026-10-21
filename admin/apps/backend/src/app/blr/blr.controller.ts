@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import { BlrRequest, BlrUpdateRequest } from './blr.schema.js';
 import {
   BlrConflictError, BlrNotFoundError, BlrValidationError,
-  createBlr, findByIndex, getBlr, nextIndex, structureOptions, updateBlr,
+  createBlr, findByIndex, getBlr, neighbours, nextIndex, structureOptions, updateBlr,
 } from './blr.service.js';
 
 const INVALID = 'The reconstruction is not valid; nothing was saved.';
@@ -66,6 +66,12 @@ export class BlrController {
   @Get('by-index/:blr')
   byIndex(@Param('blr') blr: string) {
     return run(() => findByIndex(positiveId(blr)));
+  }
+
+  /** GET /api/blr/neighbours/:blr — `{previous, next}`: `{id, blr_index}` of the adjacent reconstructions, or null. */
+  @Get('neighbours/:blr')
+  adjacent(@Param('blr') blr: string) {
+    return neighbours(positiveId(blr));
   }
 
   /** GET /api/blr/:id — a reconstruction, its sound structure and its reflexes. */

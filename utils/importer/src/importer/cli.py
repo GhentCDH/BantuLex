@@ -28,7 +28,7 @@ from utilities.model import (
     Variety,
 )
 
-from .blr import import_blr
+from .blr import import_blr, reconstruction_ids
 from .columns import (
     COLLECTOR_PATTERN,
     CONSULTANT_PATTERN,
@@ -41,6 +41,7 @@ from .entries import (
     LEVEL_ORDER,
     BlrIpvResolvedEntry,
     BlrTextToNoteEntry,
+    BlrUnresolvedLinkEntry,
     CoordinateConflictEntry,
     CriticalErrorEntry,
     DuplicateBeginningIdEntry,
@@ -56,7 +57,13 @@ from .entries import (
     build_col_index,
     check_case_variant,
 )
-from .parsing import chunked, normalize_key, parse_blr_index, parse_uncertainty
+from .parsing import (
+    append_note,
+    chunked,
+    normalize_key,
+    parse_blr_index,
+    parse_uncertainty,
+)
 from .report import ImportReport
 
 handler = RichHandler(
@@ -100,6 +107,10 @@ def main() -> None:
     logger.info(f"Columns: {[h for h in headers if h]}")
 
     import_report = ImportReport()
+
+    # Reconstructions first, so each reflex is created with its blr_entry_id.
+    import_blr(import_report)
+    blr_ids = reconstruction_ids()
 
     file_name = EXCEL.name
     sheet_name = ws.title
@@ -233,6 +244,8 @@ def main() -> None:
             batch_reflexes: list[Reflex] = []
             batch_source_links: list[tuple[Reflex, list[dict]]] = []
             batch_rows: list[int] = []
+            # (reflex, BLR number, location) of numbers without a reconstruction; reported after the flush.
+            batch_unresolved: list[tuple[Reflex, int, SourceLocation]] = []
             try:
                 for i, row_cells in enumerate(batch):
                     excel_row = total_processed + i + 2
@@ -711,7 +724,12 @@ def main() -> None:
                             seen_term_variety[tv_key] = excel_row
 
                         blr_raw = ctx.val("BLR Index")
-                        blr_index, blr_note, used_ipv = parse_blr_index(blr_raw)
+                        blr_index, blr_text, used_ipv = parse_blr_index(blr_raw)
+                        blr_entry_id = blr_ids.get(int(blr_index)) if blr_index else None
+                        # Cell text that is not a plain linked number stays in the note.
+                        reconstruction_note = append_note(
+                            None, blr_text or (None if blr_entry_id else blr_index)
+                        )
                         if used_ipv:
                             import_report.add(
                                 BlrIpvResolvedEntry(
@@ -723,11 +741,11 @@ def main() -> None:
                                     variety_english=v_key[0],
                                 )
                             )
-                        elif blr_note is not None:
+                        elif blr_text is not None:
                             import_report.add(
                                 BlrTextToNoteEntry(
                                     loc=ctx.loc("BLR Index"),
-                                    note="BLR index is geen getal: niet gelinkt, bewaard in blr_note.",
+                                    note="BLR index is geen getal: niet gelinkt, bewaard in reconstruction_note.",
                                     blr_index_raw=blr_raw,
                                     term=term,
                                     variety_english=v_key[0],
@@ -746,8 +764,8 @@ def main() -> None:
                             scientific_name=ctx.val("Scientific name"),
                             semantic_field=ctx.val("Semantic field"),
                             part_of_speech=ctx.val("Part of Speech"),
-                            blr_index=blr_index,
-                            blr_note=blr_note,
+                            reconstruction_note=reconstruction_note,
+                            blr_entry_id=blr_entry_id,
                             ipa=ctx.val("IPA"),
                             notes_on_ipa=ctx.val("Notes on IPA"),
                             notes=ctx.val("Opmerking"),
@@ -759,6 +777,8 @@ def main() -> None:
                         batch_reflexes.append(reflex)
                         batch_rows.append(excel_row)
                         batch_source_links.append((reflex, source_objects))
+                        if blr_index and blr_entry_id is None:
+                            batch_unresolved.append((reflex, int(blr_index), ctx.loc("BLR Index")))
 
                     except Exception as e:
                         logger.error(f"Error on row {excel_row}: {e}")
@@ -776,6 +796,15 @@ def main() -> None:
                 if batch_reflexes:
                     session.add_all(batch_reflexes)
                     session.flush()
+                    for reflex, idx, loc in batch_unresolved:
+                        import_report.add(
+                            BlrUnresolvedLinkEntry(
+                                loc=loc,
+                                note="Geen reconstructie met deze BLR index: niet gelinkt, bewaard in reconstruction_note.",
+                                reflex_id=reflex.id,
+                                blr_index_raw=idx,
+                            )
+                        )
                     for reflex, source_objects in batch_source_links:
                         for s_data in source_objects:
                             session.add(
@@ -801,8 +830,6 @@ def main() -> None:
                 logger.error(f"Batch error: {e}")
                 session.rollback()
                 continue
-
-    import_blr(import_report)
 
     rows_path = DATA_ROOT / "import_rows.json"
     rows_path.write_text(json.dumps(row_reflex))

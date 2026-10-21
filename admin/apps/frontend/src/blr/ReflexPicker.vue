@@ -22,7 +22,7 @@ const COLUMNS = [
   { key: 'translation', label: 'Translation' },
   { key: 'meaning', label: 'Meaning' },
   { key: 'variety_label', label: 'Variety' },
-  { key: 'blr_index', label: 'Reconstruction' },
+  { key: 'reconstruction_note', label: 'Reconstruction note' },
 ];
 const { sort, sortDir, toggle: sortBy } = useSort('id');
 const page = ref(1);
@@ -132,7 +132,7 @@ onMounted(load);
             <td class="p-2">{{ row.translation ?? '—' }}</td>
             <td class="p-2">{{ row.meaning ?? '—' }}</td>
             <td class="p-2">{{ row.variety_label ?? '—' }}</td>
-            <td class="p-2">{{ row.blr_index ?? '—' }}</td>
+            <td class="p-2">{{ row.reconstruction_note ?? '—' }}</td>
           </tr>
           <tr v-if="!rows.length && !loading">
             <td colspan="7" class="p-3 text-center opacity-60">No reflexes</td>

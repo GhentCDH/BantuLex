@@ -11,7 +11,7 @@ test('create a reconstruction with structures and reflexes in one save',async({p
  const reflex=sql(db,'select id, term from reflex where blr_entry_id is null and term is not null order by id limit 1')[0];
 
  await page.goto('crouton/reconstruction-form');
- await expect(page.getByRole('heading',{name:'Reconstruction form'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Reconstruction editor'})).toBeVisible();
  await expect(page.getByText(`BLR ${max+1} — new`)).toBeVisible();
 
  await page.getByLabel('Word',{exact:true}).fill('test-reconstruction');
@@ -39,9 +39,7 @@ test('create a reconstruction with structures and reflexes in one save',async({p
  expect(rec.consonant_structure_id).not.toBeNull();
  expect(rec.vowel_structure_id).not.toBeNull();
  expect(rec.tone_structure_id).not.toBeNull();
- const linked=sql(db,'select blr_index, blr_entry_id from reflex where id=?',[reflex.id])[0];
- expect(linked.blr_index).toBe(String(max+1));
- expect(linked.blr_entry_id).toBe(rec.id);
+ expect(sql(db,'select blr_entry_id from reflex where id=?',[reflex.id])[0].blr_entry_id).toBe(rec.id);
 });
 
 test('a new reconstruction cannot be saved without a reflex',async({page})=>{
@@ -71,7 +69,7 @@ test('edit a reconstruction opened by BLR index: fields, header and unlinking a 
  await expect(page.getByRole('button',{name:'Save changes'})).toBeDisabled();
 
  expect(sql(db,'select english from reconstruction where id=?',[rec.id])[0].english).toBe('edited gloss');
- expect(sql(db,'select blr_index, blr_entry_id from reflex where id=?',[dropped])[0]).toEqual({blr_index:null,blr_entry_id:null});
+ expect(sql(db,'select blr_entry_id from reflex where id=?',[dropped])[0].blr_entry_id).toBeNull();
 
  await page.reload();
  await expect(page.getByLabel('English',{exact:true})).toHaveValue('edited gloss');
@@ -81,9 +79,23 @@ test('edit a reconstruction opened by BLR index: fields, header and unlinking a 
 test('the Crouton reconstruction view links to the reconstruction form',async({page})=>{
  const rec=sql(db,'select id, blr_index from reconstruction where blr_index is not null order by id limit 1')[0];
  await page.goto(`crouton/reconstruction?id=${rec.id}&event=view`);
- await page.locator('dialog[open]').getByRole('link',{name:'Reconstruction form'}).click();
+ await page.locator('dialog[open]').getByRole('link',{name:'Reconstruction editor'}).click();
  await expect(page).toHaveURL(new RegExp(`/crouton/reconstruction-form\\?id=${rec.id}$`));
  await expect(page.getByText(`BLR ${rec.blr_index}`,{exact:true})).toBeVisible();
+});
+
+test('previous and next step through the reconstructions by BLR index',async({page})=>{
+ const [first,second]=sql(db,'select id, blr_index from reconstruction where blr_index is not null order by blr_index limit 2');
+ await page.goto(`crouton/reconstruction-form?id=${first.id}`);
+ await expect(page.getByText(`BLR ${first.blr_index}`,{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'← Previous'})).toBeDisabled();
+
+ await page.getByRole('button',{name:'Next →'}).click();
+ await expect(page).toHaveURL(new RegExp(`/crouton/reconstruction-form\\?id=${second.id}$`));
+ await expect(page.getByText(`BLR ${second.blr_index}`,{exact:true})).toBeVisible();
+
+ await page.getByRole('button',{name:'← Previous'}).click();
+ await expect(page).toHaveURL(new RegExp(`/crouton/reconstruction-form\\?id=${first.id}$`));
 });
 
 test('both reflex tables sort by a clicked column',async({page})=>{

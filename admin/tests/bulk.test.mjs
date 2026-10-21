@@ -9,7 +9,7 @@ const ids=(db)=>sql(db,`select (select max(id) from location) location_id, (sele
 // A row per word of a fictional dictionary; every 10th row links to BLR 368 (*búdà 'rain'),
 // every 25th has an unchecked text index.
 const rows=(n)=>Array.from({length:n},(_,i)=>({term:`bulk-${i} ɓá`,translation:`gloss ${i}`,meaning:i%3?null:`sense ${i}`,
-  pages:String(1+Math.floor(i/40)),blr_index:i%10===0?'368':i%25===0?'7364 (PT??)':null}));
+  pages:String(1+Math.floor(i/40)),blr_index:i%10===0?'368':i%25===0?'7364 (PT??)':i===7?'99999999':null}));
 
 test('bulk import: 5000 rows in one transaction, dry run, rollback and undo',async()=>{
  // Own port: node --test runs the test files in parallel (crud.test.mjs uses 14444).
@@ -49,7 +49,11 @@ test('bulk import: 5000 rows in one transaction, dry run, rollback and undo',asy
   assert.equal(r.linked,368);assert.equal(r.location_id,location_id);assert.equal(r.fieldwork_id,fieldwork_id);
   assert.equal(r.variety_id,variety_id);assert.equal(r.pages,'1');assert.equal(r.role,'primary');assert.equal(r.author_year,'Bulk Test 1888');
   assert.match(r.created_at,/^\d{4}-\d{2}-\d{2} /);
-  assert.equal(sql(db,`select blr_note from reflex where bulkimport_id=? and term='bulk-25 ɓá'`,[id])[0].blr_note,'7364 (PT??)');
+  // BLR cells that do not become a link are kept in the reconstruction note.
+  const note=term=>sql(db,`select reconstruction_note n, blr_entry_id from reflex where bulkimport_id=? and term=?`,[id,term])[0];
+  assert.deepEqual(note('bulk-25 ɓá'),{n:'7364 (PT??)',blr_entry_id:null});
+  assert.deepEqual(note('bulk-7 ɓá'),{n:'99999999',blr_entry_id:null});
+  assert.equal(note('bulk-0 ɓá').n,null);
   const list=await request(s.base,'/bulk/imports');
   assert.equal(list.status,200);assert.equal(list.body[0].id,id);assert.equal(list.body[0].reflexes_now,5000);
   // The batch is visible (read-only) as a Crouton resource as well.
@@ -93,18 +97,23 @@ test('bulk edit: a partial PATCH changes only its fields, null clears, wrong typ
   const bad=await request(s.base,`/reflex/${before.id}`,'PATCH',{translation:12});
   assert.equal(bad.status,400);assert.equal(bad.body.message[0].field,'translation');
   assert.equal(sql(db,'select translation from reflex where id=?',[before.id])[0].translation,'edited ɓá');
-  // blr_index is a reference to the BLR: it is checked and linked atomically.
-  const missing=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:'99999999'});
-  assert.equal(missing.status,400);assert.equal(missing.body.message[0].field,'blr_index');
-  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[before.id])[0].blr_entry_id,before.blr_entry_id);
-  const invalid=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:'not a number'});
-  assert.equal(invalid.status,400);assert.equal(invalid.body.message[0].field,'blr_index');
+  // The reconstruction link is blr_entry_id; the list shows its BLR index.
   const rec=sql(db,'select id, blr_index from reconstruction where blr_index is not null limit 1')[0];
-  const linked=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:String(rec.blr_index)});
+  const missing=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_entry_id:999999999});
+  assert.notEqual(missing.status,200);
+  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[before.id])[0].blr_entry_id,before.blr_entry_id);
+  const linked=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_entry_id:rec.id});
   assert.equal(linked.status,200,JSON.stringify(linked));
-  const linkedRow=sql(db,'select blr_index, blr_entry_id from reflex where id=?',[before.id])[0];
-  assert.equal(linkedRow.blr_index,String(rec.blr_index));assert.equal(linkedRow.blr_entry_id,rec.id);
-  const cleared=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_index:null});
+  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[before.id])[0].blr_entry_id,rec.id);
+  const shown=await request(s.base,`/reflex?pageSize=1&filter=id:${before.id-1}:gt&filter=id:${before.id+1}:lt`);
+  assert.equal(shown.body.data[0].blr_index,String(rec.blr_index));
+  const cleared=await request(s.base,`/reflex/${before.id}`,'PATCH',{blr_entry_id:null});
   assert.equal(cleared.status,200);assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[before.id])[0].blr_entry_id,null);
+  // A blank reconstruction note is stored as NULL; others are trimmed.
+  for(const [input,stored] of [['  ',null],['\t\n',null],['  see 10136 ',"see 10136"]]) {
+   const saved=await request(s.base,`/reflex/${before.id}`,'PATCH',{reconstruction_note:input});
+   assert.equal(saved.status,200,JSON.stringify(saved));
+   assert.equal(sql(db,'select reconstruction_note n from reflex where id=?',[before.id])[0].n,stored,JSON.stringify(input));
+  }
  } finally {await stopServer(s.child);}
 });

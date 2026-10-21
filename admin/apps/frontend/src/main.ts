@@ -19,10 +19,13 @@ import ReconstructionLinks from './relations/ReconstructionLinks.vue';
 // Relation links lead to another resource's record. Crouton reads ?id=&event= only when its resource view mounts,
 // and its modals are global, so the view is keyed by resource and the open modals are closed on such navigation.
 const PAGES: Record<string, { label: string; component: any }> = {
-  'bulk-import': { label: 'Bulk import', component: BulkImport },
-  'bulk-edit': { label: 'Bulk edit', component: BulkEdit },
-  'reconstruction-form': { label: 'Reconstruction form', component: ReconstructionPage },
+  'bulk-import': { label: 'Reflexes import', component: BulkImport },
+  'bulk-edit': { label: 'Reflexes editor', component: BulkEdit },
+  'reconstruction-form': { label: 'Reconstruction editor', component: ReconstructionPage },
 };
+// Order of the Lexical data group: each resource list next to its own pages; unlisted entries go last.
+const LEXICAL_ORDER = ['reconstruction', 'reconstruction-form', 'reflex', 'bulk-import', 'bulk-edit'];
+const lexicalRank = (id: string) => { const i = LEXICAL_ORDER.indexOf(id); return i < 0 ? LEXICAL_ORDER.length : i; };
 const resourceRoute = CroutonRouter.flatMap((route): RouteRecordRaw[] => ('children' in route && route.children) || []).find(route => route.name === 'crouton/form')!;
 const NativeResourceView = defineAsyncComponent(resourceRoute.component as () => Promise<any>);
 resourceRoute.component = defineComponent({ setup() { const route = useRoute(); return () => PAGES[route.params.formId as string] ? h(PAGES[route.params.formId as string].component) : h('div', [h(NativeResourceView, { key: route.params.formId as string }), route.params.formId === mapConfig.resource ? h(CoordinateList) : null]); } }) as any;
@@ -34,6 +37,7 @@ api.interceptors.response.use((response) => {
   if (/\/_app\/layout(\?|$)/.test(response.config.url ?? '')) {
     const lexical = response.data?.sidebar?.find((item: any) => item.id === 'lexical');
     for (const [id, page] of Object.entries(PAGES)) if (lexical?.children && !lexical.children.some((c: any) => c.id === id)) lexical.children.push({ id, label: page.label });
+    lexical?.children?.sort((x: any, y: any) => lexicalRank(x.id) - lexicalRank(y.id));
   }
   return response;
 });

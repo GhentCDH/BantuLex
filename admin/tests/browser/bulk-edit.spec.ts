@@ -10,7 +10,7 @@ test('bulk edit saves a row with one PATCH of its changed fields when the row is
  const errors:string[]=[]; page.on('pageerror',e=>errors.push(e.message));
  const patches:any[]=[]; page.on('request',r=>{if(r.method()==='PATCH')patches.push({url:r.url(),body:r.postDataJSON()});});
  await page.goto('crouton/bulk-edit');
- await expect(page.getByRole('link',{name:'Bulk edit',exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Reflexes editor',exact:true})).toBeVisible();
  const ids=sql(db,'select id from reflex order by id limit 5').map((r:any)=>r.id);
  const before=row(ids[1]);
  // Moving through a row without editing it sends nothing.
@@ -135,7 +135,7 @@ test('bulk edit rejects a missing BLR index and flashes saved and failed rows',a
  await page.goto('crouton/bulk-edit');
  const id=sql(db,'select id from reflex order by id limit 1')[0].id;
  const before=row(id);
- const cell=page.getByLabel('Blr index row 1',{exact:true});
+ const cell=page.getByLabel('BLR index row 1',{exact:true});
  await cell.fill('99999999');
  await page.getByLabel('Term row 2',{exact:true}).click();
  await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-error/);
@@ -147,7 +147,7 @@ test('bulk edit rejects a missing BLR index and flashes saved and failed rows',a
  await page.getByLabel('Term row 2',{exact:true}).click();
  await expect(page.locator('.bulk-row[data-row="1"]')).toHaveClass(/bulk-saved/);
  await expect.poll(()=>row(id).blr_entry_id).toBe(rec.id);
- expect(row(id).blr_index).toBe(String(rec.blr_index));
+ await expect(cell).toHaveValue(String(rec.blr_index));
 });
 
 test('bulk edit resizes a column by dragging its header edge',async({page})=>{

@@ -14,7 +14,7 @@ import ReconstructionToolbar from './ReconstructionToolbar.vue';
 import ReflexPicker from './ReflexPicker.vue';
 import SaveBar from './SaveBar.vue';
 import SoundStructureForm from './SoundStructureForm.vue';
-import { errorMessage, findByIndex } from './api';
+import { errorMessage, findByIndex, neighbours, type Neighbours } from './api';
 import { useBlrOptions } from './useBlrOptions';
 import { useReconstruction } from './useReconstruction';
 
@@ -24,6 +24,7 @@ const options = useBlrOptions();
 const form = useReconstruction();
 const { id, blrIndex, reconstruction, structure, reflexes, original, isNew, dirty } = form;
 const lookupError = ref('');
+const adjacent = ref<Neighbours>({ previous: null, next: null });
 
 const queryId = () => {
   const n = Number(route.query.id);
@@ -49,6 +50,22 @@ async function fromRoute() {
 }
 watch(() => [route.query.id, route.query.blr], fromRoute, { immediate: true });
 
+/** Previous and next follow the BLR index; a new reconstruction sits after the last one. */
+watch(blrIndex, async index => {
+  adjacent.value = { previous: null, next: null };
+  if (index == null) return;
+  try {
+    const result = await neighbours(index);
+    if (index === blrIndex.value) adjacent.value = result;
+  } catch {
+    // Without neighbours the buttons stay disabled; the form itself still works.
+  }
+}, { immediate: true });
+
+function go(target: number) {
+  lookupError.value = '';
+  router.push({ query: { id: String(target) } });
+}
 function open(index: number) {
   lookupError.value = '';
   router.push({ query: { blr: String(index) } });
@@ -84,9 +101,10 @@ onBeforeRouteUpdate(confirmDiscard);
 </script>
 
 <template>
-  <section class="reconstruction-page w-full px-4 py-3 flex flex-col gap-3" aria-label="Reconstruction form">
+  <section class="reconstruction-page w-full px-4 py-3 flex flex-col gap-3" aria-label="Reconstruction editor">
     <ReconstructionToolbar :blr-index="blrIndex" :is-new="isNew"
-                           :lookup-error="lookupError" @open="open" @new="startNew" />
+                           :lookup-error="lookupError" :previous="adjacent.previous" :next="adjacent.next"
+                           @open="open" @new="startNew" @go="go" />
 
     <p v-if="form.loadError.value || options.error.value" role="alert" class="text-sm text-red-700">
       {{ form.loadError.value || options.error.value }}

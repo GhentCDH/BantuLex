@@ -43,13 +43,18 @@ export const getReconstruction = async (id: number) => (await axios.get(`/api/bl
 
 export const findByIndex = async (blrIndex: number) => (await axios.get(`/api/blr/by-index/${blrIndex}`)).data.id as number;
 
+export interface Neighbours { previous: { id: number; blr_index: number } | null; next: { id: number; blr_index: number } | null }
+
+/** The reconstructions just before and after a BLR index. */
+export const neighbours = async (blrIndex: number) => (await axios.get(`/api/blr/neighbours/${blrIndex}`)).data as Neighbours;
+
 export async function saveReconstruction(id: number | null, body: SaveBody): Promise<SaveResult> {
   const { data } = id == null ? await axios.post('/api/blr', body) : await axios.put(`/api/blr/${id}`, body);
   return data;
 }
 
 /** Reflex columns Crouton's list can sort on (physical columns; not the calculated variety label). */
-export const REFLEX_SORTABLE = ['id', 'term', 'translation', 'meaning', 'blr_index'];
+export const REFLEX_SORTABLE = ['id', 'term', 'translation', 'meaning', 'reconstruction_note'];
 
 /**
  * Candidate reflexes from Crouton's reflex list (`GET /api/reflex`): its `q` search,

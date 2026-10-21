@@ -6,7 +6,7 @@
   "route": "reflex",
   "model": "reflex",
   "tag": "reflex",
-  "title": "Reflexes",
+  "title": "Reflexes list",
   "idType": "number",
   "database": "default",
   "sidebar": {
@@ -239,30 +239,8 @@
         "type": "string"
       }
     },
-    "blr_index": {
-      "label": "Blr index",
-      "type": {
-        "type": [
-          "string",
-          "null"
-        ]
-      },
-      "hiddenInView": false,
-      "hiddenInForm": false,
-      "createable": true,
-      "updateable": true,
-      "sortable": true,
-      "filterable": true,
-      "searchable": true,
-      "hiddenInTable": false,
-      "showInLookup": false,
-      "required": false,
-      "fieldInput": {
-        "type": "string"
-      }
-    },
-    "blr_note": {
-      "label": "Blr note",
+    "reconstruction_note": {
+      "label": "Reconstruction note",
       "type": {
         "type": [
           "string",
@@ -623,11 +601,7 @@
           "colspan": 6
         },
         {
-          "id": "blr_index",
-          "colspan": 6
-        },
-        {
-          "id": "blr_note",
+          "id": "reconstruction_note",
           "colspan": 12
         },
         {
@@ -726,6 +700,19 @@
           "linkResource": "fieldwork",
           "idKey": "fieldwork_id"
         }
+      }
+    },
+    {
+      "id": "blr_index",
+      "alias": "blr_index",
+      "label": "BLR index",
+      "type": "string",
+      "sqlExpression": "SELECT CAST(x.blr_index AS TEXT) FROM \"reconstruction\" x WHERE x.id = main.\"blr_entry_id\"",
+      "position": 10,
+      "hiddenInTable": false,
+      "hiddenInView": true,
+      "fieldInput": {
+        "type": "string"
       }
     },
     {

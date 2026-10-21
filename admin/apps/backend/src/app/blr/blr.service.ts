@@ -64,7 +64,7 @@ export interface ReflexRow {
   term: string | null;
   translation: string | null;
   meaning: string | null;
-  blr_index: string | null;
+  reconstruction_note: string | null;
   blr_entry_id: number | null;
   variety_id: number | null;
   variety_label: string | null;
@@ -72,7 +72,7 @@ export interface ReflexRow {
 
 const REFLEX_SELECT = {
   id: true, term: true, translation: true, meaning: true,
-  blr_index: true, blr_entry_id: true, variety_id: true,
+  reconstruction_note: true, blr_entry_id: true, variety_id: true,
   variety: { select: { name_english: true, name_bantu: true, name_french: true, name_bastin: true, guthrie_index: true } },
 } as const;
 
@@ -82,7 +82,7 @@ function toReflexRow(r: any): ReflexRow {
   const label = name ? `${name}${v.guthrie_index ? ` (${v.guthrie_index})` : ''}` : null;
   return {
     id: r.id, term: r.term, translation: r.translation, meaning: r.meaning,
-    blr_index: r.blr_index, blr_entry_id: r.blr_entry_id, variety_id: r.variety_id, variety_label: label,
+    reconstruction_note: r.reconstruction_note, blr_entry_id: r.blr_entry_id, variety_id: r.variety_id, variety_label: label,
   };
 }
 
@@ -126,11 +126,11 @@ async function structureIds(tx: any, structure: Structure) {
 }
 
 /** Link the given unlinked reflexes to a reconstruction; a count mismatch means the selection changed meanwhile. */
-async function linkReflexes(tx: any, ids: number[], id: number, index: number | null) {
+async function linkReflexes(tx: any, ids: number[], id: number) {
   if (!ids.length) return 0;
   const updated = await tx.reflex.updateMany({
     where: { id: { in: ids }, blr_entry_id: null },
-    data: { blr_index: index == null ? null : String(index), blr_entry_id: id },
+    data: { blr_entry_id: id },
   });
   if (updated.count !== ids.length)
     throw new BlrConflictError([{ field: 'reflex_ids', message: 'The selection changed while saving; nothing was saved.' }]);
@@ -153,7 +153,7 @@ export async function createBlr(body: BlrRequest) {
         ...structures,
       },
     });
-    const linked = await linkReflexes(tx, ids, reconstruction.id, index);
+    const linked = await linkReflexes(tx, ids, reconstruction.id);
     return { id: reconstruction.id, blr_index: index, linked, unlinked: 0 };
   }, TRANSACTION);
 }
@@ -182,11 +182,11 @@ export async function updateBlr(id: number, body: BlrUpdateRequest) {
 
     const unlinked = await tx.reflex.updateMany({
       where: { blr_entry_id: id, id: { notIn: ids } },
-      data: { blr_entry_id: null, blr_index: null },
+      data: { blr_entry_id: null },
     });
     const owned = await tx.reflex.findMany({ where: { blr_entry_id: id }, select: { id: true } });
     const ownedIds = new Set(owned.map((r: { id: number }) => r.id));
-    const linked = await linkReflexes(tx, ids.filter(r => !ownedIds.has(r)), id, current.blr_index);
+    const linked = await linkReflexes(tx, ids.filter(r => !ownedIds.has(r)), id);
     return { id, blr_index: current.blr_index, linked, unlinked: unlinked.count };
   }, TRANSACTION);
 }
@@ -224,4 +224,16 @@ export async function findByIndex(blrIndex: number): Promise<{ id: number }> {
   const r = await prisma().reconstruction.findFirst({ where: { blr_index: blrIndex }, select: { id: true } });
   if (!r) throw new BlrNotFoundError(`There is no reconstruction with BLR index ${blrIndex}.`);
   return r;
+}
+
+export interface BlrNeighbour { id: number; blr_index: number }
+
+/** The reconstructions with the closest lower and higher BLR index; null at either end. */
+export async function neighbours(blrIndex: number): Promise<{ previous: BlrNeighbour | null; next: BlrNeighbour | null }> {
+  const select = { id: true, blr_index: true };
+  const [previous, next] = await Promise.all([
+    prisma().reconstruction.findFirst({ where: { blr_index: { lt: blrIndex } }, orderBy: { blr_index: 'desc' }, select }),
+    prisma().reconstruction.findFirst({ where: { blr_index: { gt: blrIndex } }, orderBy: { blr_index: 'asc' }, select }),
+  ]);
+  return { previous: previous ?? null, next: next ?? null };
 }

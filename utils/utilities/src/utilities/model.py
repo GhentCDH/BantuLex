@@ -399,9 +399,9 @@ class Reflex(Table, table=True):
     scientific_name: str | None = _text(default=None)
     semantic_field: str | None = _text(default=None)
     part_of_speech: str | None = _text(default=None)
-    blr_index: str | None = _text(default=None)
-    # Unchecked BLR index text (e.g. '7364 (PT??)'); not linked to a reconstruction
-    blr_note: str | None = _text(default=None)
+    # BLR Index text that did not become a link (e.g. '7364 (PT??)', '9094 ipv 3604', or a
+    # number without a reconstruction); the BLR number itself is read via blr_entry_id
+    reconstruction_note: str | None = _text(default=None)
     ipa: str | None = _text(default=None)
     notes_on_ipa: str | None = _text(default=None)
     notes: str | None = _text(default=None)

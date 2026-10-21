@@ -52,9 +52,7 @@ test('BLR API creates a reconstruction, structures and reflex links in one trans
   assert.equal(sql(db,'select t11 from blrtonestructure where id=?',[rec.tone_structure_id])[0].t11,'H');
 
   for(const id of ids) {
-   const row=sql(db,'select blr_index, blr_entry_id from reflex where id=?',[id])[0];
-   assert.equal(row.blr_index,String(max+1));
-   assert.equal(row.blr_entry_id,res.body.id);
+   assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[id])[0].blr_entry_id,res.body.id);
   }
 
   const next=await request(s.base,'/blr/next-index');
@@ -152,6 +150,14 @@ test('BLR API loads a reconstruction by id and by BLR index',async()=>{
   assert.equal((await request(s.base,'/blr/by-index/999999999')).status,404);
   assert.equal((await request(s.base,'/blr/abc')).status,404);
 
+  const prev=sql(db,'select id, blr_index from reconstruction where blr_index<? order by blr_index desc limit 1',[rec.blr_index])[0]??null;
+  const next=sql(db,'select id, blr_index from reconstruction where blr_index>? order by blr_index limit 1',[rec.blr_index])[0]??null;
+  const around=await request(s.base,`/blr/neighbours/${rec.blr_index}`);
+  assert.equal(around.status,200);
+  assert.deepEqual(around.body,{previous:prev,next});
+  const max=sql(db,'select id, blr_index from reconstruction order by blr_index desc limit 1')[0];
+  assert.deepEqual((await request(s.base,`/blr/neighbours/${max.blr_index+1}`)).body,{previous:max,next:null});
+
  } finally {await stopServer(s.child);}
 });
 
@@ -200,8 +206,8 @@ test('BLR API update links and unlinks reflexes, and rolls back on a conflict',a
   assert.equal(res.status,200,JSON.stringify(res));
   assert.equal(res.body.linked,1);
   assert.equal(res.body.unlinked,1);
-  assert.deepEqual(sql(db,'select blr_index, blr_entry_id from reflex where id=?',[dropped])[0],{blr_index:null,blr_entry_id:null});
-  assert.deepEqual(sql(db,'select blr_index, blr_entry_id from reflex where id=?',[added])[0],{blr_index:String(rec.blr_index),blr_entry_id:rec.id});
+  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[dropped])[0].blr_entry_id,null);
+  assert.equal(sql(db,'select blr_entry_id from reflex where id=?',[added])[0].blr_entry_id,rec.id);
 
   // A reflex of another reconstruction: 409 and nothing changes.
   const other=sql(db,'select id from reflex where blr_entry_id is not null and blr_entry_id<>? limit 1',[rec.id])[0].id;

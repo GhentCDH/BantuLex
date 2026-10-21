@@ -10,6 +10,15 @@ def clean_value(val: Any) -> str | None:
     return s if s else None
 
 
+def append_note(existing: str | None, text: str | None) -> str | None:
+    """Append `text` to a note with "; "; whitespace-only becomes None, a text already in the note is not repeated."""
+    existing = (existing or "").strip()
+    text = (text or "").strip()
+    if not text or text in existing:
+        return existing or None
+    return f"{existing}; {text}" if existing else text
+
+
 def parse_float(val: Any) -> float | None:
     try:
         return float(val) if val is not None else None

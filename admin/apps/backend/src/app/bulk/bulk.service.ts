@@ -106,7 +106,8 @@ export async function importReflexes(body: BulkRequest, dryRun: boolean): Promis
             term: r.term, translation: r.translation, meaning: r.meaning, part_of_speech: r.part_of_speech,
             term_morph_analysis: r.term_morph_analysis, semantic_field: r.semantic_field,
             scientific_name: r.scientific_name, notes: r.notes,
-            blr_index: blr.index != null ? String(blr.index) : null, blr_note: blr.note,
+            // Cell text that is not a plain linked number stays in the note, as in the importer.
+            reconstruction_note: blr.note ?? (blrId == null && blr.index != null ? String(blr.index) : null),
             blr_entry_id: blrId, variety_id: variety.id, location_id: body.location_id ?? null,
             fieldwork_id: body.fieldwork_id ?? null, bulkimport_id: batch.id,
           };

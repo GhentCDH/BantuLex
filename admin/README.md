@@ -90,39 +90,39 @@ Runtime dependencies use exact published Crouton API/Vue/core/generator **0.0.1-
 
 These are framework fixes, not replacement application forms. Since alpha.82, unique-constraint violations are returned by Crouton as field validation errors (HTTP 400, code `unique`) rather than by the application's 409 mapping.
 
-## Bulk import
+## Reflexes import
 
-*Lexical data → Bulk import* (`/admin/crouton/bulk-import`) adds many reflexes at once, for example all words of a newly digitised dictionary. It is a wizard in four steps (an accordion; each step shows whether it is done):
+*Lexical data → Reflexes import* (`/admin/crouton/bulk-import`) adds many reflexes at once, for example all words of a newly digitised dictionary. It is a wizard in four steps (an accordion; each step shows whether it is done):
 
 1. **Download the template** (`bantulex-bulk-import.xlsx`). The "Reflexes" sheet has one column per field: Term (required) and Translation, Meaning (English), Part of speech, Morphology, Semantic field, Scientific name, Pages, Notes, BLR index (optional). Each header has a comment explaining the column; the "Instructions" sheet has a how-to and an example.
 2. **Link or create the related records**, the same for every row: a. the source (pick or create) and its role; b. the variety (pick, create or none); c. location and fieldwork (optional). Each step opens only when the previous one is complete.
 3. **Upload and check the file** (at most 20,000 rows per import). The filled-in template is read in the browser (ExcelJS, loaded only on this page). Rows are shown for review in one scrolling grid (no pages; only the visible rows are drawn) where small corrections can be made; larger changes go through the Excel file; rows without a term must be fixed, BLR text that is not a number is kept as a note. *Check against the database* runs the whole import and rolls it back, and marks unknown BLR indexes. Messages give the Excel row number. Columns not in the template are ignored with a warning.
 4. **Process the import.** One request, one SQLite transaction: either all rows are saved or none.
 
-BLR indexes follow the importer: a number, or "X ipv Y" (X is used); other text is kept in `blr_note`.
+BLR indexes follow the importer: a number, or "X ipv Y" (X is linked); other text, the "X ipv Y" text itself and numbers without a reconstruction are kept in `reconstruction_note`.
 
 Every import is a batch named after the local date and time it was processed (e.g. `2027 10 12 - 13h 14`; `bulkimport`, listed under *Sources → Bulk imports*); its reflexes carry `bulkimport_id`. *Undo* in "Previous imports" deletes the batch's reflexes and source links in one transaction, and the source or variety the batch created if nothing else uses them; the batch stays listed as `undone`. The wizard's choices and uploaded rows are kept in the browser until the import is processed.
 
 API: `POST /api/bulk/reflex[?dryRun=1]` (up to 20,000 rows, JSON body up to 25 MB), `GET /api/bulk/imports`, `POST /api/bulk/imports/:id/undo`. While a bulk transaction runs (about a second for 5,000 rows) other admin requests wait, because the admin uses one SQLite connection. The table and column come from `model.py`; an existing database gets them with `just migrate-db` in the repository root.
 
-## Bulk edit
+## Reflexes editor
 
-*Lexical data → Bulk edit* (`/admin/crouton/bulk-edit`) edits the text fields of existing reflexes (term, translation, meaning, part of speech, morphology, semantic field, scientific name, IPA and its notes, BLR index and note, notes) and the variety label in a grid that fills the window. Search uses Crouton's `q`; a variety or a bulk import batch narrows the rows (the variety filter replaces sorting by variety).
+*Lexical data → Reflexes editor* (`/admin/crouton/bulk-edit`) edits the text fields of existing reflexes (term, translation, meaning, part of speech, morphology, semantic field, scientific name, IPA and its notes, reconstruction note, notes), the BLR index and the variety label in a grid that fills the window. Search uses Crouton's `q`; a variety or a bulk import batch narrows the rows (the variety filter replaces sorting by variety).
 
 The grid has no row-number column; the id is a link that opens the reflex form in Crouton's modal. Columns can be reordered by dragging the `⋮⋮` handle at the left of a header; the order is remembered in `localStorage`, like the column selection and widths. The variety column is edited through its label with a searchable dropdown: typing queries the variety API (up to 20 matches, debounced), and picking a result stores its `variety_id` without creating a variety. An exact, unique label typed without picking still resolves; extra and repeated spaces are ignored. Some varieties share a display label (e.g. `Tege (B71b)` is two rows); those results carry a `[#id]` suffix, and the plain duplicate label is refused until one of them is picked. An unknown label (for example the typo `Tege (B17b)`) leaves the row unsaved with a field error. Clearing the cell clears the relation. Click a column header to sort on the server (`asc`/`desc`, toggling); the API can sort only physical reflex columns, not calculated labels such as variety. Drag the edge between two headers to resize a column; double-click that edge to restore its default width. Widths are remembered in `localStorage`, like the column selection. The *Columns* menu hides or shows columns, remembers the selection in `localStorage`, and keeps at least one column visible. *Rows* selects 20, 50, 100 or 500 rows per page (default 50; the API caps at 500).
 
 Editing goes through Crouton: rows are loaded with the resource's list operation, and a row is saved when the focus leaves it (or with *Save all*, Ctrl/Cmd+S) as one `PATCH /api/reflex/:id` with only the changed fields, after checking them with the zod schema of Crouton's reflex form. Drag the small blue handle at the bottom-right of the focused cell up or down to repeat the selected block in the adjacent rows; releasing saves the filled rows. Read-only cells have no handle.
 
-`Blr index` is a reference to the BLR, not a free field: the API resolves it to a reconstruction and sets `blr_entry_id` in the same update. An index without a reconstruction (or a non-numeric value) is rejected with a field error and the row is not saved; clearing the cell clears the link. Dirty rows get an amber marker, saved rows flash green, and rows that could not be saved flash red and are listed by row number in the status line. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked (a red left border and tooltip), and changing sort, page size, page or leaving asks before dropping them.
+*BLR index* shows the index of the linked reconstruction (`reflex` has no index column of its own). Like the variety, it is edited as a reference: the grid resolves the number with `GET /api/blr/by-index/:blr` and saves `blr_entry_id`. An index without a reconstruction (or a non-numeric value) is rejected with a field error and the row is not saved; clearing the cell clears the link. A blank *Reconstruction note* is stored as NULL. Dirty rows get an amber marker, saved rows flash green, and rows that could not be saved flash red and are listed by row number in the status line. A cleared cell is sent as `null`. Field errors from the API (`message[]` with `field`) are shown on the cells; rows that could not be saved stay marked (a red left border and tooltip), and changing sort, page size, page or leaving asks before dropping them.
 
-## Reconstruction form
+## Reconstruction editor
 
-*Lexical data → Reconstruction form* (`/admin/crouton/reconstruction-form`) creates a BLR reconstruction or edits an existing one, laid out like the public BLR viewer (`/#/blr/<index>`). On the left are the live heading (`BLR n`, `*word_tone`, the glosses) and the *Sound structure* and *Reconstruction* cards. On the right are the linked reflexes and a picker to add more. Each save is **one transaction**; any failed check rolls all of it back.
+*Lexical data → Reconstruction editor* (`/admin/crouton/reconstruction-form`) creates a BLR reconstruction or edits an existing one, laid out like the public BLR viewer (`/#/blr/<index>`). On the left are the live heading (`BLR n`, `*word_tone`, the glosses) and the *Sound structure* and *Reconstruction* cards. On the right are the linked reflexes and a picker to add more. Each save is **one transaction**; any failed check rolls all of it back.
 
-- **Open** a reconstruction with the *BLR index* field, `?blr=<index>`, `?id=<id>`, or *Open in → Reconstruction form* in Crouton's reconstruction view. Without a query the form is empty, for a new reconstruction.
+- **Open** a reconstruction with the *BLR index* field, `?blr=<index>`, `?id=<id>`, or *Open in → Reconstruction editor* in Crouton's reconstruction view. Without a query the form is empty, for a new reconstruction.
 - **New** (`POST /api/blr`): the BLR index is not entered. The API shows `MAX(blr_index) + 1` and assigns it inside the transaction. At least one reflex is required.
 - **Edit** (`PUT /api/blr/:id`):
-  - The request sends the complete set of reflexes. Reflexes removed from the list (shown struck through until saving, and restorable) are **unlinked**: `blr_entry_id` and `blr_index` become NULL. New ones are linked.
+  - The request sends the complete set of reflexes. Reflexes removed from the list (shown struck through until saving, and restorable) are **unlinked**: `blr_entry_id` becomes NULL. New ones are linked.
   - A reconstruction may be left without reflexes (most imported ones have none).
   - The BLR index and the date of entry are not changed.
 - **Fields** follow the viewer: word (required), word tone, English, French, noun class, Proto-KK, reliability, contributor and note.

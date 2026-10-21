@@ -955,13 +955,7 @@
         "pk": 0
       },
       {
-        "name": "blr_index",
-        "type": "TEXT",
-        "required": false,
-        "pk": 0
-      },
-      {
-        "name": "blr_note",
+        "name": "reconstruction_note",
         "type": "TEXT",
         "required": false,
         "pk": 0
