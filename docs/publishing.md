@@ -66,9 +66,10 @@ The submodule URL is relative (`../Pihka.git`), so it uses the same protocol
 ## Steps
 
 1. **`just import`** fills `data/bantulex.db`; after that, the admin edits it.
-2. **`just pihka-up`** serves the site on http://localhost:9161. `site/`, the
-   Pihka submodule and `data/` are mounted live: reload the browser after a
-   change.
+2. **`just pihka-up`** starts the `caddy` service on http://localhost:9161.
+   `site/`, the Pihka submodule and `data/` are mounted live: reload the browser
+   after a change. With `just admin` running, the admin is on
+   http://localhost:9161/admin/ too.
 3. **`just publish`** builds `dist/bantulex` (`site/` plus Pihka's `core/` and
    `extensions/point_map/`) and copies it with rsync. Set the target first:
    `BANTULEX_DEPLOY_TARGET=<host>:/var/www/bantulex/`. Only code changes need a
@@ -98,8 +99,27 @@ version number to raise after an edit.
 
 The admin writes with a rollback journal. A download that runs during a write
 can get a mix of old and new pages; the site can then fail to open the
-database or show inconsistent rows, and a reload fixes it. This is rare, because most writes change a few pages in
-a few milliseconds, but a bulk import takes about a second.
+database or show inconsistent rows, and a reload fixes it. This is rare,
+because most writes change a few pages in a few milliseconds, but a bulk import
+takes about a second.
+
+## Web server
+
+On the server, the system Caddy serves the site and proxies the admin. In dev,
+the `caddy` service runs the `Caddyfile`, a copy of that server block with
+local paths:
+
+| Path | Dev (`Caddyfile`) | Server (system Caddy) |
+| --- | --- | --- |
+| `/admin/*`, `/api/*` | Reverse proxy to `admin:4444` | Reverse proxy to `127.0.0.1:8190` |
+| `/core/*`, `/extensions/point_map/*` | `/srv/pihka` (the Pihka submodule) | `public/`, where `build-site` put them |
+| `/database/bantulex.db` | `/srv/data/bantulex.db` | `/data/bantulex_tst/data/bantulex.db` |
+| everything else | `/srv/site` (`site/`) | `/data/bantulex_tst/public` |
+
+`/admin` redirects to `/admin/`. Static files and the database get the same
+`no-cache` and compression rules as on the server. The server's
+`security_headers`, `cache_static` and `ugent_only` snippets are not copied.
+The admin has no login; in dev the port is published on localhost only.
 
 ## Updating Pihka
 

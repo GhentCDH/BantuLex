@@ -1,0 +1,52 @@
+# Dev copy of the tst.bantulex.ugent.be block in the system Caddy on the server (see docs/publishing.md).
+# Same routes, headers and compression; only the paths and the admin address differ:
+#   /srv/site   = /data/bantulex_tst/public    /srv/data = /data/bantulex_tst/data
+#   admin:4444  = 127.0.0.1:8190
+# The server's security_headers, cache_static and ugent_only snippets are not copied.
+# In dev, Pihka's core/ and extensions/ come from the submodule; on the server they are in public/.
+
+:80 {
+	redir /admin /admin/ 308
+	handle /admin/* {
+		reverse_proxy admin:4444
+	}
+	handle /api/* {
+		reverse_proxy admin:4444
+	}
+
+	handle {
+		@revalidate path *.html *.js *.css *.json *.wasm *.mjs *.db *.sqlite *.geojson /
+		header @revalidate Cache-Control "no-cache"
+
+		@sqlite path *.db *.sqlite
+		header @sqlite Content-Type application/vnd.sqlite3
+
+		encode {
+			zstd
+			gzip 5
+			minimum_length 1024
+			match {
+				header Content-Type text/*
+				header Content-Type application/json*
+				header Content-Type application/geo+json*
+				header Content-Type application/javascript*
+				header Content-Type application/xml*
+				header Content-Type application/wasm
+				header Content-Type application/vnd.sqlite3
+				header Content-Type image/svg+xml
+			}
+		}
+
+		# Dev only: the submodule instead of public/core and public/extensions.
+		@pihka path /core/* /extensions/point_map/*
+		root @pihka /srv/pihka
+		# The site reads the admin's database directly; nothing else in the data folder is served.
+		@database path /database/bantulex.db
+		root @database /srv/data
+		rewrite @database /bantulex.db
+		root * /srv/site
+		file_server {
+			precompressed
+		}
+	}
+}

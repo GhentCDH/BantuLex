@@ -25,15 +25,16 @@ services:
       - ./data:/app/data
     restart: unless-stopped
 
-  # ── Pihka (lokale publicatie) ──────────────────────────────────────────────
-  # site/ is de webroot; /core en /extensions komen uit Pihka, zoals build-site dat doet.
-  pihka:
+  # ── Caddy (website + admin proxy) ──────────────────────────────────────────
+  # The public site on /, the admin on /admin/ and /api (502 until `just admin` runs).
+  # site/ is the web root; /core and /extensions come from Pihka, as build-site does.
+  # Localhost only: the admin behind it has no login.
+  caddy:
     image: caddy:2-alpine
-    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     ports:
-      - "9161:80"
+      - "127.0.0.1:9161:80"
     volumes:
-      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./site:/srv/site:ro
       - ./vendor/pihka/pihka:/srv/pihka:ro
       # The whole folder, not the file: import and reset-db replace bantulex.db.

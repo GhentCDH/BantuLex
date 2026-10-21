@@ -61,6 +61,7 @@ The admin's Prisma schema and resources are introspected from `data/bantulex.db`
 | Service           | Port | Description                                           |
 | ----------------- | ---- | ----------------------------------------------------- |
 | `admin`           | 4444 | Crouton admin app; `admin` profile, edits `data/bantulex.db` (see `admin/README.md`) |
+| `caddy`           | 9161 | Web server (`Caddyfile`): Pihka site on `/`, `data/bantulex.db` on `/database/bantulex.db`, admin proxied on `/admin/` and `/api` |
 | `utils`           | —    | Python build context for import/export tools          |
 
 ### Python Workspace (`utils/`)
