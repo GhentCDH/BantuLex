@@ -152,6 +152,14 @@ test('BLR API loads a reconstruction by id and by BLR index',async()=>{
   assert.equal((await request(s.base,'/blr/by-index/999999999')).status,404);
   assert.equal((await request(s.base,'/blr/abc')).status,404);
 
+  const prev=sql(db,'select id, blr_index from reconstruction where blr_index<? order by blr_index desc limit 1',[rec.blr_index])[0]??null;
+  const next=sql(db,'select id, blr_index from reconstruction where blr_index>? order by blr_index limit 1',[rec.blr_index])[0]??null;
+  const around=await request(s.base,`/blr/neighbours/${rec.blr_index}`);
+  assert.equal(around.status,200);
+  assert.deepEqual(around.body,{previous:prev,next});
+  const max=sql(db,'select id, blr_index from reconstruction order by blr_index desc limit 1')[0];
+  assert.deepEqual((await request(s.base,`/blr/neighbours/${max.blr_index+1}`)).body,{previous:max,next:null});
+
  } finally {await stopServer(s.child);}
 });
 

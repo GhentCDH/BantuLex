@@ -225,3 +225,15 @@ export async function findByIndex(blrIndex: number): Promise<{ id: number }> {
   if (!r) throw new BlrNotFoundError(`There is no reconstruction with BLR index ${blrIndex}.`);
   return r;
 }
+
+export interface BlrNeighbour { id: number; blr_index: number }
+
+/** The reconstructions with the closest lower and higher BLR index; null at either end. */
+export async function neighbours(blrIndex: number): Promise<{ previous: BlrNeighbour | null; next: BlrNeighbour | null }> {
+  const select = { id: true, blr_index: true };
+  const [previous, next] = await Promise.all([
+    prisma().reconstruction.findFirst({ where: { blr_index: { lt: blrIndex } }, orderBy: { blr_index: 'desc' }, select }),
+    prisma().reconstruction.findFirst({ where: { blr_index: { gt: blrIndex } }, orderBy: { blr_index: 'asc' }, select }),
+  ]);
+  return { previous: previous ?? null, next: next ?? null };
+}

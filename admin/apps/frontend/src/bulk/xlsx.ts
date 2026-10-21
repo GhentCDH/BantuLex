@@ -37,7 +37,7 @@ export async function downloadTemplate() {
     '',
     `1. Fill in the "${SHEET}" sheet: one word per row, starting on row 2. Keep the header row.`,
     '2. Only Term is required; leave other cells empty when unknown. Extra columns are ignored. At most 20,000 rows per import; split larger files.',
-    '3. In the admin, open Lexical data → Bulk import, set the source and other links, and upload this file.',
+    '3. In the admin, open Lexical data → Reflexes import, set the source and other links, and upload this file.',
     '4. Check the rows, then process: all rows are saved in one transaction and can be undone as a batch.',
     '',
     ['Column', 'Required', 'Description', 'Example'],

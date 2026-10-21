@@ -10,7 +10,7 @@ test('bulk edit saves a row with one PATCH of its changed fields when the row is
  const errors:string[]=[]; page.on('pageerror',e=>errors.push(e.message));
  const patches:any[]=[]; page.on('request',r=>{if(r.method()==='PATCH')patches.push({url:r.url(),body:r.postDataJSON()});});
  await page.goto('crouton/bulk-edit');
- await expect(page.getByRole('link',{name:'Bulk edit',exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Reflexes editor',exact:true})).toBeVisible();
  const ids=sql(db,'select id from reflex order by id limit 5').map((r:any)=>r.id);
  const before=row(ids[1]);
  // Moving through a row without editing it sends nothing.

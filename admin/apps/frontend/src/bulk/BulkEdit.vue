@@ -370,10 +370,10 @@ function fitGrid() {
 </script>
 
 <template>
-  <section class="w-full px-3 py-2 flex flex-col gap-2" aria-label="Bulk edit" @keydown="onKey">
+  <section class="w-full px-3 py-2 flex flex-col gap-2" aria-label="Reflexes editor" @keydown="onKey">
     <div ref="chrome" class="flex flex-col gap-2">
       <header class="flex flex-wrap items-baseline gap-x-3">
-        <h2 class="text-xl font-semibold">Bulk edit of reflexes</h2>
+        <h2 class="text-xl font-semibold">Reflexes editor</h2>
         <p class="text-sm opacity-70" title="Edit the text fields of existing reflexes. A row is saved when you leave it (or with Save all, Ctrl/Cmd+S); edited cells are yellow until saved. Clearing a cell removes the value. Variety is edited by its exact label; other relations are changed in the reflex form.">
           Save on leaving a row, or Ctrl/Cmd+S. Edited cells are yellow until saved.
         </p>

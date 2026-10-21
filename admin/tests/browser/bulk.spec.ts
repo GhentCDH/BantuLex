@@ -14,7 +14,7 @@ test('bulk import wizard: template, links, upload, check, process and undo',asyn
  await page.goto('crouton/bulk-import');
  await page.evaluate(()=>localStorage.removeItem('bantulex-bulk-draft'));
  await page.reload();
- await expect(page.getByRole('link',{name:'Bulk import',exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Reflexes import',exact:true})).toBeVisible();
 
  // 1. Template: headers with comments, filled in like a researcher would.
  const download=page.waitForEvent('download');

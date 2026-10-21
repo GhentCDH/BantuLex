@@ -246,10 +246,10 @@ const field = 'w-full border rounded px-2 py-1 text-sm';
 </script>
 
 <template>
-  <section class="max-w-screen-2xl mx-auto p-4 flex flex-col gap-3" aria-label="Bulk import">
+  <section class="max-w-screen-2xl mx-auto p-4 flex flex-col gap-3" aria-label="Reflexes import">
     <header class="flex items-start gap-4">
       <div>
-        <h2 class="text-xl font-semibold">Bulk import of reflexes</h2>
+        <h2 class="text-xl font-semibold">Reflexes import</h2>
         <p class="text-sm opacity-70">Import many words from one source at once, e.g. a digitised dictionary. Follow the four steps; the import is saved in one transaction and can be undone as a batch.</p>
       </div>
       <button class="btn btn-sm ml-auto" type="button" @click="startOver">Start over</button>

@@ -6,7 +6,7 @@
   "route": "reflex",
   "model": "reflex",
   "tag": "reflex",
-  "title": "Reflexes",
+  "title": "Reflexes list",
   "idType": "number",
   "database": "default",
   "sidebar": {

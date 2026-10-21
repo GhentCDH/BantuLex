@@ -6,7 +6,7 @@
   "route": "reconstruction",
   "model": "reconstruction",
   "tag": "reconstruction",
-  "title": "Reconstructions",
+  "title": "Reconstructions list",
   "idType": "number",
   "database": "default",
   "sidebar": {
