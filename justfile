@@ -1,7 +1,6 @@
 
-# Pihka-publicatie: bron-export, gebouwde site en rsync-doel (bv. user@server:/srv/bantulex/)
+# Pihka-publicatie: gebouwde site en rsync-doel (bv. user@server:/srv/bantulex/)
 PIHKA_URL     := "http://localhost:9161"
-SOURCE_DB     := env("BANTULEX_SOURCE_DB", "out/export.sqlite")
 DIST          := "dist/bantulex"
 DEPLOY_TARGET := env("BANTULEX_DEPLOY_TARGET", "")
 
@@ -54,12 +53,7 @@ export-all: export-evolex export-tofix
 # vendor/pihka is een git submodule van GhentCDH/Pihka en wordt nooit lokaal aangepast.
 # site/ is de eigen BantuLex-UI; van Pihka gebruikt die alleen core/ (engine) en de kaartextensie.
 
-# Kopieert de SQLite-export naar site/database en materialiseert de perspectieven uit site/config.json
-site-db:
-    cp {{SOURCE_DB}} site/database/bantulex.sqlite
-    node --input-type=module -e "import { readFileSync } from 'node:fs'; \
-      import { prepareSampleDatabase } from './vendor/pihka/scripts/prepare-sample-db.js'; \
-      await prepareSampleDatabase('site/database/bantulex.sqlite', JSON.parse(readFileSync('site/config.json', 'utf8')));"
+# De site leest data/bantulex.db, dezelfde database die de admin bewerkt; de browser bouwt reflex_search zelf.
 
 # Lokale Pihka op {{PIHKA_URL}}, site/ is live gemount (herlaad de browser na wijzigingen)
 pihka-up:
@@ -72,7 +66,6 @@ build-site:
     cp -r site/. {{DIST}}/
     cp -r vendor/pihka/pihka/core {{DIST}}/core
     cp -r vendor/pihka/pihka/extensions/point_map {{DIST}}/extensions/point_map
-    rm -f {{DIST}}/database/.gitkeep
 
 # Kopieert de gebouwde site naar de Caddy-server
 publish: build-site

@@ -9,10 +9,17 @@ vendored Preact and SQLite WASM (`core/vendor`) and the map extension
 (`extensions/point_map`).
 
 ```
-data/*.xlsx --importer--> Postgres --Dataflow--> SQLite export
-    --just site-db--> site/database/bantulex.sqlite (with materialized reflex_search)
-    --just build-site--> dist/bantulex/ --just publish--> web server
+data/*.xlsx --just import--> data/bantulex.db <--edits-- admin (Crouton)
+                                    |
+                                    +--served as /database/bantulex.db--> browser (Pihka)
+
+site/ + Pihka --just build-site--> dist/bantulex/ --just publish--> web server
 ```
+
+The site and the admin use the same database file. An edit in the admin is
+visible on the site after the next page load; there is no export or publish
+step for data. The database is not in `dist/`: Caddy serves
+`data/bantulex.db` at `/database/bantulex.db`, and nothing else from `data/`.
 
 ## Layout
 
@@ -20,11 +27,10 @@ data/*.xlsx --importer--> Postgres --Dataflow--> SQLite export
 | --- | --- |
 | `vendor/pihka/` | Git submodule of GhentCDH/Pihka, pinned to one commit. Never edit it here. |
 | `site/` | The BantuLex site. It is the web root; `build-site` adds Pihka's `core/` and `extensions/point_map/` beside it. |
-| `site/config.json` | Database file and version, perspectives (`reflex_search` is materialized with indexes), the engine plugin and the sound structure inventories. |
+| `site/config.json` | Database URL, perspectives (`reflex_search` and `blr_reconstruction` are materialized with indexes), the engine plugin and the sound structure inventories. |
 | `site/main.js` | Composition root: opens the database with the Pihka engine and mounts the UI. |
 | `site/engine/filters.js` | Engine plugin with the BantuLex filter types (`values`, `contains`, `gloss`, `blr-structure`). All SQL lives here. |
 | `site/ui/` | Preact UI: views (`search`, `blr`, `reflex`), components (meaning search, sound structure, column filter, results, map), URL state and translations (en, nl). |
-| `site/database/` | The prepared database. Gitignored. |
 | `dist/` | The built site. Gitignored. |
 
 ### Views
@@ -59,37 +65,36 @@ The submodule URL is relative (`../Pihka.git`), so it uses the same protocol
 
 ## Steps
 
-1. **Export Postgres to SQLite** with [Dataflow](https://github.com/GhentCDH/Dataflow)
-   and `dataflow.config.json`. The config writes to `/out/export.sqlite`; mount
-   `./out` there, so the result is `out/export.sqlite`.
-2. **`just site-db`** copies the export to `site/database/bantulex.sqlite` and
-   adds the perspective views, with `reflex_search` as an indexed table. The
-   site does not use full-text search (`"enrichment": {"fts": false}`), so no
-   search indexes are built. Run it again after you change `perspectives` in
-   `site/config.json`, and raise `databaseVersion` there after every new
-   database. Use `BANTULEX_SOURCE_DB=<path>` for a different export. Needs
-   Node.js 22.13 or newer.
-3. **`just pihka-up`** serves the site on http://localhost:9161. `site/` and
-   the Pihka submodule are mounted live: reload the browser after a change.
-4. **`just publish`** builds `dist/bantulex` (`site/` plus Pihka's `core/` and
+1. **`just import`** fills `data/bantulex.db`; after that, the admin edits it.
+2. **`just pihka-up`** serves the site on http://localhost:9161. `site/`, the
+   Pihka submodule and `data/` are mounted live: reload the browser after a
+   change.
+3. **`just publish`** builds `dist/bantulex` (`site/` plus Pihka's `core/` and
    `extensions/point_map/`) and copies it with rsync. Set the target first:
-   `BANTULEX_DEPLOY_TARGET=<host>:/var/www/bantulex/`.
+   `BANTULEX_DEPLOY_TARGET=<host>:/var/www/bantulex/`. Only code changes need a
+   publish; data changes do not.
 
-## Server requirements
+## Database loading
 
-The site is served at http://bantulex.ugent.be by Caddy with `file_server`. The
-HTTP VFS datasource reads the database with range requests, so the server must:
+The browser downloads the whole database (about 9 MB with zstd) and opens it in
+memory. `data/bantulex.db` has no `reflex_search` or `blr_reconstruction`
+tables: they are perspectives with `"materialize": true`, and the Pihka engine
+builds them with their indexes on every page load (about 0.6 s for 185,000
+reflexes). The site does not use full-text search
+(`"enrichment": {"fts": false}`), so no search indexes are built.
 
-- answer range requests with `206` (Caddy does this);
-- send a strong `ETag` (Caddy does this);
-- not compress the database. Do not add `encode` to the site, or exclude
-  `*.sqlite` from it.
+## Caching
 
-The `cache_static` snippet on the server caches `.js` files for one hour. After
-a publish, a browser can use the old JavaScript for up to one hour.
+Caddy sends `Cache-Control: no-cache` for the database, HTML, JavaScript, CSS
+and JSON. The browser keeps its copy and revalidates it with the `ETag` (from
+the file's modification time and size) on every load: an unchanged database
+costs one `304` response, a changed one is downloaded again. There is no
+version number to raise after an edit.
 
-When `publish` replaces the database, open browser sessions get an error on
-their next read, because the ETag changes. A reload loads the new version.
+The admin writes with a rollback journal. A download that runs during a write
+can get a mix of old and new pages; the site can then fail to open the
+database or show inconsistent rows, and a reload fixes it. This is rare, because most writes change a few pages in
+a few milliseconds, but a bulk import takes about a second.
 
 ## Updating Pihka
 

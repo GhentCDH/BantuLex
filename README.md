@@ -43,7 +43,6 @@ This builds the containers, backs up and removes `data/bantulex.db`, and runs th
 | `just admin-e2e` | Browser tests against the host Chrome (see admin/README.md) |
 | `just open-admin` | Open the admin in the browser |
 | `just pihka-init` | Fetch the pinned Pihka submodule |
-| `just site-db` | Prepare the SQLite export for Pihka |
 | `just pihka-up` | Preview the website locally |
 | `just publish` | Build the website and rsync it |
 

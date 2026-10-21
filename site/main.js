@@ -20,14 +20,21 @@ async function main() {
         if (!response.ok) throw new Error(`config.json: HTTP ${response.status}`);
         const config = await response.json();
         const databaseUrl = new URL(config.database, import.meta.url);
-        if (config.databaseVersion) databaseUrl.searchParams.set("v", String(config.databaseVersion));
 
         const session = await openDataset({
             databaseUrl: databaseUrl.href,
             config: {
                 datasource: config.datasource,
                 enrichment: config.enrichment,
-                perspectives: config.perspectives.map(({ id, table, query }) => ({ id, table, query })),
+                // materialize, facets and default_sort let the engine build reflex_search with indexes.
+                perspectives: config.perspectives.map(({ id, table, query, materialize, facets, default_sort }) => ({
+                    id,
+                    table,
+                    query,
+                    materialize,
+                    facets,
+                    default_sort,
+                })),
             },
             plugins: [filters],
             onProgress: ({ phase, bytes }) =>
