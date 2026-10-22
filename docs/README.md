@@ -4,7 +4,9 @@
   comes from in the spreadsheets.
 - [Data quality](data-quality.md): known issues in the data and open questions.
 - [Publishing](publishing.md): how the public website is built with Pihka and
-  deployed.
+  served.
+- [Deployment](deployment.md): the site, the admin and the backups on the
+  server.
 
 ## Data flow
 

@@ -1,8 +1,10 @@
+set dotenv-load
 
-# Pihka-publicatie: gebouwde site en rsync-doel (bv. user@server:/srv/bantulex/)
+# Pihka-site: gebouwde site, server (bv. user@gcdhdockqas1) en de map die de systeem-Caddy daar serveert
 PIHKA_URL     := "http://localhost:9161"
 DIST          := "dist/bantulex"
-DEPLOY_TARGET := env("BANTULEX_DEPLOY_TARGET", "")
+DEPLOY_HOST   := env("BANTULEX_DEPLOY_HOST", "")
+DEPLOY_PUBLIC := env("BANTULEX_DEPLOY_PUBLIC", "/data/bantulex_tst/public")
 
 # Crouton URL
 ADMIN_URL := "http://localhost:4444/admin/"
@@ -64,13 +66,16 @@ build-site:
     rm -rf {{DIST}}
     mkdir -p {{DIST}}/extensions
     cp -r site/. {{DIST}}/
+    # Oude voorbereide databases in site/database horen niet in de site: Caddy serveert data/bantulex.db.
+    rm -rf {{DIST}}/database
     cp -r vendor/pihka/pihka/core {{DIST}}/core
     cp -r vendor/pihka/pihka/extensions/point_map {{DIST}}/extensions/point_map
 
-# Kopieert de gebouwde site naar de Caddy-server
-publish: build-site
-    @test -n "{{DEPLOY_TARGET}}" || (echo "Zet BANTULEX_DEPLOY_TARGET, bv. user@server:/srv/bantulex/" && exit 1)
-    rsync -av --delete --delay-updates {{DIST}}/ {{DEPLOY_TARGET}}
+# Bouwt de site en kopieert ze naar de map die de systeem-Caddy op de server serveert (zie docs/deployment.md)
+deploy: build-site
+    @test -n "{{DEPLOY_HOST}}" || (echo "Zet BANTULEX_DEPLOY_HOST, bv. user@gcdhdockqas1" && exit 1)
+    # Gedeelde map: groep via setgid van de server, groepsschrijfbaar, geen maptijden (andermans mappen).
+    rsync -rlptvO --chmod=D2775,F664 --delete --delay-updates {{DIST}}/ "{{DEPLOY_HOST}}:{{DEPLOY_PUBLIC}}/"
 
 # Haalt de vastgezette Pihka-versie op (na clone of checkout)
 pihka-init:

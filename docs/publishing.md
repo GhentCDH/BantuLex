@@ -13,13 +13,14 @@ data/*.xlsx --just import--> data/bantulex.db <--edits-- admin (Crouton)
                                     |
                                     +--served as /database/bantulex.db--> browser (Pihka)
 
-site/ + Pihka --just build-site--> dist/bantulex/ --just publish--> web server
+site/ + Pihka --just build-site--> dist/bantulex/ --just deploy--> public/ on the server
 ```
 
 The site and the admin use the same database file. An edit in the admin is
 visible on the site after the next page load; there is no export or publish
-step for data. The database is not in `dist/`: Caddy serves
-`data/bantulex.db` at `/database/bantulex.db`, and nothing else from `data/`.
+step for data. The database is not in `dist/` and is never copied to the
+server: Caddy serves `data/bantulex.db` at `/database/bantulex.db`, and nothing
+else from `data/`. On the server, that is the file the server's admin edits.
 
 ## Layout
 
@@ -70,10 +71,11 @@ The submodule URL is relative (`../Pihka.git`), so it uses the same protocol
    `site/`, the Pihka submodule and `data/` are mounted live: reload the browser
    after a change. With `just admin` running, the admin is on
    http://localhost:9161/admin/ too.
-3. **`just publish`** builds `dist/bantulex` (`site/` plus Pihka's `core/` and
-   `extensions/point_map/`) and copies it with rsync. Set the target first:
-   `BANTULEX_DEPLOY_TARGET=<host>:/var/www/bantulex/`. Only code changes need a
-   publish; data changes do not.
+3. **`just deploy`** builds `dist/bantulex` (`site/` plus Pihka's `core/` and
+   `extensions/point_map/`) and copies it with rsync to the folder that the
+   system Caddy serves. Set `BANTULEX_DEPLOY_HOST=<user>@<host>` first. Only
+   code changes need a deploy; data changes do not. See
+   [deployment](deployment.md).
 
 ## Database loading
 
