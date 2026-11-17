@@ -1,6 +1,6 @@
 name: Feedback
 description: Give feedback to the developers
-title: "[feedback] "
+title: ""
 labels: [feedback]
 body:
   - type: textarea
