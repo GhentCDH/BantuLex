@@ -1,0 +1,49 @@
+name: Feedback
+description: Give feedback to the developers
+title: "[feedback] "
+labels: [feedback]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Wat wil je doen?
+      placeholder: "Bijvoorbeeld: “Ik wilde een tekst zoeken op naam.”"
+    validations:
+      required: true
+
+  - type: input
+    id: page
+    attributes:
+      label: Waar? Welke pagina?
+      description: Kopieer het webadres (de link bovenaan in je browser) van de pagina.
+      placeholder: https://...
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Wat deed je precies?
+      description: Beschrijf stap voor stap waarop je klikte of wat je intypte.
+      placeholder: |
+        1.
+        2.
+        3.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Wat ging er mis?
+      description: Wat gebeurde er, en wat had je verwacht dat er zou gebeuren?
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Een schermafbeelding
+      description: Een foto van je scherm zegt vaak meer dan veel woorden. Je kan die gewoon in dit tekstvak slepen of plakken.
+
+  - type: input
+    id: device
+    attributes:
+      label: Eventueel welk toestel en welke browser?
+      placeholder: "Bijvoorbeeld: “laptop met Chrome” of “iPhone met Safari”."
